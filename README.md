@@ -12,6 +12,7 @@ A multiplayer C# game framework for Godot 3 dependent on GDNet (https://github.c
 <Compile Include="src\MDFramework\MDGameMode.cs" />
 <Compile Include="src\MDFramework\MDGameSession.cs" />
 <Compile Include="src\MDFramework\MDNetEntity.cs" />
+<Compile Include="src\MDFramework\MDNode.cs" />
 <Compile Include="src\MDFramework\MDPlayer.cs" />
 ```
 

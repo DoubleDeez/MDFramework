@@ -27,14 +27,14 @@ internal static class MDArguments
     public static int GetArgInt(string ArgKey)
     {
         string ArgValue = GetArg(ArgKey);
-        return ArgValue.IsValidInteger() ? Convert.ToInt32(ArgValue) : -1;
+        return ArgValue.IsValidInteger() ? ArgValue.ToInt() : -1;
     }
 
     // -1.0f if not found
     public static float GetArgFloat(string ArgKey)
     {
         string ArgValue = GetArg(ArgKey);
-        return ArgValue.IsValidFloat() ? Convert.ToSingle(ArgValue) : -1.0f;
+        return ArgValue.IsValidFloat() ? ArgValue.ToFloat() : -1.0f;
     }
 
     /* Simple argument parser that generates a dictionary of arguments passed to the game application to their values.
