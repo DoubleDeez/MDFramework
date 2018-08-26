@@ -10,4 +10,9 @@ A multiplayer C# game framework for Godot 3 dependent on GDNet (https://github.c
 <Content Include="MDFramework\*.cs" />
 ```
 
-3. Setup your project to AutoLoad either `MDGameInstance` or your subclass of it.
+3. Setup your `project.godot` to AutoLoad either `MDGameInstance` or your subclass of it.
+
+```ini
+[autoload]
+MDGameInstance="*res://MDFramework/MDGameInstance.cs"
+```
