@@ -7,12 +7,17 @@ A multiplayer C# game framework for Godot 3 dependent on GDNet (https://github.c
 2. Add the MDFramework files to your `Project.csproj`, inside of `<ItemGroup>`, making sure the path matches where you cloned the repo. 
 
 ```xml
-<Content Include="MDFramework\*.cs" />
+<Compile Include="src\MDFramework\MDHelpers\MDArguments.cs" />
+<Compile Include="src\MDFramework\MDGameInstance.cs" />
+<Compile Include="src\MDFramework\MDGameMode.cs" />
+<Compile Include="src\MDFramework\MDGameSession.cs" />
+<Compile Include="src\MDFramework\MDNetEntity.cs" />
+<Compile Include="src\MDFramework\MDPlayer.cs" />
 ```
 
 3. Setup your `project.godot` to AutoLoad either `MDGameInstance` or your subclass of it.
 
 ```ini
 [autoload]
-MDGameInstance="*res://MDFramework/MDGameInstance.cs"
+MDGameInstance="*res://src/MDFramework/MDGameInstance.cs"
 ```
