@@ -10,6 +10,7 @@ public class MDGameInstance : MDNode
 {
     public override void _Ready()
     {
+        MDLog.Initialize();
         MDArguments.PopulateArgs();
     }
     

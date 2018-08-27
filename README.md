@@ -1,6 +1,8 @@
 # MDFramework
 A multiplayer C# game framework for Godot 3 dependent on GDNet (https://github.com/PerduGames/gdnet3)
 
+Being built along side my own Godot project.
+
 # Installation
 1. Clone the repo to your Godot project's directory.
 
@@ -8,6 +10,7 @@ A multiplayer C# game framework for Godot 3 dependent on GDNet (https://github.c
 
 ```xml
 <Compile Include="src\MDFramework\MDHelpers\MDArguments.cs" />
+<Compile Include="src\MDFramework\MDHelpers\MDLog.cs" />
 <Compile Include="src\MDFramework\MDGameInstance.cs" />
 <Compile Include="src\MDFramework\MDGameMode.cs" />
 <Compile Include="src\MDFramework\MDGameSession.cs" />

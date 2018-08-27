@@ -7,9 +7,10 @@ using static Godot.StringExtensions;
  *
  * Static class that parses the arguments passed into the game executable to be exposed to game code.
  */
-internal static class MDArguments
+public static class MDArguments
 {
     private const string ARG_PREFIX = "-";
+    private const string LOG_CAT = "MDArgs";
 
     // Does this argument exist?
     public static bool HasArg(string ArgKey)
@@ -49,7 +50,7 @@ internal static class MDArguments
         }
 
         string[] ArgArray = System.Environment.GetCommandLineArgs();
-        Console.WriteLine("Populating Arguments: " + String.Join(" ", ArgArray));
+        MDLog.Log(LOG_CAT, MDLogLevel.Info, "Populating Arguments: " + String.Join(" ", ArgArray));
     
         Args = new Dictionary<string, string>();
         for (int i = 0; i < ArgArray.Length; ++i)
