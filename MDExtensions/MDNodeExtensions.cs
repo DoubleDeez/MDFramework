@@ -11,7 +11,7 @@ public static class MDNodeExtensions
     // Grabs the singleton game instance
     public static MDGameInstance GetGameInstance(this Node instance)
     {
-        return instance.GetNode("/root/MDGameInstance") as MDGameInstance;
+        return instance.GetNode("/root/GameInstance") as MDGameInstance;
     }
 
     // Grabs the GameSession from the GameInstance

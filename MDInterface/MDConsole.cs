@@ -8,9 +8,6 @@ using System;
  */
 public class MDConsole : Panel
 {
-    public delegate void OnCloseRequested();
-    public OnCloseRequested RequestClose = null;
-
     public override void _Ready()
     {
         base._Ready();
@@ -19,6 +16,13 @@ public class MDConsole : Panel
         this.SetMargin(0, -24, 0, 0);
 
         CreateLineEdit();
+    }
+
+    // Closes and frees the console prompt
+    public void Close()
+    {
+        GetParent().RemoveChild(this);
+        QueueFree();
     }
 
     // Creates the UI control that accepts text input
@@ -38,10 +42,7 @@ public class MDConsole : Panel
     // Called when the user hits enter on the ConsoleInput
     private void OnCommandEntered(string Command)
     {
-        if (RequestClose != null)
-        {
-            RequestClose.Invoke();
-        }
+        Close();
     }
 
     private LineEdit ConsoleInput;

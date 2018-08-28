@@ -9,6 +9,7 @@ using System;
 public class MDInterfaceManager : Control
 {
     private const int ConsoleKey = (int)KeyList.Quoteleft;
+    private const string ConsoleName = "Console";
     private const string LOG_CAT = "InterfaceManager";
 
     public override void _Ready()
@@ -38,20 +39,16 @@ public class MDInterfaceManager : Control
     // Opens and focuses the console UI
     private void ToggleConsole()
     {
+        MDConsole Console = FindNode(ConsoleName, true, false) as MDConsole;
         if (Console == null)
         {
             Console = new MDConsole();
             Console.SetName("Console");
-            Console.RequestClose = ToggleConsole;
             AddChild(Console);
         }
         else
         {
-            RemoveChild(Console);
-            Console.QueueFree();
-            Console = null;
+            Console.Close();
         }
     }
-
-    private MDConsole Console;
 }
