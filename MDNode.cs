@@ -27,9 +27,16 @@ public class MDNode : Node
     }
 
     // Shortcut for GetTree().GetRoot().AddChild()
-    public void AddNodeToRoot(Node Child)
+    public void AddNodeToRoot(Node Child, bool Deferred = false)
     {
-        GetTree().GetRoot().AddChild(Child);
+        if (Deferred)
+        {
+            GetTree().GetRoot().CallDeferred("AddChild", Child);
+        }
+        else
+        {
+            GetTree().GetRoot().AddChild(Child);
+        }
     }
     
     // Cached GameInstance reference

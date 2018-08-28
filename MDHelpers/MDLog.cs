@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using static Godot.StringExtensions;
 using Directory = Godot.Directory;
 using Error = Godot.Error;
@@ -12,7 +13,8 @@ public enum MDLogLevel
     Info,
     Warn,
     Error,
-    Fatal
+    Fatal,
+    Log // Always logs
 }
 
 public struct MDLogProperties
@@ -74,7 +76,7 @@ public static class MDLog
 
         if (LogLevel == MDLogLevel.Fatal)
         {
-            // TODO - break;
+            DebugBreak();
         }
     }
 
@@ -141,6 +143,16 @@ public static class MDLog
         }
 
         return true;
+    }
+
+    // Breaks the debugger
+    [Conditional("DEBUG")]
+    private static void DebugBreak()
+    {
+        if(Debugger.IsAttached)
+        {
+            Debugger.Break();
+        }
     }
 
     private static string FullLogFilePath;

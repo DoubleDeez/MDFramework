@@ -12,6 +12,7 @@ public class MDGameInstance : MDNode
     {
         MDLog.Initialize();
         MDArguments.PopulateArgs();
+        CreateGameSession();
     }
     
     public new MDGameSession GetGameSession()
@@ -25,7 +26,7 @@ public class MDGameInstance : MDNode
         {
             GameSession = new MDGameSession();
             GameSession.SetName("GameSession");
-            AddNodeToRoot(GameSession);
+            AddNodeToRoot(GameSession, true);
         }
     }
 
