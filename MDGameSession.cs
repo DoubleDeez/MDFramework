@@ -6,7 +6,7 @@ using System;
  *
  * Class that manages the current multiplayer state of the game.
  */
-public class MDGameSession : MDNode
+public class MDGameSession : Node
 {
     private const string ARG_SERVER = "server";
     private const string ARG_CLIENT = "client";

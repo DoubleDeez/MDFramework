@@ -6,16 +6,17 @@ using System;
  *
  * Single-instance class that persists throughout the life-time of the game application.
  */
-public class MDGameInstance : MDNode
+public class MDGameInstance : Node
 {
     public override void _Ready()
     {
         MDLog.Initialize();
         MDArguments.PopulateArgs();
         CreateGameSession();
+        CreateInterfaceManager();
     }
     
-    public new MDGameSession GetGameSession()
+    public MDGameSession GetGameSession()
     {
         return GameSession;
     }
@@ -26,9 +27,20 @@ public class MDGameInstance : MDNode
         {
             GameSession = new MDGameSession();
             GameSession.SetName("GameSession");
-            AddNodeToRoot(GameSession, true);
+            this.AddNodeToRoot(GameSession, true);
+        }
+    }
+
+    private void CreateInterfaceManager()
+    {
+        if (InterfaceManager == null)
+        {
+            InterfaceManager = new MDInterfaceManager();
+            InterfaceManager.SetName("InterfaceManager");
+            this.AddNodeToRoot(InterfaceManager, true);
         }
     }
 
     private MDGameSession GameSession = null;
+    private MDInterfaceManager InterfaceManager = null;
 }
