@@ -59,9 +59,9 @@ public static class MDLog
 
         if (LogFile || LogConsole)
         {
-            string FullMessage = "[" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + "] "
-                + "[" + CategoryName + "::" + LogLevel.ToString() + "] "
-                + string.Format(Message, args);
+            string FullMessage = "[" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + "] " +
+                "[" + CategoryName + "::" + LogLevel.ToString() + "] " +
+                string.Format(Message, args);
 
             if (LogFile)
             {
@@ -116,7 +116,7 @@ public static class MDLog
         if (CreateLogDirectoryIfNotExists(LOG_DIR))
         {
             LogFile = new File();
-            LogFile.Open(FullLogFilePath, (int)File.ModeFlags.Write);
+            LogFile.Open(FullLogFilePath, (int) File.ModeFlags.Write);
             Log(LOG_CAT, MDLogLevel.Info, "Created log file {0}", FullLogFilePath);
             LogFile.Close();
         }
@@ -129,7 +129,7 @@ public static class MDLog
     // Opens the log file for writing
     private static void OpenLogFile()
     {
-        LogFile.Open(FullLogFilePath, (int)File.ModeFlags.ReadWrite);
+        LogFile.Open(FullLogFilePath, (int) File.ModeFlags.ReadWrite);
         LogFile.SeekEnd();
     }
 
@@ -149,7 +149,7 @@ public static class MDLog
     [Conditional("DEBUG")]
     private static void DebugBreak()
     {
-        if(Debugger.IsAttached)
+        if (Debugger.IsAttached)
         {
             Debugger.Break();
         }

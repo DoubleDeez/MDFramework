@@ -17,6 +17,7 @@ public class MDNetEntity : Node
     public bool StartServer(int Port)
     {
         GDNetAddress Address = new GDNetAddress();
+        Address.SetHost("");
         Address.SetPort(Port);
 
         return NetHost.Bind(Address) == Error.Ok;

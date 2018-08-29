@@ -1,5 +1,6 @@
 using Godot;
 using System;
+using System.Reflection;
 
 /*
  * MDGameSession
@@ -15,21 +16,25 @@ public class MDGameSession : Node
     public override void _Ready()
     {
         NetEntity = new MDNetEntity();
+        this.AddNodeToRoot(NetEntity);
         CheckArgsForConnectionInfo();
+        MDCommand.RegisterCommandAttributes(this);
     }
 
+    [MDCommandAttribute()]
     public bool StartServer(int Port)
     {
         bool Success = NetEntity.StartServer(Port);
-        MDLog.CLog(Success, LOG_CAT, MDLogLevel.Error, "Started server on port {0}", Port);
+        MDLog.CLog(Success, LOG_CAT, MDLogLevel.Info, "Started server on port {0}", Port);
         MDLog.CLog(!Success, LOG_CAT, MDLogLevel.Error, "Failed to start server on port {0}", Port);
         return Success;
     }
 
+    [MDCommandAttribute()]
     public bool StartClient(string Address, int Port)
     {
         bool Success = NetEntity.ConnectToServer(Address, Port);
-        MDLog.CLog(Success, LOG_CAT, MDLogLevel.Error, "Connected to server at {0}:{1}", Address, Port);
+        MDLog.CLog(Success, LOG_CAT, MDLogLevel.Info, "Connected to server at {0}:{1}", Address, Port);
         MDLog.CLog(!Success, LOG_CAT, MDLogLevel.Error, "Failed to connect to server at {0}:{1}", Address, Port);
         return Success;
     }

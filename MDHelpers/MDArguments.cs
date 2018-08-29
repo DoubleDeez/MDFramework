@@ -51,7 +51,7 @@ public static class MDArguments
 
         string[] ArgArray = System.Environment.GetCommandLineArgs();
         MDLog.Log(LOG_CAT, MDLogLevel.Info, "Populating Arguments: " + String.Join(" ", ArgArray));
-    
+
         Args = new Dictionary<string, string>();
         for (int i = 0; i < ArgArray.Length; ++i)
         {
