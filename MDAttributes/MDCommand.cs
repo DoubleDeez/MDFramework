@@ -1,7 +1,7 @@
 using System;
 
 [AttributeUsage(AttributeTargets.Method)]
-public class MDCommandAttribute : Attribute
+public class MDCommand : Attribute
 {
     public string HelpText {get; set;}
 }

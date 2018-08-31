@@ -4,21 +4,21 @@ using System.Reflection;
 using static Godot.StringExtensions;
 
 /*
- * MDCommand
+ * MDCommands
  *
  * Class allow functions to be registered as commands to be accessed via an MDConsole instance
  */
-public static class MDCommand
+public static class MDCommands
 {
-    private const string LOG_CAT = "MDCommand";
+    private const string LOG_CAT = "MDCommands";
 
-    // Registers all the methods marked with an MDCommandAttribute
+    // Registers all the methods marked with an MDCommand
     public static void RegisterCommandAttributes(object Instance)
     {
         MethodInfo[] Methods = Instance.GetType().GetMethods();
         foreach (MethodInfo Method in Methods)
         {
-            MDCommandAttribute CmdAttr = Method.GetCustomAttribute(typeof(MDCommandAttribute)) as MDCommandAttribute;
+            MDCommand CmdAttr = Method.GetCustomAttribute(typeof(MDCommand)) as MDCommand;
             if (CmdAttr != null)
             {
                 RegisterCommand(Instance, Method);
@@ -45,7 +45,7 @@ public static class MDCommand
             }
             HelpText += " [" + ParamString + "]";
         }
-        
+
         RegisterCommand(Instance, Method, HelpText);
     }
 

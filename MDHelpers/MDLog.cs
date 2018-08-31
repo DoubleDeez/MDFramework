@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using static Godot.StringExtensions;
 using Directory = Godot.Directory;
-using Error = Godot.Error;
+using GDError = Godot.Error;
 using File = Godot.File;
 
 public enum MDLogLevel
@@ -80,6 +80,24 @@ public static class MDLog
         }
     }
 
+    // Calls Log with level == error
+    public static void Error(string CategoryName, string Message, params object[] args)
+    {
+        Log(CategoryName, MDLogLevel.Error, Message, args);
+    }
+
+    // Calls Log with level == warn
+    public static void Warn(string CategoryName, string Message, params object[] args)
+    {
+        Log(CategoryName, MDLogLevel.Warn, Message, args);
+    }
+
+    // Calls Log with level == info
+    public static void Info(string CategoryName, string Message, params object[] args)
+    {
+        Log(CategoryName, MDLogLevel.Info, Message, args);
+    }
+
     // Sames os Log() expect it only logs if Condition == true
     public static void CLog(bool Condition, string CategoryName, MDLogLevel LogLevel, string Message, params object[] args)
     {
@@ -139,7 +157,7 @@ public static class MDLog
         Directory dir = new Directory();
         if (!dir.DirExists(FileDir))
         {
-            return dir.MakeDirRecursive(FileDir) == Error.Ok;
+            return dir.MakeDirRecursive(FileDir) == GDError.Ok;
         }
 
         return true;

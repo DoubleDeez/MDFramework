@@ -18,7 +18,7 @@ Being built along side my own Godot project.
     <Compile Include="src\MDFramework\MDExtensions\MDControlExtension.cs" />
     <Compile Include="src\MDFramework\MDExtensions\MDNodeExtension.cs" />
     <Compile Include="src\MDFramework\MDHelpers\MDArguments.cs" />
-    <Compile Include="src\MDFramework\MDHelpers\MDCommand.cs" />
+    <Compile Include="src\MDFramework\MDHelpers\MDCommands.cs" />
     <Compile Include="src\MDFramework\MDHelpers\MDLog.cs" />
     <Compile Include="src\MDFramework\MDInterface\MDConsole.cs" />
     <Compile Include="src\MDFramework\MDInterface\MDInterfaceManager.cs" />
@@ -41,6 +41,7 @@ GameInstance="*res://src/MDFramework/MDGameInstance.cs"
 * An ability to disable command prompt (especially for release builds)
 * Command prompt auto-complete with help text
 * Command history
-* Easy replication of fields
-* Client/Server/Broadcast functions
+* Instance based replication (use name to find the node?)
+  * Easy replication of fields
+  * Client/Server/Broadcast functions
 * more...

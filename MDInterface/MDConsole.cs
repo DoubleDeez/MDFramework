@@ -42,7 +42,7 @@ public class MDConsole : Panel
     // Called when the user hits enter on the ConsoleInput
     private void OnCommandEntered(string Command)
     {
-        MDCommand.InvokeCommand(Command);
+        MDCommands.InvokeCommand(Command);
         Close();
     }
 

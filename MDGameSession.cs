@@ -18,10 +18,10 @@ public class MDGameSession : Node
         NetEntity = new MDNetEntity();
         this.AddNodeToRoot(NetEntity);
         CheckArgsForConnectionInfo();
-        MDCommand.RegisterCommandAttributes(this);
+        MDCommands.RegisterCommandAttributes(this);
     }
 
-    [MDCommandAttribute()]
+    [MDCommand()]
     public bool StartServer(int Port)
     {
         bool Success = NetEntity.StartServer(Port);
@@ -30,7 +30,7 @@ public class MDGameSession : Node
         return Success;
     }
 
-    [MDCommandAttribute()]
+    [MDCommand()]
     public bool StartClient(string Address, int Port)
     {
         bool Success = NetEntity.ConnectToServer(Address, Port);
@@ -58,7 +58,7 @@ public class MDGameSession : Node
             }
             else
             {
-                MDLog.Log(LOG_CAT, MDLogLevel.Error, "Failed to parse client arg {0}, expecting -{1}=[IPAddres:Port]", ClientArg, ARG_CLIENT);
+                MDLog.Error(LOG_CAT, "Failed to parse client arg {0}, expecting -{1}=[IPAddres:Port]", ClientArg, ARG_CLIENT);
             }
         }
     }
