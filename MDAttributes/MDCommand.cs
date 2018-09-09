@@ -4,4 +4,6 @@ using System;
 public class MDCommand : Attribute
 {
     public string HelpText {get; set;}
+
+    public object[] DefaultArgs {get; set;}
 }

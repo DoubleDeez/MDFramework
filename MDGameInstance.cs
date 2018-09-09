@@ -10,17 +10,34 @@ public class MDGameInstance : Node
 {
     public override void _Ready()
     {
+        // Init static classes first
+        MDStatics.GI = this;
         MDLog.Initialize();
         MDArguments.PopulateArgs();
+
+        // Init instacces
         CreateGameSession();
         CreateInterfaceManager();
     }
-    
-    public MDGameSession GetGameSession()
+
+    public override void _Notification(int NotificationType)
     {
-        return GameSession;
+        if (NotificationType == MainLoop.NotificationWmQuitRequest)
+        {
+            if (GameSession != null)
+            {
+                GameSession.Disconnect();
+            }
+        }
     }
 
+    // Registers the given instance's fields marked with [MDReplicated()]
+    public void RegisterReplication(Node Instance)
+    {
+        GameSession.Replicator.RegisterReplication(Instance);
+    }
+
+    // Ensure GameSession is created
     private void CreateGameSession()
     {
         if (GameSession == null)
@@ -31,6 +48,7 @@ public class MDGameInstance : Node
         }
     }
 
+    // Ensure InterfaceManager is created
     private void CreateInterfaceManager()
     {
         if (InterfaceManager == null)
@@ -41,6 +59,6 @@ public class MDGameInstance : Node
         }
     }
 
-    private MDGameSession GameSession = null;
-    private MDInterfaceManager InterfaceManager = null;
+    public MDGameSession GameSession {get; private set;}
+    public MDInterfaceManager InterfaceManager {get; private set;}
 }

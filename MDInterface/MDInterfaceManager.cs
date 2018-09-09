@@ -43,7 +43,7 @@ public class MDInterfaceManager : Control
         if (Console == null)
         {
             Console = new MDConsole();
-            Console.SetName("Console");
+            Console.SetName(ConsoleName);
             AddChild(Console);
         }
         else

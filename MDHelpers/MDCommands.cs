@@ -21,13 +21,13 @@ public static class MDCommands
             MDCommand CmdAttr = Method.GetCustomAttribute(typeof(MDCommand)) as MDCommand;
             if (CmdAttr != null)
             {
-                RegisterCommand(Instance, Method);
+                RegisterCommand(Instance, Method, CmdAttr.DefaultArgs);
             }
         }
     }
 
     // Register a method as a command
-    public static void RegisterCommand(object Instance, MethodInfo Method)
+    public static void RegisterCommand(object Instance, MethodInfo Method, object[] DefaultParams = null)
     {
         if (Method == null)
         {
@@ -46,11 +46,11 @@ public static class MDCommands
             HelpText += " [" + ParamString + "]";
         }
 
-        RegisterCommand(Instance, Method, HelpText);
+        RegisterCommand(Instance, Method, HelpText, DefaultParams);
     }
 
     // Register a command, with custom help text that can be displayed in the console
-    public static void RegisterCommand(object Instance, MethodInfo Method, string HelpText)
+    public static void RegisterCommand(object Instance, MethodInfo Method, string HelpText, object[] DefaultParams = null)
     {
         if (Method == null)
         {
@@ -65,13 +65,14 @@ public static class MDCommands
         string MethodName = Method.Name.ToLower();
         if (CommandMap.ContainsKey(MethodName))
         {
-            MDLog.Log(LOG_CAT, MDLogLevel.Warn, "Command with name [{0}] is already registered, it will be replaced", Method.Name);
+            MDLog.Warn(LOG_CAT, "Command with name [{0}] is already registered, it will be replaced", Method.Name);
         }
 
         CommandInfo NewCommand;
         NewCommand.HelpText = HelpText;
         NewCommand.Instance = Instance;
         NewCommand.Method = Method;
+        NewCommand.DefaultArgs = DefaultParams;
 
         CommandMap[MethodName] = NewCommand;
     }
@@ -89,23 +90,37 @@ public static class MDCommands
         string CmdName = Args[0].ToLower();
         if (!CommandMap.ContainsKey(CmdName))
         {
-            // Command not registered
+            MDLog.Error(LOG_CAT, "Command not found: [{0}]", Command);
             return false;
         }
 
         CommandInfo CmdInfo = CommandMap[CmdName];
         ParameterInfo[] Params = CmdInfo.Method.GetParameters();
-        if (Args.Length - 1 != Params.Length)
+        object[] ParamArray;
+
+        // Should we use the default args?
+        if (Params.Length > 0 && Args.Length == 1 && CmdInfo.DefaultArgs.Length == Params.Length)
         {
-            // Wrong number of arguments
-            return false;
+            ParamArray = CmdInfo.DefaultArgs;
+        }
+        else
+        {
+            if (Args.Length - 1 != Params.Length)
+            {
+                // Wrong number of arguments
+                return false;
+            }
+
+            ParamArray = new object[Args.Length - 1];
+            Array.Copy(Args, 1, ParamArray, 0, ParamArray.Length);
         }
 
+        // Convert the strings to the appropriate type
         List<object> CmdParams = new List<object>();
-        int ArgIndex = 1;
+        int ArgIndex = 0;
         foreach (ParameterInfo ParamInfo in Params)
         {
-            object Param = Convert.ChangeType(Args[ArgIndex++], ParamInfo.ParameterType);
+            object Param = Convert.ChangeType(ParamArray[ArgIndex++], ParamInfo.ParameterType);
             CmdParams.Add(Param);
         }
 
@@ -121,8 +136,11 @@ public static class MDCommands
     {
         public string HelpText;
 
+        // TODO - Make weak
         public object Instance;
 
         public MethodInfo Method;
+
+        public object[] DefaultArgs;
     }
 }
