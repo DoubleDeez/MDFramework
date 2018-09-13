@@ -21,6 +21,7 @@ Being built along side my own Godot project.
     <Compile Include="src\MDFramework\MDHelpers\MDArguments.cs" />
     <Compile Include="src\MDFramework\MDHelpers\MDCommands.cs" />
     <Compile Include="src\MDFramework\MDHelpers\MDLog.cs" />
+    <Compile Include="src\MDFramework\MDHelpers\MDSerialization.cs" />
     <Compile Include="src\MDFramework\MDHelpers\MDStatics.cs" />
     <Compile Include="src\MDFramework\MDInterface\MDConsole.cs" />
     <Compile Include="src\MDFramework\MDInterface\MDInterfaceManager.cs" />
@@ -60,12 +61,29 @@ There are 2 methods of replication with this framework. RPCs (calling a function
 ### Field Replication
 Setting up replicating has a similar pattern to setting up console commands. Any field on a `Node` class marked with the `MDReplicated()` attribute can be replicated. The registered `Node` **must** have its name set before being registered, and the name must be the same on the server and all clients as this is how `MDReplicator` determines where to send replicated data. Fields are always reliably replicated, although order isn't necessarily guaranteed since all fields are replicated as a post-process - they are not sent out as soon as you assign the variable.
 
+### Supported Types for replication
+The following types are able to be used for field replication and RPC parameters.
+* bool
+* byte
+* char
+* float
+* long
+* ulong
+* int
+* uint
+* short
+* ushort
+* string
+* Dictionary/List/Array of the above types
+* Any of the above types on Classes/Structs
+
 # TODO
 * An ability to disable command prompt (especially for release builds)
 * Command prompt auto-complete with help text
 * Command history
 * Instance based replication (use name to find the node?)
   * Easy replication of fields
+  * Notification of a change in a replicated field
   * Client/Server/Broadcast functions (RPCs)
 * Relevancy replication prioritization
 * Distance based replication relevancy

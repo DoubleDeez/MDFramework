@@ -8,6 +8,8 @@ using System;
  */
 public class MDGameInstance : Node
 {
+    private const string LOG_CAT = "LogGameInstance";
+
     public override void _Ready()
     {
         // Init static classes first
@@ -22,12 +24,17 @@ public class MDGameInstance : Node
 
     public override void _Notification(int NotificationType)
     {
-        if (NotificationType == MainLoop.NotificationWmQuitRequest)
+        base._Notification(NotificationType);
+
+        switch(NotificationType)
         {
-            if (GameSession != null)
-            {
-                GameSession.Disconnect();
-            }
+            case MainLoop.NotificationWmQuitRequest:
+                MDLog.Info(LOG_CAT, "Quit notification received.");
+                if (GameSession != null)
+                {
+                    GameSession.Disconnect();
+                }
+                break;
         }
     }
 

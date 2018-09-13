@@ -82,6 +82,11 @@ public class MDNetEntity : Node
 
     public void Disconnect()
     {
+        if (ClientPeer != null)
+        {
+            ClientPeer.DisconnectNow();
+        }
+
         NetHost.Unbind();
         NetMode = MDNetMode.Standalone;
         SetProcess(false);
