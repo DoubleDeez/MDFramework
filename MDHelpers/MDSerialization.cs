@@ -35,6 +35,11 @@ public static class MDSerialization
             return Type_Node;
         }
 
+        if (InType.IsEnum)
+        {
+            return Type_Int;
+        }
+
         if (TypeToMDType.ContainsKey(InType))
         {
             return TypeToMDType[InType];
@@ -104,7 +109,7 @@ public static class MDSerialization
         Func<object, byte[]> converter;
         if (!ToBytes.TryGetValue(DataType, out converter))
         {
-            MDLog.Error(LOG_CAT, "Attempting to serialize unsupported type [{0}] for packet", Data.GetType().Name);
+            MDLog.Error(LOG_CAT, "Attempting to serialize unsupported type [{0}] for packet", DataType.Name);
             return MDStatics.EmptyByteArray;
         }
 
@@ -240,7 +245,7 @@ public static class MDSerialization
         { typeof(uint),     o => BitConverter.GetBytes((uint) o) },
         { typeof(short),    o => BitConverter.GetBytes((short) o) },
         { typeof(ushort),   o => BitConverter.GetBytes((ushort) o) },
-        { typeof(Node),     o => MDStatics.EmptyByteArray },
+        { typeof(Node),     o => MDStatics.EmptyByteArray }, // Node serialization is handled in MDReplcator
     };
 
     private static readonly FromByteConverterDict FromBytes = new FromByteConverterDict()
@@ -256,7 +261,7 @@ public static class MDSerialization
         { typeof(uint),     bytes => BitConverter.ToUInt32(bytes, 0) },
         { typeof(short),    bytes => BitConverter.ToInt16(bytes, 0) },
         { typeof(ushort),   bytes => BitConverter.ToUInt16(bytes, 0) },
-        { typeof(Node),     bytes => null },
+        { typeof(Node),     bytes => null }, // Node deserialization is handled in MDReplcator
     };
 
     private static readonly TypeToSizeDict TypeSize = new TypeToSizeDict()

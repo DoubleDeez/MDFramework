@@ -13,6 +13,13 @@ public static class MDPacketType
     public const int MDMaxPacketType = 255;
 }
 
+public enum TestEnum
+{
+    First,
+    Second,
+    Third
+}
+
 /*
  * MDGameSession
  *
@@ -55,12 +62,23 @@ public class MDGameSession : Node
             WorldTime = 0.0f;
             if (this.GetNetMode() == MDNetMode.Server)
             {
-                TestInt = Rand.Next(33, 127);
-                MDLog.Info(LOG_CAT, "Setting TestInt to [{0}]", TestInt);
+                if (TestEnumVal == TestEnum.First)
+                {
+                    TestEnumVal = TestEnum.Second;
+                }
+                else if (TestEnumVal == TestEnum.Second)
+                {
+                    TestEnumVal = TestEnum.Third;
+                }
+                else if (TestEnumVal == TestEnum.Third)
+                {
+                    TestEnumVal = TestEnum.First;
+                }
+                MDLog.Info(LOG_CAT, "Setting TestInt to [{0}]", TestEnumVal);
             }
             else
             {
-                MDLog.Info(LOG_CAT, "TestInt is now [{0}]", TestInt);
+                MDLog.Info(LOG_CAT, "TestInt is now [{0}]", TestEnumVal);
             }
         }
     }
@@ -308,11 +326,9 @@ public class MDGameSession : Node
     }
 
     [MDReplicated()]
-    private int TestInt;
+    private TestEnum TestEnumVal = TestEnum.First;
 
     private float WorldTime = 0.0f;
-
-    private Random Rand = new Random();
 
     private PeerDict Peers = new PeerDict();
 

@@ -57,7 +57,7 @@ In game, the command console can be opened with the `~` key.
 
 In your code, you can add more commands by adding the `[MDCommand()]` attribute to any methods you wish to have as commands.
 Then from that same class call `MDCommands.RegisterCommandAttributes(this);` to have those commands registered.
-For classes extending `Node`, a good place to call it would be `_Ready()`, `Node` classes have an extension helper for this, so you can just call `this.RegisterCommandAttributes();`.
+For classes extending `Node`, a good place to call it would be in `_Ready()`, `Node` classes have an extension helper for this, so you can just call `this.RegisterCommandAttributes();`.
 
 Only a single instance of a class can be registered for commands, this is because commands are invoked via their method name, which are the same for all instances of a class.
 
