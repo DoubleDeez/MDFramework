@@ -26,6 +26,7 @@ public class MDInterfaceManager : Control
 
     public override void _Input(InputEvent InEvent)
     {
+        #if DEBUG
         if (InEvent is InputEventKey EventKey)
         {
             if (EventKey.Pressed && !EventKey.Echo && EventKey.GetScancode() == ConsoleKey)
@@ -34,6 +35,7 @@ public class MDInterfaceManager : Control
                 this.SetInputHandled();
             }
         }
+        #endif
     }
 
     // Opens and focuses the console UI

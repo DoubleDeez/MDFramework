@@ -53,6 +53,21 @@ public class MDReplicator
         }
     }
 
+    // Sends ALL tracked replicated fields to the specified Peer. Generally used to update a peer when they join.
+    public void BuildAllNodeDataAndSendToPeer(int PeerID)
+    {
+        // TODO - Instead of this function, set it up so that when a client registers an object for replication, it requests the updated data from the server
+        MDGameSession GameSession = MDStatics.GetGameSession();
+        foreach(ReplicatedNode RepNode in NodeList.Values)
+        {
+            byte[] NodeData = RepNode.BuildData(false);
+            if (NodeData != null)
+            {
+                GameSession.BroadcastPacket(MDPacketType.Replication, NodeData);
+            }
+        }
+    }
+
     // Iterate over NodeList finding nodes with updated values
     private void BuildNodeDataAndSend()
     {
@@ -231,18 +246,18 @@ public class ReplicatedObject
         return NumBytesDeserialized - StartIndex;
     }
 
-    protected BytesList BuildChildData(object Container)
+    protected BytesList BuildChildData(object Container, bool ChangedValuesOnly = true)
     {
         BytesList TempList = new BytesList();
-        BuildFieldData(Container, TempList);
+        BuildFieldData(Container, TempList, ChangedValuesOnly);
         return TempList;
     }
 
-    private void BuildFieldData(object Container, BytesList DataList)
+    private void BuildFieldData(object Container, BytesList DataList, bool ChangedValuesOnly = true)
     {
         foreach(ReplicatedField RepField in ReplicatedFields.Values)
         {
-            byte[] FieldData = RepField.BuildData(Container);
+            byte[] FieldData = RepField.BuildData(Container, ChangedValuesOnly);
             if (FieldData != null)
             {
                 DataList.Add(FieldData);
@@ -256,7 +271,7 @@ public class ReplicatedNode : ReplicatedObject
 {
     public WeakReference WeakNode;
 
-    public byte[] BuildData()
+    public byte[] BuildData(bool ChangedValuesOnly = true)
     {
         /*
             Node data format:
@@ -272,7 +287,7 @@ public class ReplicatedNode : ReplicatedObject
             return null;
         }
 
-        BytesList ChildData = BuildChildData(NodeRef);
+        BytesList ChildData = BuildChildData(NodeRef, ChangedValuesOnly);
         int NumRepObjects = ChildData.Count;
 
         if (NumRepObjects > 0)
@@ -319,7 +334,7 @@ public class ReplicatedField
 
     public object CachedValue;
 
-    public byte[] BuildData(object Container)
+    public byte[] BuildData(object Container, bool ChangedValuesOnly = true)
     {
         /*
             Field Data Format:
@@ -330,7 +345,7 @@ public class ReplicatedField
             [Value data] byte[]
         */
         object CurrentValue = Field.GetValue(Container);
-        if (!CurrentValue.Equals(CachedValue))
+        if (!ChangedValuesOnly || !CurrentValue.Equals(CachedValue))
         {
             CachedValue = CurrentValue;
 

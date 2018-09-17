@@ -1,7 +1,7 @@
 # MDFramework
 A multiplayer C# game framework for Godot 3 dependent on the GDNet module (https://github.com/PerduGames/gdnet3).
 
-Being built along side my own Godot project.
+As this is being built along side my own Godot project, I will generally add features as I need them.
 
 ## Why?
 At the time of writing this framework, I found Godot's existing high-level networking framework too limited.
@@ -53,7 +53,7 @@ GameInstance="*res://src/MDFramework/MDGameInstance.cs"
 # How to use MDFramework
 
 ## Command Console
-In game, the command console can be opened with the `~` key.
+In game, the command console can be opened with the `~` key. Command history can be navigated using the `Up` and `Down` arrow keys.
 
 In your code, you can add more commands by adding the `[MDCommand()]` attribute to any methods you wish to have as commands.
 Then from that same class call `MDCommands.RegisterCommandAttributes(this);` to have those commands registered.
@@ -121,14 +121,12 @@ Currently, this will enable logging for all MDProfiler instances and can get ver
 ```
 
 # TODO
-* An ability to disable command prompt (especially for release builds)
+* An ability to enable command prompt in release builds
 * Command prompt auto-complete with help text
-* Command history
 * Instance based replication - by node/field name
   * Notification of a change in a replicated field
   * Client/Server/Broadcast functions (RPCs)
   * Network owner of Nodes
-* Relevancy replication prioritization
 * Distance based replication relevancy
 * UI management framework
 * Automatic Field<->Node binding

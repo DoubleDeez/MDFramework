@@ -184,6 +184,9 @@ public class MDGameSession : Node
     {
         MDLog.Info(LOG_CAT, "Peer [ID: {0}] connected", PeerId);
         SendConnectionDataToClient(PeerId);
+
+        // TODO - Call this in a spot that guarantees the client is ready for it
+        Replicator.BuildAllNodeDataAndSendToPeer(PeerId);
     }
 
     protected virtual void ClientOnConnectedToServer()
@@ -233,7 +236,7 @@ public class MDGameSession : Node
         byte[] PeerIDAsBytes = MDSerialization.ConvertSupportedTypeToBytes(PeerID);
         SendPacket(PeerID, MDPacketType.Connection, PeerIDAsBytes);
 
-        Peers.Add(PeerID,CreatePlayerObject(PeerID));
+        Peers.Add(PeerID, CreatePlayerObject(PeerID));
     }
 
     // After the client connects to the server, the server will send the client data to this function
@@ -242,7 +245,7 @@ public class MDGameSession : Node
         if(this.GetNetMode() != MDNetMode.Server)
         {
             LocalPeerID = MDSerialization.ConvertBytesToSupportedType<int>(Data);
-            Peers.Add(LocalPeerID,CreatePlayerObject(LocalPeerID));
+            Peers.Add(LocalPeerID, CreatePlayerObject(LocalPeerID));
         }
         else
         {

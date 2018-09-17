@@ -1,6 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
+using Directory = Godot.Directory;
+using File = Godot.File;
+using GDError = Godot.Error;
 using static Godot.StringExtensions;
 
 /*
@@ -11,6 +15,8 @@ using static Godot.StringExtensions;
 public static class MDCommands
 {
     private const string LOG_CAT = "MDCommands";
+    private const string HISTORY_FILE = "CommandHistory";
+    private const string HISTORY_DIR = "user://cmd/";
 
     // Registers all the methods marked with an MDCommand
     public static void RegisterCommandAttributes(object Instance)
@@ -93,6 +99,8 @@ public static class MDCommands
             return false;
         }
 
+        AddCommandToHistory(Command);
+
         string CmdName = Args[0].ToLower();
         if (!CommandMap.ContainsKey(CmdName))
         {
@@ -131,6 +139,67 @@ public static class MDCommands
         }
 
         CmdInfo.Method.Invoke(CmdInfo.Instance, CmdParams.ToArray());
+
+        return true;
+    }
+
+    public static List<string> GetCommandHistory()
+    {
+        File CmdFile = GetHistoryFile();
+        if (CmdFile == null)
+        {
+            return null;
+        }
+
+        string HistoryText = CmdFile.GetAsText();
+        CmdFile.Close();
+
+        List<string> CommandHistory = new List<string>(HistoryText.Split('\n'));
+        CommandHistory = CommandHistory.Where(s => !string.IsNullOrWhiteSpace(s)).Distinct().ToList();
+        CommandHistory.Reverse();
+        return CommandHistory;
+    }
+
+    public static void AddCommandToHistory(string Command)
+    {
+        File CmdFile = GetHistoryFile();
+        if (CmdFile == null)
+        {
+            return;
+        }
+
+        CmdFile.SeekEnd();
+        CmdFile.StoreLine(Command);
+        CmdFile.Close();
+    }
+
+    private static File GetHistoryFile()
+    {
+        if (CreateHistoryDirectoryIfNotExists(HISTORY_DIR))
+        {
+            string FullFilePath = HISTORY_DIR + HISTORY_FILE;
+            File CmdFile = new File();
+            if (!CmdFile.FileExists(FullFilePath))
+            {
+                CmdFile.Open(FullFilePath, (int) File.ModeFlags.Write);
+                CmdFile.Close();
+            }
+
+            CmdFile.Open(FullFilePath, (int) File.ModeFlags.ReadWrite);
+            return CmdFile;
+        }
+
+        MDLog.Error(LOG_CAT, "Failed to create command history directory.");
+        return null;
+    }
+
+    private static bool CreateHistoryDirectoryIfNotExists(string FileDir)
+    {
+        Directory dir = new Directory();
+        if (!dir.DirExists(FileDir))
+        {
+            return dir.MakeDirRecursive(FileDir) == GDError.Ok;
+        }
 
         return true;
     }
