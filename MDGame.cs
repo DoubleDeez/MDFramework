@@ -8,7 +8,10 @@ using System;
  */
 public class MDGame : Node
 {
+    private const string GAME_NODE_NAME = "GameNode";
+
     public override void _Ready()
     {
+        SetName(GAME_NODE_NAME);
     }
 }

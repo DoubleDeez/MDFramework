@@ -11,4 +11,6 @@ public class MDPlayer : Node
     public override void _Ready()
     {
     }
+
+    public int PeerID {get; set;}
 }

@@ -63,4 +63,10 @@ public static class MDNodeExtensions
     {
         return Instance.GetGameSession().NetEntity.NetMode;
     }
+
+    // Sets the network owner for an object
+    public static void SetNetOwner(this Node Instance, int PeerID)
+    {
+        
+    }
 }

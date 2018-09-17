@@ -1,6 +1,7 @@
 using Godot;
 using System;
 using System.Reflection;
+using PeerDict = System.Collections.Generic.Dictionary<int, MDPlayer>;
 
 public static class MDPacketType
 {
@@ -24,6 +25,11 @@ public class MDGameSession : Node
     private const string ARG_SERVER = "server";
     private const string ARG_CLIENT = "client";
     private const string LOG_CAT = "LogGameSession";
+
+    public const int STANDALONE_PEER_ID = -2;
+    public const int SERVER_PEER_ID = -1;
+
+    public const string PlayerNameFormat = "Player{0}";
 
     public override void _Ready()
     {
@@ -96,6 +102,11 @@ public class MDGameSession : Node
         MDLog.CLog(Success, LOG_CAT, MDLogLevel.Debug, "Started server on port {0}", Port);
         MDLog.CLog(!Success, LOG_CAT, MDLogLevel.Error, "Failed to start server on port {0}", Port);
 
+        if (Success)
+        {
+            LocalPeerID = SERVER_PEER_ID;
+        }
+
         return Success;
     }
 
@@ -112,24 +123,18 @@ public class MDGameSession : Node
     [MDCommand()]
     public void Disconnect()
     {
+        LocalPeerID = STANDALONE_PEER_ID;
         NetEntity.Disconnect();
-        Engine.SetTargetFps(0);
     }
 
-    [MDCommand()]
-    public void SendString(string Data)
-    {
-        SendPacket(MDPacketType.None, MDSerialization.ConvertSupportedTypeToBytes(Data));
-    }
-
-    public void SendPacket(int PacketType, byte[] data)
+    public void BroadcastPacket(int PacketType, byte[] data)
     {
         NetEntity.SendBytes(MDStatics.JoinByteArrays(MDSerialization.ConvertSupportedTypeToBytes(PacketType), data));
     }
 
-    public int GetPeerID()
+    public void SendPacket(int Peer, int PacketType, byte[] data)
     {
-        return PeerId;
+        NetEntity.SendBytes(Peer, MDStatics.JoinByteArrays(MDSerialization.ConvertSupportedTypeToBytes(PacketType), data));
     }
 
     private void OnConnectedEvent(int PeerID)
@@ -140,7 +145,6 @@ public class MDGameSession : Node
         }
         else
         {
-            MDLog.Info(LOG_CAT, "Connect to server [ID: {0}]", PeerId);
             ClientOnConnectedToServer();
         }
     }
@@ -153,6 +157,7 @@ public class MDGameSession : Node
         }
         else
         {
+            PeerID = STANDALONE_PEER_ID;
             ClientOnDisconnectedFromServer();
         }
     }
@@ -160,6 +165,7 @@ public class MDGameSession : Node
     protected virtual void ServerOnPeerConnected(int PeerId)
     {
         MDLog.Info(LOG_CAT, "Peer [ID: {0}] connected", PeerId);
+        SendConnectionDataToClient(PeerId);
     }
 
     protected virtual void ClientOnConnectedToServer()
@@ -170,6 +176,7 @@ public class MDGameSession : Node
     protected virtual void ServerOnPeerDisconnected(int PeerId)
     {
         MDLog.Info(LOG_CAT, "Peer [ID: {0}] disconnected", PeerId);
+        Peers.Remove(PeerId);
     }
 
     protected virtual void ClientOnDisconnectedFromServer()
@@ -177,6 +184,7 @@ public class MDGameSession : Node
         MDLog.Info(LOG_CAT, "Disconnected from server");
     }
 
+    // Called when we receive a network packet
     protected virtual void OnDataReceived(GDNetEvent Event)
     {
         if (Event.GetPacket() != null)
@@ -185,35 +193,76 @@ public class MDGameSession : Node
             byte[] PacketNoType = Packet.SubArray(4);
             int PacketType = GetPacketTypeFromBytes(Packet);
             MDLog.Debug(LOG_CAT, "Received data from peer [ID: {0}] of Packet Type [{1}]", Event.GetPeerId(), PacketType);
+            MDLog.Debug(LOG_CAT, "Packet of length [{0}], data: [{1}]", PacketNoType.Length, MDSerialization.ConvertBytesToSupportedType(MDSerialization.Type_String, PacketNoType));
             
             switch(PacketType)
             {
                 case MDPacketType.None:
-                    MDLog.Debug(LOG_CAT, "Packet of length [{0}], data: [{1}]", PacketNoType.Length, MDSerialization.ConvertBytesToSupportedType(MDSerialization.Type_String, PacketNoType));
                     break;
                 case MDPacketType.Replication:
-                    if(this.GetNetMode() != MDNetMode.Server)
-                    {
-                        MDLog.Debug(LOG_CAT, "Packet of length [{0}], data: [{1}]", PacketNoType.Length, MDSerialization.ConvertBytesToSupportedType(MDSerialization.Type_String, PacketNoType));
-                        Replicator.UpdateChanges(PacketNoType);
-                    }
-                    else
-                    {
-                        MDLog.Error(LOG_CAT, "Received replication packet but we are the server");
-                    }
+                    OnReceivedReplicationData(PacketNoType);
                     break;
                 case MDPacketType.Connection:
-                    // Do something with the connection info
+                    OnReceivedConnectionData(PacketNoType);
                     break;
             }
         }
     }
 
+    // Called on the server when a client first connects
+    protected virtual void SendConnectionDataToClient(int PeerID)
+    {
+        byte[] PeerIDAsBytes = MDSerialization.ConvertSupportedTypeToBytes(PeerID);
+        SendPacket(PeerID, MDPacketType.Connection, PeerIDAsBytes);
+
+        Peers.Add(PeerID,CreatePlayerObject(PeerID));
+    }
+
+    // After the client connects to the server, the server will send the client data to this function
+    protected virtual void OnReceivedConnectionData(byte[] Data)
+    {
+        if(this.GetNetMode() != MDNetMode.Server)
+        {
+            LocalPeerID = MDSerialization.ConvertBytesToSupportedType<int>(Data);
+            Peers.Add(LocalPeerID,CreatePlayerObject(LocalPeerID));
+        }
+        else
+        {
+            MDLog.Error(LOG_CAT, "Received connection packet but we are the server");
+        }
+    }
+
+    // When the client receives replication data from the server, this function is called
+    protected virtual void OnReceivedReplicationData(byte[] Data)
+    {
+        if(this.GetNetMode() != MDNetMode.Server)
+        {
+            Replicator.UpdateChanges(Data);
+        }
+        else
+        {
+            MDLog.Error(LOG_CAT, "Received replication packet but we are the server");
+        }
+    }
+
+    // Create and initialize the player object
+    protected virtual MDPlayer CreatePlayerObject(int PeerID)
+    {
+        MDPlayer Player = new MDPlayer();
+        string PlayerName = String.Format(PlayerNameFormat, PeerID);
+        Player.SetName(PlayerName);
+        this.AddNodeToRoot(Player);
+
+        return Player;
+    }
+
+    // Gets the MDPacketType from the beginning of a byte array
     private int GetPacketTypeFromBytes(byte[] bytes)
     {
         return MDSerialization.GetIntFromStartOfByteArray(bytes);
     }
 
+    // Starts a server or client based on the command args
     private void CheckArgsForConnectionInfo()
     {
         // Expects -server=[port]
@@ -261,12 +310,13 @@ public class MDGameSession : Node
     [MDReplicated()]
     private int TestInt;
 
-    private int PeerId = 0;
-
     private float WorldTime = 0.0f;
 
     private Random Rand = new Random();
 
-    public MDNetEntity NetEntity { get; private set;}
+    private PeerDict Peers = new PeerDict();
+
+    public MDNetEntity NetEntity {get; private set;}
     public MDReplicator Replicator {get; private set;}
+    public int LocalPeerID {get; private set; } = STANDALONE_PEER_ID;
 }

@@ -92,15 +92,15 @@ public class MDNetEntity : Node
         NetMode = MDNetMode.Standalone;
     }
 
-    public void SendBytes(byte[] Data)
+    public void SendBytes(byte[] Data, GDNetMessage.Type MsgType = GDNetMessage.Type.Reliable)
     {
         if (NetMode == MDNetMode.Server)
         {
-            NetHost.BroadcastPacket(Data, 0, (int)GDNetMessage.Type.Reliable);
+            NetHost.BroadcastPacket(Data, 0, (int)MsgType);
         }
         else if (NetMode == MDNetMode.Client)
         {
-            ClientPeer.SendPacket(Data, 0, (int)GDNetMessage.Type.Reliable);
+            ClientPeer.SendPacket(Data, 0, (int)MsgType);
         }
         else
         {
@@ -108,14 +108,24 @@ public class MDNetEntity : Node
         }
     }
 
-    public int GetPeerID()
+    public void SendBytes(int Peer, byte[] Data, GDNetMessage.Type MsgType = GDNetMessage.Type.Reliable)
     {
-        if (ClientPeer == null)
+        if (NetMode == MDNetMode.Server)
         {
-            return 0;
+            GDNetPeer NetPeer = NetHost.GetPeer(Peer);
+            if (NetPeer != null)
+            {
+                NetPeer.SendPacket(Data, 0, (int)MsgType);
+            }
+            else
+            {
+                MDLog.Error(LOG_CAT, "Peer ID [{0}] doesn't exist", Peer);
+            }
         }
-
-        return ClientPeer.GetPeerId();
+        else
+        {
+            MDLog.Error(LOG_CAT, "Can't send data, not server");
+        }
     }
 
     public GDNetHost NetHost {get; private set;}

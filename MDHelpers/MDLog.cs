@@ -30,6 +30,12 @@ public struct MDLogProperties
         FileLogLevel = LogLevel;
         ConsoleLogLevel = LogLevel;
     }
+
+    public MDLogProperties(MDLogLevel InFileLogLevel, MDLogLevel InConsoleFileLogLevel)
+    {
+        FileLogLevel = InFileLogLevel;
+        ConsoleLogLevel = InConsoleFileLogLevel;
+    }
 }
 
 /*
@@ -49,6 +55,7 @@ public static class MDLog
     {
         LogProperties = new Dictionary<string, MDLogProperties>();
         InitLogFile();
+        MDCommands.RegisterCommandAttributes(typeof(MDLog));
     }
 
     // Logs the message (supports formatting) in accordance with the LogProperties set for the specified log category
@@ -65,8 +72,19 @@ public static class MDLog
 
         if (LogFile || LogConsole)
         {
+            int PeerID = MDStatics.GetPeerID();
+            string ClientID = "CLIENT " + PeerID.ToString();
+            if (PeerID == MDGameSession.STANDALONE_PEER_ID)
+            {
+                ClientID = "STANDALONE";
+            }
+            else if (PeerID == MDGameSession.SERVER_PEER_ID)
+            {
+                ClientID = "SERVER";
+            }
+
             string FullMessage = "[" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + "]" +
-                "[" + MDStatics.GetPeerID() + "] " +
+                "[" + ClientID + "] " +
                 "[" + CategoryName + "::" + LogLevel.ToString() + "] " +
                 string.Format(Message, args);
 
@@ -85,6 +103,12 @@ public static class MDLog
         {
             DebugBreak();
         }
+    }
+
+    // Calls Log with level == fatal
+    public static void Fatal(string CategoryName, string Message, params object[] args)
+    {
+        Log(CategoryName, MDLogLevel.Fatal, Message, args);
     }
 
     // Calls Log with level == error
@@ -124,6 +148,12 @@ public static class MDLog
     public static void AddLogCategoryProperties(string CategoryName, MDLogProperties LogProps)
     {
         LogProperties[CategoryName] = LogProps;
+    }
+
+    [MDCommand()]
+    public static void SetLogLevel(string CategoryName, MDLogLevel LogLevel)
+    {
+        LogProperties[CategoryName] = new MDLogProperties(LogLevel);
     }
 
     // Prints the message to the console

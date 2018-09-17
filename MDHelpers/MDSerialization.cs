@@ -96,6 +96,10 @@ public static class MDSerialization
         {
             DataType = typeof(Node);
         }
+        else if (DataType.IsEnum)
+        {
+            DataType = typeof(int);
+        }
 
         Func<object, byte[]> converter;
         if (!ToBytes.TryGetValue(DataType, out converter))
@@ -141,6 +145,12 @@ public static class MDSerialization
 
         MDLog.Error(LOG_CAT, "Attempting the deserialize unsupport type [{0}]", SupportedType.Name);
         return null;
+    }
+
+    // Convert a byte array to the supported data type
+    public static T ConvertBytesToSupportedType<T>(byte[] Data)
+    {
+        return (T)ConvertBytesToSupportedType(typeof(T), Data);
     }
 
     // Returns true if the type requires storing the number of values (eg. a list is unbound so we need to know how many values are serialized)

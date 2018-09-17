@@ -15,7 +15,13 @@ public static class MDCommands
     // Registers all the methods marked with an MDCommand
     public static void RegisterCommandAttributes(object Instance)
     {
-        MethodInfo[] Methods = Instance.GetType().GetMethods();
+        RegisterCommandAttributes(Instance.GetType(), Instance);
+    }
+
+    // Registers all the methods marked with an MDCommand
+    public static void RegisterCommandAttributes(Type ObjType, object Instance = null)
+    {
+        MethodInfo[] Methods = ObjType.GetMethods();
         foreach (MethodInfo Method in Methods)
         {
             MDCommand CmdAttr = Method.GetCustomAttribute(typeof(MDCommand)) as MDCommand;

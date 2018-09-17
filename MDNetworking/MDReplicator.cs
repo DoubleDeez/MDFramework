@@ -62,7 +62,7 @@ public class MDReplicator
             byte[] NodeData = RepNode.BuildData();
             if (NodeData != null)
             {
-                GameSession.SendPacket(MDPacketType.Replication, NodeData);
+                GameSession.BroadcastPacket(MDPacketType.Replication, NodeData);
             }
         }
     }

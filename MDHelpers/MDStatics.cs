@@ -12,7 +12,7 @@ public static class MDStatics
     // Get the global game session from the game instance
     public static MDGameSession GetGameSession()
     {
-        return GI.GetGameSession();
+        return GI.GameSession;
     }
 
     // Helper to construct a subarray
@@ -23,7 +23,7 @@ public static class MDStatics
         {
             return data;
         }
-        
+
         T[] result = new T[NewLength];
         System.Array.Copy(data, StartIndex, result, 0, NewLength);
         return result;
@@ -64,9 +64,9 @@ public static class MDStatics
         MDGameSession GS = GetGameSession();
         if (GS == null)
         {
-            return 0;
+            return MDGameSession.STANDALONE_PEER_ID;
         }
 
-        return GS.GetPeerID();
+        return GS.LocalPeerID;
     }
 }
