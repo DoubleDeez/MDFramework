@@ -41,7 +41,6 @@ public class MDGameSession : Node
     public override void _Ready()
     {
         MDLog.AddLogCategoryProperties(LOG_CAT, new MDLogProperties(MDLogLevel.Info));
-        CreateReplicator();
         SetupNetEntity();
         CheckArgsForConnectionInfo();
         this.RegisterCommandAttributes();
@@ -74,11 +73,11 @@ public class MDGameSession : Node
                 {
                     TestEnumVal = TestEnum.First;
                 }
-                MDLog.Info(LOG_CAT, "Setting TestInt to [{0}]", TestEnumVal);
+                MDLog.Info(LOG_CAT, "Setting TestEnumVal to [{0}]", TestEnumVal);
             }
             else
             {
-                MDLog.Info(LOG_CAT, "TestInt is now [{0}]", TestEnumVal);
+                MDLog.Info(LOG_CAT, "TestEnumVal is now [{0}]", TestEnumVal);
             }
         }
     }
@@ -236,7 +235,10 @@ public class MDGameSession : Node
         byte[] PeerIDAsBytes = MDSerialization.ConvertSupportedTypeToBytes(PeerID);
         SendPacket(PeerID, MDPacketType.Connection, PeerIDAsBytes);
 
-        Peers.Add(PeerID, CreatePlayerObject(PeerID));
+        MDPlayer Player = CreatePlayerObject(PeerID);
+        Peers.Add(PeerID, Player);
+
+        RemoteCaller.SetNetworkOwner(Player.GetName(), PeerID);
     }
 
     // After the client connects to the server, the server will send the client data to this function
@@ -308,15 +310,6 @@ public class MDGameSession : Node
         }
     }
 
-    // Ensure Replicator is created
-    private void CreateReplicator()
-    {
-        if (Replicator == null)
-        {
-            Replicator = new MDReplicator();
-        }
-    }
-
     // Ensure NetEntity is created
     private void SetupNetEntity()
     {
@@ -336,6 +329,7 @@ public class MDGameSession : Node
     private PeerDict Peers = new PeerDict();
 
     public MDNetEntity NetEntity {get; private set;}
-    public MDReplicator Replicator {get; private set;}
+    public MDReplicator Replicator {get; private set;} = new MDReplicator();
+    public MDRemoteCaller RemoteCaller {get; private set;} = new MDRemoteCaller();
     public int LocalPeerID {get; private set; } = STANDALONE_PEER_ID;
 }

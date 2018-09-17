@@ -8,10 +8,11 @@ At the time of writing this framework, I found Godot's existing high-level netwo
 So I wanted to build something that had the features and ease-of-use of a high-level networking framework but also offered the flexibility of something like ENet.
 
 # Features
-* Command line parameter parsing that can be queried at any time
-* A simple logging system with logging categories and different log levels for each category for both writing to file and stdout
-* A console command prompt that allows you to add commands from single-instance classes
-* Attribute-based field replication
+* [Command line parameter parsing](#command-line-arguments) that can be queried at any time
+* A simple [logging system](#logging) with logging categories and different log levels for each category for both writing to file and stdout
+* A [console command](#command-console) prompt that allows you to add commands from single-instance classes
+* Attribute-based [field replication](#field-replication)
+* A simpler [profiler](#profiler) class to determine execution time of a code block
 
 # Installation
 0. (Optional) I recommend forking the repo so you can track your changes to it, easily merge updates, and reuse it in other projects you have.
@@ -35,7 +36,7 @@ So I wanted to build something that had the features and ease-of-use of a high-l
     <Compile Include="src\MDFramework\MDInterface\MDConsole.cs" />
     <Compile Include="src\MDFramework\MDInterface\MDInterfaceManager.cs" />
     <Compile Include="src\MDFramework\MDNetworking\MDGameSession.cs" />
-    <Compile Include="src\MDFramework\MDNetworking\MDRemoteCalls.cs" />
+    <Compile Include="src\MDFramework\MDNetworking\MDRemoteCaller.cs" />
     <Compile Include="src\MDFramework\MDNetworking\MDReplicator.cs" />
     <Compile Include="src\MDFramework\MDGameInstance.cs" />
     <Compile Include="src\MDFramework\MDNetEntity.cs" />
@@ -52,6 +53,9 @@ GameInstance="*res://src/MDFramework/MDGameInstance.cs"
 
 # How to use MDFramework
 
+## Command Line Arguments
+TODO
+
 ## Command Console
 In game, the command console can be opened with the `~` key. Command history can be navigated using the `Up` and `Down` arrow keys.
 
@@ -61,8 +65,17 @@ For classes extending `Node`, a good place to call it would be in `_Ready()`, `N
 
 Only a single instance of a class can be registered for commands, this is because commands are invoked via their method name, which are the same for all instances of a class.
 
+## Logging
+TODO
+
 ## Replication
 There are 2 methods of replication with this framework. RPCs (calling a function on a remote system) and field replication (copying the data of a variable from the server to clients).
+
+### Network Ownership
+Only the server can set who has network ownership of a node. By default, all nodes except for `MDPlayer` player instances will have the server as their network owner.
+For `MDPlayer` instances, the server automatically assigns the corresponding peer as the owner of their `MDPlayer` instance.
+Standalone clients and the server always have network ownership rights, even if a client is set as network owner.
+How network ownership affects replication is described in the [RPCs](#rpcs) section below.
 
 ### RPCs
 RPC functions can only exist on Node objects. There are 3 types of RPC functions: Server, Client, and Broadcast commands.
@@ -123,10 +136,10 @@ Currently, this will enable logging for all MDProfiler instances and can get ver
 # TODO
 * An ability to enable command prompt in release builds
 * Command prompt auto-complete with help text
-* Instance based replication - by node/field name
-  * Notification of a change in a replicated field
-  * Client/Server/Broadcast functions (RPCs)
-  * Network owner of Nodes
+* Notification of a change in a replicated field
+* Client/Server/Broadcast functions (RPCs)
+* Reliability settings of RPCs
+* Assign RPCs to channels
 * Distance based replication relevancy
 * UI management framework
 * Automatic Field<->Node binding

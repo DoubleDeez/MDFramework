@@ -69,4 +69,10 @@ public static class MDStatics
 
         return GS.LocalPeerID;
     }
+
+    // Gets the net mode of the local client
+    public static MDNetMode GetNetMode()
+    {
+        return GI.GetNetMode();
+    }
 }
