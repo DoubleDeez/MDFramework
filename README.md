@@ -37,7 +37,6 @@ So I wanted to build something that had the features and ease-of-use of a high-l
     <Compile Include="src\MDFramework\MDNetworking\MDGameSession.cs" />
     <Compile Include="src\MDFramework\MDNetworking\MDRemoteCalls.cs" />
     <Compile Include="src\MDFramework\MDNetworking\MDReplicator.cs" />
-    <Compile Include="src\MDFramework\MDGame.cs" />
     <Compile Include="src\MDFramework\MDGameInstance.cs" />
     <Compile Include="src\MDFramework\MDNetEntity.cs" />
     <Compile Include="src\MDFramework\MDPlayer.cs" />
@@ -118,7 +117,7 @@ The debug check is recommended to not have it run in your release builds.
 To enable the profile logging, add `-logprofile` to your command line args when launching Godot/your game.
 Currently, this will enable logging for all MDProfiler instances and can get very log spammy.
 ```log
-[2018-09-17 00:15:40.932][CLIENT 0] [LogProfiler::Info] Profiling [IDENTITYING STRING HERE] took 20us
+[2018-09-17 00:15:40.932][PEER 0] [LogProfiler::Info] Profiling [IDENTITYING STRING HERE] took 20us
 ```
 
 # TODO

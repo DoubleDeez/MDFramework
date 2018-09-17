@@ -73,7 +73,7 @@ public static class MDLog
         if (LogFile || LogConsole)
         {
             int PeerID = MDStatics.GetPeerID();
-            string ClientID = "CLIENT " + PeerID.ToString();
+            string ClientID = "PEER " + PeerID.ToString();
             if (PeerID == MDGameSession.STANDALONE_PEER_ID)
             {
                 ClientID = "STANDALONE";
