@@ -21,6 +21,7 @@ Being built along side my own Godot project.
     <Compile Include="src\MDFramework\MDHelpers\MDArguments.cs" />
     <Compile Include="src\MDFramework\MDHelpers\MDCommands.cs" />
     <Compile Include="src\MDFramework\MDHelpers\MDLog.cs" />
+    <Compile Include="src\MDFramework\MDHelpers\MDProfiler.cs" />
     <Compile Include="src\MDFramework\MDHelpers\MDSerialization.cs" />
     <Compile Include="src\MDFramework\MDHelpers\MDStatics.cs" />
     <Compile Include="src\MDFramework\MDInterface\MDConsole.cs" />

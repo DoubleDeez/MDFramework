@@ -26,26 +26,31 @@ public class MDReplicator
 
     // Broadcasts out replicated modified variables if we're the server, propagates changes recieved from the server if client.
     public void TickReplication()
-    {
+    {   
         BuildNodeDataAndSend();
     }
 
     // Updates fields on this client with changes received from server
     public void UpdateChanges(byte[] ReplicationData)
     {
-        int ByteLocation = 0;
-        int NameLength = MDSerialization.GetIntFromStartOfByteArray(ReplicationData);
-        string NodeName = (string)MDSerialization.ConvertBytesToSupportedType(MDSerialization.Type_String, ReplicationData.SubArray(ByteLocation += 4, (ByteLocation += NameLength) - 1));
-        byte NodeDataType = ReplicationData[ByteLocation++];
-        
-        if (!NodeList.ContainsKey(NodeName))
+        #if DEBUG
+        using (MDProfiler Profiler = new MDProfiler("MDReplicator.UpdateChanges"))
+        #endif
         {
-            MDLog.Error(LOG_CAT, "Received replication info for non-registered node [{0}]", NodeName);
-            return;
-        }
+            int ByteLocation = 0;
+            int NameLength = MDSerialization.GetIntFromStartOfByteArray(ReplicationData);
+            string NodeName = (string)MDSerialization.ConvertBytesToSupportedType(MDSerialization.Type_String, ReplicationData.SubArray(ByteLocation += 4, (ByteLocation += NameLength) - 1));
+            byte NodeDataType = ReplicationData[ByteLocation++];
+            
+            if (!NodeList.ContainsKey(NodeName))
+            {
+                MDLog.Error(LOG_CAT, "Received replication info for non-registered node [{0}]", NodeName);
+                return;
+            }
 
-        ReplicatedNode RepNode = NodeList[NodeName];
-        RepNode.UpdateData(ReplicationData, ByteLocation);
+            ReplicatedNode RepNode = NodeList[NodeName];
+            RepNode.UpdateData(ReplicationData, ByteLocation);
+        }
     }
 
     // Iterate over NodeList finding nodes with updated values
