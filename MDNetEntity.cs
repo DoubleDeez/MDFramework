@@ -27,17 +27,20 @@ public class MDNetEntity : Node
         NetHost = new GDNetHost();
         NetMode = MDNetMode.Standalone;
 
-        SetProcess(false);
+        GetTree().Connect("idle_frame", this, "PreProcess");
     }
 
-    public override void _Process(float Delta)
+    public void PreProcess()
     {
-        while (NetHost.IsEventAvailable())
+        if (NetMode > MDNetMode.Standalone)
         {
-            GDNetEvent NetEvent = NetHost.GetEvent();
-            if (OnNetEvent != null)
+            while (NetHost.IsEventAvailable())
             {
-                OnNetEvent(NetEvent);
+                GDNetEvent NetEvent = NetHost.GetEvent();
+                if (OnNetEvent != null)
+                {
+                    OnNetEvent(NetEvent);
+                }
             }
         }
     }
@@ -51,7 +54,6 @@ public class MDNetEntity : Node
         if (NetHost.Bind(Address) == Error.Ok)
         {
             NetMode = MDNetMode.Server;
-            SetProcess(true);
             return true;
         }
 
@@ -73,7 +75,6 @@ public class MDNetEntity : Node
         if (ClientPeer != null)
         {
             NetMode = MDNetMode.Client;
-            SetProcess(true);
             return true;
         }
 
@@ -89,7 +90,6 @@ public class MDNetEntity : Node
 
         NetHost.Unbind();
         NetMode = MDNetMode.Standalone;
-        SetProcess(false);
     }
 
     public void SendBytes(byte[] Data)
@@ -106,6 +106,16 @@ public class MDNetEntity : Node
         {
             MDLog.Error(LOG_CAT, "Can't send data, not connected");
         }
+    }
+
+    public int GetPeerID()
+    {
+        if (ClientPeer == null)
+        {
+            return 0;
+        }
+
+        return ClientPeer.GetPeerId();
     }
 
     public GDNetHost NetHost {get; private set;}

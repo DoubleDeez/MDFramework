@@ -8,6 +8,7 @@ using ReplicatedNonNodeDict = System.Collections.Generic.Dictionary<string, Repl
 using ReplicatedFieldDict = System.Collections.Generic.Dictionary<string, ReplicatedField>;
 using ReplicatedListDict = System.Collections.Generic.Dictionary<string, ReplicatedList>;
 using ReplicatedDictDict = System.Collections.Generic.Dictionary<string, ReplicatedDict>;
+using System.Diagnostics;
 
 public class MDReplicator
 {
@@ -32,7 +33,19 @@ public class MDReplicator
     // Updates fields on this client with changes received from server
     public void UpdateChanges(byte[] ReplicationData)
     {
+        int ByteLocation = 0;
+        int NameLength = MDSerialization.GetIntFromStartOfByteArray(ReplicationData);
+        string NodeName = (string)MDSerialization.ConvertBytesToSupportedType(MDSerialization.Type_String, ReplicationData.SubArray(ByteLocation += 4, (ByteLocation += NameLength) - 1));
+        byte NodeDataType = ReplicationData[ByteLocation++];
         
+        if (!NodeList.ContainsKey(NodeName))
+        {
+            MDLog.Error(LOG_CAT, "Received replication info for non-registered node [{0}]", NodeName);
+            return;
+        }
+
+        ReplicatedNode RepNode = NodeList[NodeName];
+        RepNode.UpdateData(ReplicationData, ByteLocation);
     }
 
     // Iterate over NodeList finding nodes with updated values
@@ -125,24 +138,6 @@ public class MDReplicator
 
         return false;
     }
-
-    private byte[] ConstructReplicatedPacketData(ReplicatedNode RepNode)
-    {
-        /*
-            Packet format:
-            DataArray {
-                [DataType] : int
-                [NumData] : int - only if DataType is string, Array, List, Dictionary, Struct, or Class
-                [TypeNameLength] : int - only if Struct or Class
-                [TypeName] : string - only if Struct or Class
-                [Data] : byte[] - Length determined by type or NumData, only if NOT Struct, or Class
-                [Data] : DataArray - (Recursive) Only if Struct or Class
-            }
-         */
-        
-
-        return null;
-    }
 }
 
 // Base class for replicated class/struct types
@@ -157,6 +152,79 @@ public class ReplicatedObject
     public ReplicatedListDict ReplicatedLists = new ReplicatedListDict();
 
     public ReplicatedDictDict ReplicatedDicts = new ReplicatedDictDict();
+
+    private const string LOG_CAT = "LogReplicatedObject";
+
+    // Updates the subobjects and returns the number of bytes that were deserialized
+    protected int UpdateData(object Container, byte[] Data, int StartIndex)
+    {
+        /*
+            Data format at this point:
+            [Num Data] int - The number of sub objects we're replicating
+            [Value data] byte[]
+         */
+        int NumBytesDeserialized = StartIndex;
+        int NumSubObjects = MDSerialization.GetIntFromStartOfByteArray(Data.SubArray(NumBytesDeserialized, (NumBytesDeserialized += 4) - 1));
+
+        for (int i = 0; i < NumSubObjects; ++i)
+        {
+            /*
+                Each object Format:
+                [Length of Name] int
+                [Name data] string
+                [Type data] byte 
+                [Num Data] int - This is only here for variable sized types (eg. string)
+                [Value data] byte[]
+            */
+            int NameLength = MDSerialization.GetIntFromStartOfByteArray(Data.SubArray(NumBytesDeserialized, (NumBytesDeserialized += 4) - 1));
+            string ObjectName = (string)MDSerialization.ConvertBytesToSupportedType(MDSerialization.Type_String, Data.SubArray(NumBytesDeserialized, (NumBytesDeserialized += NameLength) - 1));
+            byte ObjectType = Data[NumBytesDeserialized++];
+            
+            switch(ObjectType)
+            {
+                case MDSerialization.Type_String:
+                case MDSerialization.Type_Bool:
+                case MDSerialization.Type_Byte:
+                case MDSerialization.Type_Char:
+                case MDSerialization.Type_Float:
+                case MDSerialization.Type_Long:
+                case MDSerialization.Type_Ulong:
+                case MDSerialization.Type_Int:
+                case MDSerialization.Type_Uint:
+                case MDSerialization.Type_Short:
+                case MDSerialization.Type_Ushort:
+                    if (!ReplicatedFields.ContainsKey(ObjectName))
+                    {
+                        MDLog.Error(LOG_CAT, "Received replication info for non-replicated field [{0}] of type [{1}]", ObjectName, (int)ObjectType);
+                    }
+                    else
+                    {
+                        ReplicatedField RepField = ReplicatedFields[ObjectName];
+                        NumBytesDeserialized += RepField.UpdateData(Container, ObjectType, Data, NumBytesDeserialized);
+                    }
+                    break;
+
+                case MDSerialization.Type_Node:
+                    if (!ReplicatedNodes.ContainsKey(ObjectName))
+                    {
+                        MDLog.Error(LOG_CAT, "Received replication info for non-replicated subnode [{0}]", ObjectName);
+                    }
+                    else
+                    {
+                        ReplicatedNode RepNode = ReplicatedNodes[ObjectName];
+                        NumBytesDeserialized += RepNode.UpdateData(Data, NumBytesDeserialized);
+                    }
+                    break;
+
+                case MDSerialization.Type_Invalid:
+                default:
+                    MDLog.Error(LOG_CAT, "Attempting to deserialize invalid object type [{0}]", (int)ObjectType);
+                    break;
+            }
+        }
+
+        return NumBytesDeserialized - StartIndex;
+    }
 
     protected BytesList BuildChildData(object Container)
     {
@@ -185,6 +253,14 @@ public class ReplicatedNode : ReplicatedObject
 
     public byte[] BuildData()
     {
+        /*
+            Node data format:
+            [Length of Node Name] int
+            [Node Name data] string
+            [Type data] byte (MDSerialization.Type_Node)
+            [Num Data] int - The number of sub objects we're replicating
+            [Value data] byte[]
+         */
         Node NodeRef = WeakNode.Target as Node;
         if (NodeRef == null)
         {
@@ -206,6 +282,17 @@ public class ReplicatedNode : ReplicatedObject
         }
         
         return null;
+    }
+
+    public int UpdateData(byte[] Data, int StartIndex)
+    {
+        /*
+            Data format at this point:
+            [Num Data] int - The number of sub objects we're replicating
+            [Value data] byte[]
+         */
+        Node NodeRef = WeakNode.Target as Node;
+        return UpdateData(NodeRef, Data, StartIndex);
     }
 }
 
@@ -233,10 +320,10 @@ public class ReplicatedField
             Field Data Format:
             [Length of Name] int
             [Name data] string
-            [Type data] int 
+            [Type data] byte 
             [Num Data] int - This is only here for variable sized types (eg. string)
-            [Value data] bytes
-         */
+            [Value data] byte[]
+        */
         object CurrentValue = Field.GetValue(Container);
         if (!CurrentValue.Equals(CachedValue))
         {
@@ -246,6 +333,36 @@ public class ReplicatedField
         }
 
         return null;
+    }
+
+    // Updates the value and returns the number of bytes deserialized
+    public int UpdateData(object Container, byte ObjectType, byte[] Data, int StartIndex)
+    {
+        /*
+            Field Data Format:
+            [Num Data] int - This is only here for variable sized types (eg. string)
+            [Value data] byte[]
+        */
+
+        int NumBytesDeserialized = StartIndex;
+        int ValueLength = 0;
+        if (MDSerialization.DoesTypeRequireTrackingCount(ObjectType))
+        {
+            ValueLength = MDSerialization.GetIntFromStartOfByteArray(Data.SubArray(NumBytesDeserialized, (NumBytesDeserialized += 4) - 1));
+        }
+        else
+        {
+            ValueLength = MDSerialization.GetSizeInBytes(ObjectType);
+        }
+
+        object ReplicatedValue = MDSerialization.ConvertBytesToSupportedType(ObjectType, Data.SubArray(NumBytesDeserialized, (NumBytesDeserialized += ValueLength) - 1));
+        if (ReplicatedValue != null && !ReplicatedValue.Equals(CachedValue))
+        {
+            CachedValue = ReplicatedValue;
+            Field.SetValue(Container, CachedValue);
+        }
+
+        return NumBytesDeserialized - StartIndex;
     }
 }
 

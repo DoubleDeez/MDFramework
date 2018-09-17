@@ -27,6 +27,7 @@ public class MDGameSession : Node
 
     public override void _Ready()
     {
+        MDLog.AddLogCategoryProperties(LOG_CAT, new MDLogProperties(MDLogLevel.Info));
         CreateReplicator();
         SetupNetEntity();
         CheckArgsForConnectionInfo();
@@ -46,8 +47,15 @@ public class MDGameSession : Node
         if (WorldTime > 3)
         {
             WorldTime = 0.0f;
-
-            TestInt = Rand.Next(33, 127);
+            if (this.GetNetMode() == MDNetMode.Server)
+            {
+                TestInt = Rand.Next(33, 127);
+                MDLog.Info(LOG_CAT, "Setting TestInt to [{0}]", TestInt);
+            }
+            else
+            {
+                MDLog.Info(LOG_CAT, "TestInt is now [{0}]", TestInt);
+            }
         }
     }
 
@@ -85,7 +93,7 @@ public class MDGameSession : Node
     public bool StartServer(int Port)
     {
         bool Success = NetEntity.StartServer(Port);
-        MDLog.CLog(Success, LOG_CAT, MDLogLevel.Info, "Started server on port {0}", Port);
+        MDLog.CLog(Success, LOG_CAT, MDLogLevel.Debug, "Started server on port {0}", Port);
         MDLog.CLog(!Success, LOG_CAT, MDLogLevel.Error, "Failed to start server on port {0}", Port);
 
         return Success;
@@ -95,7 +103,7 @@ public class MDGameSession : Node
     public bool StartClient(string Address, int Port)
     {
         bool Success = NetEntity.ConnectToServer(Address, Port);
-        MDLog.CLog(Success, LOG_CAT, MDLogLevel.Info, "Connected to server at {0}:{1}", Address, Port);
+        MDLog.CLog(Success, LOG_CAT, MDLogLevel.Debug, "Connected to server at {0}:{1}", Address, Port);
         MDLog.CLog(!Success, LOG_CAT, MDLogLevel.Error, "Failed to connect to server at {0}:{1}", Address, Port);
 
         return Success;
@@ -119,6 +127,11 @@ public class MDGameSession : Node
         NetEntity.SendBytes(MDStatics.JoinByteArrays(MDSerialization.ConvertSupportedTypeToBytes(PacketType), data));
     }
 
+    public int GetPeerID()
+    {
+        return PeerId;
+    }
+
     private void OnConnectedEvent(int PeerID)
     {
         if (this.GetNetMode() == MDNetMode.Server)
@@ -127,6 +140,7 @@ public class MDGameSession : Node
         }
         else
         {
+            MDLog.Info(LOG_CAT, "Connect to server [ID: {0}]", PeerId);
             ClientOnConnectedToServer();
         }
     }
@@ -170,17 +184,17 @@ public class MDGameSession : Node
             byte[] Packet = Event.GetPacket();
             byte[] PacketNoType = Packet.SubArray(4);
             int PacketType = GetPacketTypeFromBytes(Packet);
-            MDLog.Info(LOG_CAT, "Received data from peer [ID: {0}] of Packet Type [{1}]", Event.GetPeerId(), PacketType);
+            MDLog.Debug(LOG_CAT, "Received data from peer [ID: {0}] of Packet Type [{1}]", Event.GetPeerId(), PacketType);
             
             switch(PacketType)
             {
                 case MDPacketType.None:
-                    MDLog.Info(LOG_CAT, "Packet of length [{0}], data: [{1}]", PacketNoType.Length, MDSerialization.ConvertBytesToSupportedType(MDSerialization.TypeString, PacketNoType));
+                    MDLog.Debug(LOG_CAT, "Packet of length [{0}], data: [{1}]", PacketNoType.Length, MDSerialization.ConvertBytesToSupportedType(MDSerialization.Type_String, PacketNoType));
                     break;
                 case MDPacketType.Replication:
                     if(this.GetNetMode() != MDNetMode.Server)
                     {
-                        MDLog.Info(LOG_CAT, "Packet of length [{0}], data: [{1}]", PacketNoType.Length, MDSerialization.ConvertBytesToSupportedType(MDSerialization.TypeString, PacketNoType));
+                        MDLog.Debug(LOG_CAT, "Packet of length [{0}], data: [{1}]", PacketNoType.Length, MDSerialization.ConvertBytesToSupportedType(MDSerialization.Type_String, PacketNoType));
                         Replicator.UpdateChanges(PacketNoType);
                     }
                     else
@@ -246,6 +260,8 @@ public class MDGameSession : Node
 
     [MDReplicated()]
     private int TestInt;
+
+    private int PeerId = 0;
 
     private float WorldTime = 0.0f;
 

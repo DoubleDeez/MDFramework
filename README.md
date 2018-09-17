@@ -59,7 +59,7 @@ There are 2 methods of replication with this framework. RPCs (calling a function
 // TODO
 
 ### Field Replication
-Setting up replicating has a similar pattern to setting up console commands. Any field on a `Node` class marked with the `MDReplicated()` attribute can be replicated. The registered `Node` **must** have its name set before being registered, and the name must be the same on the server and all clients as this is how `MDReplicator` determines where to send replicated data. Fields are always reliably replicated, although order isn't necessarily guaranteed since all fields are replicated as a post-process - they are not sent out as soon as you assign the variable.
+Setting up replicating has a similar pattern to setting up console commands. Any field on a `Node` class marked with the `MDReplicated()` attribute can be replicated. The registered `Node` **must** have its name set before being registered, and the name must be the same on the server and all clients as this is how `MDReplicator` determines where to send replicated data. Fields are always reliably replicated, although order isn't necessarily guaranteed since all fields are replicated as a post-process - they are not sent out as soon as you assign the variable. To register your `MDReplicated()` fields on your node, call `this.RegisterReplicatedFields();`, ideally in your `_Ready()` function.
 
 ### Supported Types for replication
 The following types are able to be used for field replication and RPC parameters.
@@ -74,20 +74,22 @@ The following types are able to be used for field replication and RPC parameters
 * short
 * ushort
 * string
-* Dictionary/List/Array of the above types
-* Any of the above types on Classes/Structs
+* enums (as an int)
+* Dictionary/List/Array of the above types (WIP)
+* Any of the above types on Classes/Structs (WIP)
 
 # TODO
 * An ability to disable command prompt (especially for release builds)
 * Command prompt auto-complete with help text
 * Command history
-* Instance based replication (use name to find the node?)
-  * Easy replication of fields
+* Instance based replication - by node/field name
   * Notification of a change in a replicated field
   * Client/Server/Broadcast functions (RPCs)
 * Relevancy replication prioritization
 * Distance based replication relevancy
 * UI management framework
 * Automatic Field<->Node binding
-* More...
+* More features...
 * Optimize, threading, convert performance critical features to C++
+* De-spaghetti Replication<->Serialization
+* Figure out a way to do replication without string compares/serializing names

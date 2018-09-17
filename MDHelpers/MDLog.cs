@@ -20,10 +20,16 @@ public enum MDLogLevel
 public struct MDLogProperties
 {
     // Minimum LogLevel required to write this log to file
-    public MDLogLevel FileLogLevel;
+    public MDLogLevel FileLogLevel {get; set;}
 
     // Minimum LogLevel required to write this log to the console
-    public MDLogLevel ConsoleLogLevel;
+    public MDLogLevel ConsoleLogLevel {get; set;}
+
+    public MDLogProperties(MDLogLevel LogLevel)
+    {
+        FileLogLevel = LogLevel;
+        ConsoleLogLevel = LogLevel;
+    }
 }
 
 /*
@@ -59,7 +65,8 @@ public static class MDLog
 
         if (LogFile || LogConsole)
         {
-            string FullMessage = "[" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + "] " +
+            string FullMessage = "[" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + "]" +
+                "[" + MDStatics.GetPeerID() + "] " +
                 "[" + CategoryName + "::" + LogLevel.ToString() + "] " +
                 string.Format(Message, args);
 
@@ -98,6 +105,12 @@ public static class MDLog
         Log(CategoryName, MDLogLevel.Info, Message, args);
     }
 
+    // Calls Log with level == debug
+    public static void Debug(string CategoryName, string Message, params object[] args)
+    {
+        Log(CategoryName, MDLogLevel.Debug, Message, args);
+    }
+
     // Sames os Log() expect it only logs if Condition == true
     public static void CLog(bool Condition, string CategoryName, MDLogLevel LogLevel, string Message, params object[] args)
     {
@@ -108,7 +121,7 @@ public static class MDLog
     }
 
     // Adds log category properties to be referenced when making logs of that type
-    public static void AddLogCategoryProperties(string CategoryName, ref MDLogProperties LogProps)
+    public static void AddLogCategoryProperties(string CategoryName, MDLogProperties LogProps)
     {
         LogProperties[CategoryName] = LogProps;
     }

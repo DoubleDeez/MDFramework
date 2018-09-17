@@ -17,7 +17,7 @@ public class MDGameInstance : Node
         MDLog.Initialize();
         MDArguments.PopulateArgs();
 
-        // Init instacces
+        // Init instances
         CreateGameSession();
         CreateInterfaceManager();
     }

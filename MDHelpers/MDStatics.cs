@@ -19,6 +19,11 @@ public static class MDStatics
     public static T[] SubArray<T>(this T[] data, int StartIndex, int EndIndex)
     {
         int NewLength = 1 + (EndIndex - StartIndex);
+        if (NewLength == data.Length)
+        {
+            return data;
+        }
+        
         T[] result = new T[NewLength];
         System.Array.Copy(data, StartIndex, result, 0, NewLength);
         return result;
@@ -51,5 +56,17 @@ public static class MDStatics
         }
 
         return JoinedArray;
+    }
+
+    // Gets the peer ID from the game session, 0 for server or standalone
+    public static int GetPeerID()
+    {
+        MDGameSession GS = GetGameSession();
+        if (GS == null)
+        {
+            return 0;
+        }
+
+        return GS.GetPeerID();
     }
 }
