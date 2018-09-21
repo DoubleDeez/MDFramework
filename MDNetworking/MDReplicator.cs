@@ -83,6 +83,7 @@ public class MDReplicator
     }
 
     // Registers a subnode field to the provided replicated node
+    // TODO - Register SubNodes by path instead
     private bool RegisterSubNode(Node SubNode, ReplicatedNodeDict RepNodeList)
     {
         bool HasReplicatedFields = false;

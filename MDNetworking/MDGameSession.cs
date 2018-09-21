@@ -8,6 +8,7 @@ public static class MDPacketType
     public const int None = 0;
     public const int Replication = 1;
     public const int Connection = 2;
+    public const int RPC = 3;
 
     // Start your own packet types from this value
     public const int MDMaxPacketType = 255;
@@ -149,6 +150,11 @@ public class MDGameSession : Node
         NetEntity.SendBytes(MDStatics.JoinByteArrays(MDSerialization.ConvertSupportedTypeToBytes(PacketType), data));
     }
 
+    public void SendPacket(int PacketType, byte[] data)
+    {
+        NetEntity.SendBytes(MDStatics.JoinByteArrays(MDSerialization.ConvertSupportedTypeToBytes(PacketType), data));
+    }
+
     public void SendPacket(int Peer, int PacketType, byte[] data)
     {
         NetEntity.SendBytes(Peer, MDStatics.JoinByteArrays(MDSerialization.ConvertSupportedTypeToBytes(PacketType), data));
@@ -225,6 +231,9 @@ public class MDGameSession : Node
                 case MDPacketType.Connection:
                     OnReceivedConnectionData(PacketNoType);
                     break;
+                case MDPacketType.RPC:
+                    OnReceivedRpcData(PacketNoType);
+                    break;
             }
         }
     }
@@ -266,6 +275,12 @@ public class MDGameSession : Node
         {
             MDLog.Error(LOG_CAT, "Received replication packet but we are the server");
         }
+    }
+
+    // We received an RPC call
+    protected virtual void OnReceivedRpcData(byte[] Data)
+    {
+
     }
 
     // Create and initialize the player object
@@ -319,6 +334,18 @@ public class MDGameSession : Node
             NetEntity.OnNetEvent = OnNetEvent;
             this.AddNodeToRoot(NetEntity);
         }
+    }
+
+    // Register the passed in node's rpc methods
+    public void RegisterRPCs(Node Instance)
+    {
+        RemoteCaller.RegisterRPCs(Instance);
+    }
+
+    // Call an RPC function
+    public void CallRPC(Node Instance, Action RPCFunction, params object[] args)
+    {
+        RemoteCaller.CallRPC(Instance, RPCFunction, args);
     }
 
     [MDReplicated()]

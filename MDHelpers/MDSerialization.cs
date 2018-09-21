@@ -6,6 +6,7 @@ using MDTypeToTypeDict = System.Collections.Generic.Dictionary<byte, System.Type
 using TypeToSizeDict = System.Collections.Generic.Dictionary<System.Type, int>;
 using ToByteConverterDict = System.Collections.Generic.Dictionary<System.Type, System.Func<object, byte[]>>;
 using FromByteConverterDict = System.Collections.Generic.Dictionary<System.Type, System.Func<byte[], object>>;
+using ByteArrayList = System.Collections.Generic.List<byte[]>;
 
 // Types of data supported for replication, used to determine type size when [de]serializing packets
 public static class MDSerialization
@@ -114,6 +115,33 @@ public static class MDSerialization
         }
 
         return converter(Data);
+    }
+
+    // Converts a string to [length of string][string data]
+    public static byte[] ConvertSupportedTypeToBytes(string String)
+    {
+        byte[] StringLengthBytes = ConvertSupportedTypeToBytes(Encoding.Unicode.GetByteCount(String));
+        byte[] StringBytes = ConvertSupportedTypeToBytes((object)String);
+        return MDStatics.JoinByteArrays(StringLengthBytes, StringBytes);
+    }
+
+    // Converts an array of support objects
+    public static byte[] ConvertObjectsToBytes(params object[] args)
+    {
+        ByteArrayList ByteList = new ByteArrayList();
+        foreach (object obj in args)
+        {
+            if (obj.GetType() == typeof(string))
+            {
+                ByteList.Add(ConvertSupportedTypeToBytes((string)obj));
+            }
+            else
+            {
+                ByteList.Add(ConvertSupportedTypeToBytes(obj));
+            }
+        }
+
+        return MDStatics.JoinByteArrays(ByteList.ToArray());
     }
 
     // Convert the first 4 bytes of a byte array to an int

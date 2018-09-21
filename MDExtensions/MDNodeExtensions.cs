@@ -52,6 +52,18 @@ public static class MDNodeExtensions
         Instance.GetGameInstance().RegisterReplication(Instance);
     }
 
+    // Helper to register all RPC functions on the remote caller
+    public static void RegisterRPCs(this Node Instance)
+    {
+        Instance.GetGameSession().RegisterRPCs(Instance);
+    }
+
+    // Extension to call RPC functions
+    public static void CallRPC(this Node Instance, Action RPCFunction, params object[] args)
+    {
+        Instance.GetGameSession().CallRPC(Instance, RPCFunction, args);
+    }
+
     // Returns true if this application can set replicated variables, call client RPCs, and broadcast RPCs
     public static bool HasNetworkAuthority(this Node Instance)
     {
@@ -64,9 +76,9 @@ public static class MDNodeExtensions
         return Instance.GetGameSession().NetEntity.NetMode;
     }
 
-    // Sets the network owner for an object
-    public static void SetNetOwner(this Node Instance, int PeerID)
+    // Registers this classes MDRpc() methods
+    public static void SetNetOwner(this Node Instance)
     {
-        
+        Instance.GetGameSession().RegisterRPCs(Instance);
     }
 }

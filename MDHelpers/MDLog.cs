@@ -135,6 +135,36 @@ public static class MDLog
         Log(CategoryName, MDLogLevel.Debug, Message, args);
     }
 
+    // Calls Log with level == fatal
+    public static void CFatal(bool Condition, string CategoryName, string Message, params object[] args)
+    {
+        CLog(Condition, CategoryName, MDLogLevel.Fatal, Message, args);
+    }
+
+    // Calls Log with level == error
+    public static void CError(bool Condition, string CategoryName, string Message, params object[] args)
+    {
+        CLog(Condition, CategoryName, MDLogLevel.Error, Message, args);
+    }
+
+    // Calls Log with level == warn
+    public static void CWarn(bool Condition, string CategoryName, string Message, params object[] args)
+    {
+        CLog(Condition, CategoryName, MDLogLevel.Warn, Message, args);
+    }
+
+    // Calls Log with level == info
+    public static void CInfo(bool Condition, string CategoryName, string Message, params object[] args)
+    {
+        CLog(Condition, CategoryName, MDLogLevel.Info, Message, args);
+    }
+
+    // Calls Log with level == debug
+    public static void CDebug(bool Condition, string CategoryName, string Message, params object[] args)
+    {
+        CLog(Condition, CategoryName, MDLogLevel.Debug, Message, args);
+    }
+
     // Sames os Log() expect it only logs if Condition == true
     public static void CLog(bool Condition, string CategoryName, MDLogLevel LogLevel, string Message, params object[] args)
     {
