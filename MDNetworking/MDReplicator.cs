@@ -162,7 +162,8 @@ public class MDReplicator
 
             if (IsString)
             {
-                RepField.CachedValue = string.Copy(Field.GetValue(FieldOwner) as string);
+                string CurrentValue = Field.GetValue(FieldOwner) as string;
+                RepField.CachedValue = CurrentValue != null ? string.Copy(CurrentValue) : null;
             }
             else
             {

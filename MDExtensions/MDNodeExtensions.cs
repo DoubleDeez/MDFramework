@@ -1,5 +1,6 @@
 using Godot;
 using System;
+using System.Linq.Expressions;
 
 /*
  * MDNodeExtensions
@@ -59,9 +60,9 @@ public static class MDNodeExtensions
     }
 
     // Extension to call RPC functions
-    public static void CallRPC(this Node Instance, Action RPCFunction, params object[] args)
+    public static void CallRPC(this Node Instance, string FunctionName, params object[] args)
     {
-        Instance.GetGameSession().CallRPC(Instance, RPCFunction, args);
+        Instance.GetGameSession().CallRPC(Instance, FunctionName, args);
     }
 
     // Returns true if this application can set replicated variables, call client RPCs, and broadcast RPCs

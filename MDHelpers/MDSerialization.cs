@@ -152,6 +152,16 @@ public static class MDSerialization
         return (int)converter(Data);
     }
 
+    // Get the string from the beginning of a byte[], assumes the array begins with string length.
+    // Returns the number of bytes used in the byte[]
+    public static int GetStringFromStartOfByteArray(byte[] Data, out string Converted)
+    {
+        int StringSize = GetIntFromStartOfByteArray(Data);
+        Converted = (string)ConvertBytesToSupportedType(Type_String, Data.SubArray(4, 3 + StringSize));
+
+        return StringSize + 4;
+    }
+
     // Convert a byte array to the supported data type stored in the bytes (Format: [MDType as byte][Optional Num][Data])
     public static object ConvertBytesToSupportedType(byte[] Data)
     {

@@ -41,7 +41,7 @@ public class MDGameSession : Node
 
     public override void _Ready()
     {
-        MDLog.AddLogCategoryProperties(LOG_CAT, new MDLogProperties(MDLogLevel.Debug));
+        MDLog.AddLogCategoryProperties(LOG_CAT, new MDLogProperties(MDLogLevel.Info));
         SetupNetEntity();
         CheckArgsForConnectionInfo();
         this.RegisterCommandAttributes();
@@ -49,6 +49,7 @@ public class MDGameSession : Node
         GetTree().Connect("idle_frame", this, "PreProcess");
 
         this.RegisterReplicatedFields();
+        this.RegisterRPCs();
 
         SetProcess(true);
     }
@@ -76,6 +77,8 @@ public class MDGameSession : Node
                 }
 
                 MDLog.Info(LOG_CAT, "Setting TestEnumVal to [{0}]", TestEnumVal);
+
+                this.CallRPC(nameof(BroadcastTestRPC));
             }
             else
             {
@@ -146,19 +149,19 @@ public class MDGameSession : Node
         NetEntity.Disconnect();
     }
 
-    public void BroadcastPacket(int PacketType, byte[] data)
+    public void BroadcastPacket(int PacketType, byte[] data, RPCReliability Reliability = RPCReliability.Reliable)
     {
-        NetEntity.SendBytes(MDStatics.JoinByteArrays(MDSerialization.ConvertSupportedTypeToBytes(PacketType), data));
+        NetEntity.SendBytes(MDStatics.JoinByteArrays(MDSerialization.ConvertSupportedTypeToBytes(PacketType), data), ConvertReliabilityType(Reliability));
     }
 
-    public void SendPacket(int PacketType, byte[] data)
+    public void SendPacket(int PacketType, byte[] data, RPCReliability Reliability = RPCReliability.Reliable)
     {
-        NetEntity.SendBytes(MDStatics.JoinByteArrays(MDSerialization.ConvertSupportedTypeToBytes(PacketType), data));
+        NetEntity.SendBytes(MDStatics.JoinByteArrays(MDSerialization.ConvertSupportedTypeToBytes(PacketType), data), ConvertReliabilityType(Reliability));
     }
 
-    public void SendPacket(int Peer, int PacketType, byte[] data)
+    public void SendPacket(int Peer, int PacketType, byte[] data, RPCReliability Reliability = RPCReliability.Reliable)
     {
-        NetEntity.SendBytes(Peer, MDStatics.JoinByteArrays(MDSerialization.ConvertSupportedTypeToBytes(PacketType), data));
+        NetEntity.SendBytes(Peer, MDStatics.JoinByteArrays(MDSerialization.ConvertSupportedTypeToBytes(PacketType), data), ConvertReliabilityType(Reliability));
     }
 
     private void OnConnectedEvent(int PeerID)
@@ -281,7 +284,7 @@ public class MDGameSession : Node
     // We received an RPC call
     protected virtual void OnReceivedRpcData(byte[] Data)
     {
-
+        RemoteCaller.HandleRPCPacket(Data);
     }
 
     // Create and initialize the player object
@@ -344,9 +347,32 @@ public class MDGameSession : Node
     }
 
     // Call an RPC function
-    public void CallRPC(Node Instance, Action RPCFunction, params object[] args)
+    public void CallRPC(Node Instance, string FunctionName, params object[] args)
     {
-        RemoteCaller.CallRPC(Instance, RPCFunction, args);
+        RemoteCaller.CallRPC(Instance, FunctionName, args);
+    }
+
+    // Convert RPC reliability enum to GDNet's type
+    private GDNetMessage.Type ConvertReliabilityType(RPCReliability Reliability)
+    {
+        switch (Reliability)
+        {
+            case RPCReliability.Reliable:
+                return GDNetMessage.Type.Reliable;
+            case RPCReliability.Unreliable:
+                return GDNetMessage.Type.Sequenced;
+            case RPCReliability.Unordered:
+                return GDNetMessage.Type.Unsequenced;
+            default:
+                MDLog.Error(LOG_CAT, "Invalid RPCReliability type [{0}] for conversion", Reliability);
+                return 0;
+        }
+    }
+
+    [MDRpc(RPCType.Broadcast, RPCReliability.Reliable)]
+    private void BroadcastTestRPC()
+    {
+        MDLog.Info(LOG_CAT, "Test Broadcast RPC");
     }
 
     [MDReplicated()]

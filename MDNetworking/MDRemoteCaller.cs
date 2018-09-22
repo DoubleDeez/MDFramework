@@ -80,34 +80,48 @@ public class MDRemoteCaller
                     MDLog.CError(Method.ReturnType != typeof(void), LOG_CAT, "RPC functions can't have return values [{0}::{1}]", NodeType.Name, Method.Name);
                 }
             }
+
+            NodeMethods.Add(NodeType, Methods);
         }
 
         RPCNodes[Instance.GetName()] = new WeakReference(Instance);
     }
 
     // Call the RPC function as appropriate
-    public void CallRPC(Node Instance, Action RPCFunction, params object[] args)
+    public void CallRPC(Node Instance, string FunctionName, params object[] args)
     {
         Type NodeType = Instance.GetType();
-        MethodInfo RPCMethod = RPCFunction.Method;
+        if (!NodeMethods.ContainsKey(NodeType))
+        {
+            MDLog.Error(LOG_CAT, "Attempting to call RPC on non-registered node [{0}]", NodeType.Name);
+            return;
+        }
+
+        MethodMap Methods = NodeMethods[NodeType];
+        if (!Methods.ContainsKey(FunctionName))
+        {
+            MDLog.Error(LOG_CAT, "Attempting to call non-RPC function [{0}::{1}]", NodeType.Name, FunctionName);
+            return;
+        }
+
+        MethodInfo RPCMethod = Methods[FunctionName];
         MDRpc RpcAttribute = RPCMethod.GetCustomAttribute(typeof(MDRpc)) as MDRpc;
         if (RpcAttribute == null)
         {
-            MDLog.Error(LOG_CAT, "[{0}::{1}] is not an MDRpc", NodeType.Name, RPCMethod.Name);
+            MDLog.Error(LOG_CAT, "[{0}::{1}] is not an MDRpc", NodeType.Name, FunctionName);
             return;
         }
 
         string NodeName = Instance.GetName();
         MDNetMode NetMode = MDStatics.GetNetMode();
         RPCType CallType = RpcAttribute.Type;
-        // TODO RPCReliability
         RPCReliability Reliability = RpcAttribute.Reliability;
         if (CallType == RPCType.Server)
         {
             if (NetMode == MDNetMode.Client)
             {
                 MDGameSession GameSession = MDStatics.GetGameSession();
-                GameSession.SendPacket(MDPacketType.RPC, BuildDataArray(Instance.GetName(), RPCMethod.Name, args));
+                GameSession.SendPacket(MDPacketType.RPC, BuildDataArray(Instance.GetName(), FunctionName, args), Reliability);
             }
             else // We are the server (or standalone)
             {
@@ -123,7 +137,7 @@ public class MDRemoteCaller
                 if (NetOwner >= 0)
                 {
                     MDGameSession GameSession = MDStatics.GetGameSession();
-                    GameSession.SendPacket(NetOwner, MDPacketType.RPC,  BuildDataArray(Instance.GetName(), RPCMethod.Name, args));
+                    GameSession.SendPacket(NetOwner, MDPacketType.RPC,  BuildDataArray(Instance.GetName(), FunctionName, args), Reliability);
                 }
                 else
                 {
@@ -135,19 +149,38 @@ public class MDRemoteCaller
             {
                 // Broadcast the call
                 MDGameSession GameSession = MDStatics.GetGameSession();
-                GameSession.BroadcastPacket(MDPacketType.RPC,  BuildDataArray(Instance.GetName(), RPCMethod.Name, args));
+                GameSession.BroadcastPacket(MDPacketType.RPC,  BuildDataArray(Instance.GetName(), FunctionName, args), Reliability);
                 RPCMethod.Invoke(Instance, args);
                 return;
             }
         }
 
         MDLog.Error(LOG_CAT, "Invalid RPCType [{0}] and NetMode [{1}] for function [{2}::{3}]"
-            , CallType, NetMode, NodeType.Name, RPCMethod.Name);
+            , CallType, NetMode, NodeType.Name, FunctionName);
+    }
+
+    // Called when we receive an RPC packet
+    public void HandleRPCPacket(byte[] Data)
+    {
+        string NodeName;
+        int BytesUsed = MDSerialization.GetStringFromStartOfByteArray(Data, out NodeName);
+        
+        string MethodName;
+        BytesUsed += MDSerialization.GetStringFromStartOfByteArray(Data.SubArray(BytesUsed), out MethodName);
+
+        MDLog.Info(LOG_CAT, "Received RPC call on Node [{0}] for function [{1}]", NodeName, MethodName);
     }
 
     // Builds the data array for the rpc call
     private byte[] BuildDataArray(string NodeName, string MethodName, params object[] args)
     {
+        // Maybe referencing methods by an index would be better?
+        /*
+            [Node name length] int
+            [Node name] string
+            [Method name length] int
+            [Method name] string
+         */
         byte[] NodeBytes = MDSerialization.ConvertSupportedTypeToBytes(NodeName);
         byte[] MethodBytes = MDSerialization.ConvertSupportedTypeToBytes(MethodName);
 

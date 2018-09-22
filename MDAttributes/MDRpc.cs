@@ -11,13 +11,13 @@ public enum RPCReliability
 {
     Reliable, // Guaranteed to arrive, in order
     Unreliable, // May not arrive, but will be in order
-    Unsequenced, // May not arrive and maybe not in order
+    Unordered, // May not arrive and maybe not in order
 }
 
 [AttributeUsage(AttributeTargets.Method)]
 public class MDRpc : Attribute
 {
-    MDRpc(RPCType InType, RPCReliability InReliability)
+    public MDRpc(RPCType InType, RPCReliability InReliability)
     {
         Type = InType;
         Reliability = InReliability;

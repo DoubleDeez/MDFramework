@@ -61,6 +61,7 @@ public static class MDLog
     // Logs the message (supports formatting) in accordance with the LogProperties set for the specified log category
     public static void Log(string CategoryName, MDLogLevel LogLevel, string Message, params object[] args)
     {
+        // TODO - Get calling method's name automatically: https://stackoverflow.com/a/5443690
         bool LogFile = true;
         bool LogConsole = true;
         if (LogProperties.ContainsKey(CategoryName))
