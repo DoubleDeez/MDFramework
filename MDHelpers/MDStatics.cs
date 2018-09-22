@@ -75,4 +75,16 @@ public static class MDStatics
     {
         return GI.GetNetMode();
     }
+
+    // Gets the SceneTree from the GameInstance
+    public static SceneTree GetTree()
+    {
+        return GI.GetTree();
+    }
+
+    // Returns true if the types are equal or is SubClass is a a subclass of Base
+    public static bool IsSameOrSubclass(Type SubClass, Type Base)
+    {
+        return SubClass.IsSubclassOf(Base) || SubClass == Base;
+    }
 }

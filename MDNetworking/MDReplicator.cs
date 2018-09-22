@@ -1,6 +1,7 @@
 using Godot;
 using System;
 using System.Reflection;
+using System.Text;
 using Generics = System.Collections.Generic;
 using BytesList = System.Collections.Generic.List<byte[]>;
 using ReplicatedNodeDict = System.Collections.Generic.Dictionary<string, ReplicatedNode>;
@@ -15,10 +16,15 @@ public class MDReplicator
     private ReplicatedNodeDict NodeList = new ReplicatedNodeDict();
     private const string LOG_CAT = "LogReplicator";
 
+    public MDReplicator()
+    {
+        MDLog.AddLogCategoryProperties(LOG_CAT, new MDLogProperties(MDLogLevel.Info));
+    }
+
     // Registers the given instance's fields marked with [MDReplicated()]
     public void RegisterReplication(Node Instance)
     {
-        if (!RegisterSubNode(Instance, NodeList))
+        if (!RegisterNode(Instance, NodeList))
         {
             MDLog.Warn(LOG_CAT, "Attempting to register node ({0}) that doesn't have any replicated fields or subfields.", Instance.GetPath());
         }
@@ -32,7 +38,14 @@ public class MDReplicator
 
     // Updates fields on this client with changes received from server
     public void UpdateChanges(byte[] ReplicationData)
-    {
+    {       
+        /*
+            Node data format:
+            [Length of Node Name] int
+            [Node Name data] string
+            [Num Data] int - The number of sub objects we're replicating
+            [Value data] byte[]
+         */
         #if DEBUG
         using (MDProfiler Profiler = new MDProfiler("MDReplicator.UpdateChanges"))
         #endif
@@ -40,7 +53,8 @@ public class MDReplicator
             int ByteLocation = 0;
             int NameLength = MDSerialization.GetIntFromStartOfByteArray(ReplicationData);
             string NodeName = (string)MDSerialization.ConvertBytesToSupportedType(MDSerialization.Type_String, ReplicationData.SubArray(ByteLocation += 4, (ByteLocation += NameLength) - 1));
-            byte NodeDataType = ReplicationData[ByteLocation++];
+
+            MDLog.Debug(LOG_CAT, "Name Length: [{0}] | Node Name: [{1}] | ByteLocation: [{2}]", NameLength, NodeName, ByteLocation);
             
             if (!NodeList.ContainsKey(NodeName))
             {
@@ -63,7 +77,7 @@ public class MDReplicator
             byte[] NodeData = RepNode.BuildData(false);
             if (NodeData != null)
             {
-                GameSession.BroadcastPacket(MDPacketType.Replication, NodeData);
+                GameSession.SendPacket(PeerID, MDPacketType.Replication, NodeData);
             }
         }
     }
@@ -82,27 +96,27 @@ public class MDReplicator
         }
     }
 
-    // Registers a subnode field to the provided replicated node
-    // TODO - Register SubNodes by path instead
-    private bool RegisterSubNode(Node SubNode, ReplicatedNodeDict RepNodeList)
+    // Registers a replicated node
+    private bool RegisterNode(Node Instance, ReplicatedNodeDict RepNodeList)
     {
+        string NodeName = Instance.GetName();
+        if (RepNodeList.ContainsKey(NodeName))
+        {
+            MDLog.Warn(LOG_CAT, "Attempting to register already registered Node [{0}]", NodeName);
+            return true;
+        }
+
         bool HasReplicatedFields = false;
-        ReplicatedNode SubRepNode = new ReplicatedNode();
-        SubRepNode.WeakNode = new WeakReference(SubNode);
-        FieldInfo[] Fields = SubNode.GetType().GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+        ReplicatedNode RepNode = new ReplicatedNode();
+        RepNode.WeakNode = new WeakReference(Instance);
+        FieldInfo[] Fields = Instance.GetType().GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
         foreach(FieldInfo Field in Fields)
         {
             MDReplicated RepAttribute = Field.GetCustomAttribute(typeof(MDReplicated)) as MDReplicated;
             if (RepAttribute != null)
             {
                 Type FieldType = Field.FieldType;
-                // Is this a sub Node?
-                if (FieldType.IsSubclassOf(typeof(Node)))
-                {
-                    HasReplicatedFields |= RegisterSubNode(Field.GetValue(SubNode) as Node, SubRepNode.ReplicatedNodes);
-                }
-                // Is this a string or POD type?
-                else if (RegisterStringOrPOD(SubNode, Field, SubRepNode.ReplicatedFields))
+                if (RegisterSubNodeOrStringOrPOD(Instance, Field, RepNode.ReplicatedFields))
                 {
                     HasReplicatedFields = true;
                 }
@@ -129,24 +143,31 @@ public class MDReplicator
 
         if (HasReplicatedFields)
         {
-            RepNodeList.Add(SubNode.GetName(), SubRepNode);
+            RepNodeList.Add(NodeName, RepNode);
         }
 
         return HasReplicatedFields;
     }
 
-    // Registers strings and POD types to the replicated object
-    private bool RegisterStringOrPOD(object FieldOwner, FieldInfo Field, ReplicatedFieldDict ReplicatedFields)
+    // Registers strings (or sub node paths) and POD types to the replicated object
+    private bool RegisterSubNodeOrStringOrPOD(object FieldOwner, FieldInfo Field, ReplicatedFieldDict ReplicatedFields)
     {
         Type FieldType = Field.FieldType;
-        if (FieldType == typeof(string) || FieldType.IsPrimitive || FieldType.IsEnum)
+        bool IsString = FieldType == typeof(string);
+        bool IsSubNode = MDStatics.IsSameOrSubclass(FieldType, typeof(Node));
+        if (IsString || IsSubNode || FieldType.IsPrimitive || FieldType.IsEnum)
         {
             ReplicatedField RepField = new ReplicatedField();
             RepField.Field = Field;
 
-            if (FieldType == typeof(string))
+            if (IsString)
             {
                 RepField.CachedValue = string.Copy(Field.GetValue(FieldOwner) as string);
+            }
+            else if (IsSubNode)
+            {
+                Node SubNode = Field.GetValue(FieldOwner) as Node;
+                RepField.CachedValue = string.Copy(SubNode.GetPath().ToString());
             }
             else
             {
@@ -164,8 +185,6 @@ public class MDReplicator
 // Base class for replicated class/struct types
 public class ReplicatedObject
 {
-    public ReplicatedNodeDict ReplicatedNodes = new ReplicatedNodeDict();
-
     public ReplicatedFieldDict ReplicatedFields = new ReplicatedFieldDict();
 
     public ReplicatedNonNodeDict ReplicatedNonNodes = new ReplicatedNonNodeDict();
@@ -214,6 +233,7 @@ public class ReplicatedObject
                 case MDSerialization.Type_Uint:
                 case MDSerialization.Type_Short:
                 case MDSerialization.Type_Ushort:
+                case MDSerialization.Type_Node:
                     if (!ReplicatedFields.ContainsKey(ObjectName))
                     {
                         MDLog.Error(LOG_CAT, "Received replication info for non-replicated field [{0}] of type [{1}]", ObjectName, (int)ObjectType);
@@ -222,18 +242,6 @@ public class ReplicatedObject
                     {
                         ReplicatedField RepField = ReplicatedFields[ObjectName];
                         NumBytesDeserialized += RepField.UpdateData(Container, ObjectType, Data, NumBytesDeserialized);
-                    }
-                    break;
-
-                case MDSerialization.Type_Node:
-                    if (!ReplicatedNodes.ContainsKey(ObjectName))
-                    {
-                        MDLog.Error(LOG_CAT, "Received replication info for non-replicated subnode [{0}]", ObjectName);
-                    }
-                    else
-                    {
-                        ReplicatedNode RepNode = ReplicatedNodes[ObjectName];
-                        NumBytesDeserialized += RepNode.UpdateData(Data, NumBytesDeserialized);
                     }
                     break;
 
@@ -278,7 +286,6 @@ public class ReplicatedNode : ReplicatedObject
             Node data format:
             [Length of Node Name] int
             [Node Name data] string
-            [Type data] byte (MDSerialization.Type_Node)
             [Num Data] int - The number of sub objects we're replicating
             [Value data] byte[]
          */
@@ -293,10 +300,13 @@ public class ReplicatedNode : ReplicatedObject
 
         if (NumRepObjects > 0)
         {
+            // Node is a special case (non-subnode) so we have to serialize it manually
             string NodeName = NodeRef.GetName();
             BytesList Data = new BytesList();
-            Data.Add(MDSerialization.SerializeSupportedTypeToBytes(NodeName, NodeRef));
-            Data.Add(MDSerialization.ConvertSupportedTypeToBytes(NumRepObjects));
+            byte[] NameBytes = MDSerialization.ConvertSupportedTypeToBytes(NodeName);
+            byte[] NumObjectsBytes = MDSerialization.ConvertSupportedTypeToBytes(NumRepObjects);
+            Data.Add(NameBytes);
+            Data.Add(NumObjectsBytes);
             Data.AddRange(ChildData);
 
             return MDStatics.JoinByteArrays(Data.ToArray());
@@ -346,11 +356,19 @@ public class ReplicatedField
             [Value data] byte[]
         */
         object CurrentValue = Field.GetValue(Container);
+        Type NodeType = typeof(Node);
+        bool IsNodeAsString = MDStatics.IsSameOrSubclass(Field.FieldType, NodeType);
+        if (IsNodeAsString)
+        {
+            Node SubNode = CurrentValue as Node;
+            CurrentValue = SubNode != null ? SubNode.GetPath().ToString() : "";
+        }
+
         if (!ChangedValuesOnly || !CurrentValue.Equals(CachedValue))
         {
             CachedValue = CurrentValue;
-
-            return MDStatics.JoinByteArrays(MDSerialization.SerializeSupportedTypeToBytes(Field.Name, CachedValue));
+            Type ForcedType = IsNodeAsString ? NodeType : null;
+            return MDSerialization.SerializeSupportedTypeToBytes(Field.Name, CachedValue, ForcedType);
         }
 
         return null;
@@ -380,7 +398,20 @@ public class ReplicatedField
         if (ReplicatedValue != null && !ReplicatedValue.Equals(CachedValue))
         {
             CachedValue = ReplicatedValue;
-            Field.SetValue(Container, CachedValue);
+
+            Type NodeType = typeof(Node);
+            bool IsNodeAsString = MDStatics.IsSameOrSubclass(Field.FieldType, NodeType);
+            if (IsNodeAsString)
+            {
+                // For replicated Node fields, we want to get the node from the tree using the replicated node path
+                string StringPath = CachedValue as string;
+                SceneTree Tree = MDStatics.GetTree();
+                Field.SetValue(Container, Tree.GetRoot().GetNode(StringPath));
+            }
+            else
+            {
+                Field.SetValue(Container, CachedValue);
+            }
         }
 
         return NumBytesDeserialized - StartIndex;

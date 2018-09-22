@@ -110,6 +110,7 @@ The following types are able to be used for field replication and RPC parameters
 * ushort
 * string
 * enums (converted to int and back internally)
+* Nodes (must be on the tree as their path gets serialized not the whole node)
 * Dictionary/List/Array of the above types // TODO
 * Any of the above types on Classes/Structs (Only structs for RPC params) // TODO
 

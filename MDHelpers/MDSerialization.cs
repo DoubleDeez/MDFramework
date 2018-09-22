@@ -31,7 +31,7 @@ public static class MDSerialization
     // Converts a Type to an MDType byte for serialization
     public static byte GetMDTypeFromType(Type InType)
     {
-        if (InType.IsSubclassOf(typeof(Node)))
+        if (MDStatics.IsSameOrSubclass(InType, typeof(Node)))
         {
             return Type_Node;
         }
@@ -61,7 +61,8 @@ public static class MDSerialization
     }
 
     // Convert a supported type to byte array, prefixing with the name and serialized type int
-    public static byte[] SerializeSupportedTypeToBytes(string DataName, object Data)
+    // When setting ForcedType, instead of serializing the MDType of Data, the MDType of ForcedType will be used
+    public static byte[] SerializeSupportedTypeToBytes(string DataName, object Data, Type ForcedType = null)
     {
         /*
             Data Format:
@@ -79,18 +80,17 @@ public static class MDSerialization
             return null;
         }
         
-        byte[] NameLengthBytes = ConvertSupportedTypeToBytes(Encoding.Unicode.GetByteCount(DataName));
         byte[] NameBytes = ConvertSupportedTypeToBytes(DataName);
-        byte[] TypeBytes = ConvertSupportedTypeToBytes(MDType);
+        byte[] TypeBytes = ConvertSupportedTypeToBytes(ForcedType == null ? MDType : GetMDTypeFromType(ForcedType));
         byte[] DataBytes = ConvertSupportedTypeToBytes(Data);
         if (DoesTypeRequireTrackingCount(DataType))
         {
             byte[] CountBytes = ConvertSupportedTypeToBytes(NumValuesToSerialize(Data, MDType));
-            return MDStatics.JoinByteArrays(NameLengthBytes, NameBytes, TypeBytes, CountBytes, DataBytes);
+            return MDStatics.JoinByteArrays(NameBytes, TypeBytes, CountBytes, DataBytes);
         }
         else
         {
-            return MDStatics.JoinByteArrays(NameLengthBytes, NameBytes, TypeBytes, DataBytes);
+            return MDStatics.JoinByteArrays(NameBytes, TypeBytes, DataBytes);
         }
     }
     
@@ -98,7 +98,7 @@ public static class MDSerialization
     public static byte[] ConvertSupportedTypeToBytes(object Data)
     {
         Type DataType = Data.GetType();
-        if (DataType.IsSubclassOf(typeof(Node)))
+        if (MDStatics.IsSameOrSubclass(DataType, typeof(Node)))
         {
             DataType = typeof(Node);
         }
@@ -189,7 +189,7 @@ public static class MDSerialization
     // Returns true if the type requires storing the number of values (eg. a list is unbound so we need to know how many values are serialized)
     public static bool DoesTypeRequireTrackingCount(byte MDType)
     {
-        return MDType == Type_String; // TODO - List/Dict
+        return MDType == Type_String || MDType == Type_Node; // TODO - List/Dict
     }
 
     // Returns true if the type requires storing the number of values (eg. a list is unbound so we need to know how many values are serialized)
@@ -262,18 +262,19 @@ public static class MDSerialization
 
     private static readonly ToByteConverterDict ToBytes = new ToByteConverterDict()
     {
-        { typeof(string),   o => Encoding.Unicode.GetBytes((string) o) },
-        { typeof(bool),     o => BitConverter.GetBytes((bool) o) },
+        { typeof(string),   o => Encoding.Unicode.GetBytes((string)o) },
+        { typeof(bool),     o => BitConverter.GetBytes((bool)o) },
         { typeof(byte),     o => new byte[1]{(byte)o} },
-        { typeof(char),     o => BitConverter.GetBytes((char) o) },
-        { typeof(float),    o => BitConverter.GetBytes((float) o) },
-        { typeof(long),     o => BitConverter.GetBytes((long) o) },
-        { typeof(ulong),    o => BitConverter.GetBytes((ulong) o) },
-        { typeof(int),      o => BitConverter.GetBytes((int) o) },
-        { typeof(uint),     o => BitConverter.GetBytes((uint) o) },
-        { typeof(short),    o => BitConverter.GetBytes((short) o) },
-        { typeof(ushort),   o => BitConverter.GetBytes((ushort) o) },
-        { typeof(Node),     o => MDStatics.EmptyByteArray }, // Node serialization is handled in MDReplcator
+        { typeof(char),     o => BitConverter.GetBytes((char)o) },
+        { typeof(float),    o => BitConverter.GetBytes((float)o) },
+        { typeof(long),     o => BitConverter.GetBytes((long)o) },
+        { typeof(ulong),    o => BitConverter.GetBytes((ulong)o) },
+        { typeof(int),      o => BitConverter.GetBytes((int)o) },
+        { typeof(uint),     o => BitConverter.GetBytes((uint)o) },
+        { typeof(short),    o => BitConverter.GetBytes((short)o) },
+        { typeof(ushort),   o => BitConverter.GetBytes((ushort)o) },
+        { typeof(Node),     o => Encoding.Unicode.GetBytes((string)o) }, // Node is done as node path string
+        //{ typeof(Node),     o => Encoding.Unicode.GetBytes(((Node)o).GetPath()) }, // Node is done as node path string
     };
 
     private static readonly FromByteConverterDict FromBytes = new FromByteConverterDict()
@@ -289,7 +290,8 @@ public static class MDSerialization
         { typeof(uint),     bytes => BitConverter.ToUInt32(bytes, 0) },
         { typeof(short),    bytes => BitConverter.ToInt16(bytes, 0) },
         { typeof(ushort),   bytes => BitConverter.ToUInt16(bytes, 0) },
-        { typeof(Node),     bytes => null }, // Node deserialization is handled in MDReplcator
+        { typeof(Node),     bytes => Encoding.Unicode.GetString(bytes) },  // Node is done as node path string
+        //{ typeof(Node),     bytes => MDStatics.GetTree().GetRoot().GetNode(Encoding.Unicode.GetString(bytes)) },  // Node is done as node path string
     };
 
     private static readonly TypeToSizeDict TypeSize = new TypeToSizeDict()

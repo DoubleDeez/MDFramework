@@ -98,8 +98,10 @@ public class MDRemoteCaller
         }
 
         string NodeName = Instance.GetName();
-        RPCType CallType = RpcAttribute.Type;
         MDNetMode NetMode = MDStatics.GetNetMode();
+        RPCType CallType = RpcAttribute.Type;
+        // TODO RPCReliability
+        RPCReliability Reliability = RpcAttribute.Reliability;
         if (CallType == RPCType.Server)
         {
             if (NetMode == MDNetMode.Client)
