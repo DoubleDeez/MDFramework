@@ -136,18 +136,20 @@ Currently, this will enable logging for all MDProfiler instances and can get ver
 ```
 
 # TODO
-* An ability to enable command prompt in release builds
+In no particular order:
+* Ability to enable command prompt in release builds
 * Command prompt auto-complete with help text
 * Notification of a change in a replicated field
 * Client/Server/Broadcast functions (RPCs)
-* Reliability settings of RPCs
-* Assign RPCs to channels
+* Assign RPCs to net channels
 * Distance based replication relevancy
 * UI management framework
+* Eliminate need for setup functions (eg. RegisterCommandAttributes(), RegisterReplicatedFields(), RegisterRPCs(), etc)
 * Automatic Field<->Node binding
 * Enable only specific instances of profile logging (rather than the entire system on/off)
-* More features...
-* Optimize, threading, convert performance critical features to C++
+* Save system (Serialize a class to file)
+* Config file system
+* Optimizations
 * De-spaghetti Replication<->Serialization
 * Figure out a way to do replication without string compares/serializing names
 * Maybe use a large byte array buffer when serializing data instead of creating a ton of small byte[]
