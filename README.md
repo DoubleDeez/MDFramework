@@ -111,6 +111,7 @@ The following types are able to be used for field replication and RPC parameters
 * string
 * enums (converted to int and back internally)
 * Nodes (must be on the tree as their path gets serialized not the whole node)
+  * Compares the address of replicated Node to determine if a change has occurred, so changing the name or path of the node will not update clients. Use [RPCs](#RPCs) for that.
 * Dictionary/List/Array of the above types // TODO
 * Any of the above types on Classes/Structs (Only structs for RPC params) // TODO
 

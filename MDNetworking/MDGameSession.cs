@@ -41,16 +41,12 @@ public class MDGameSession : Node
 
     public override void _Ready()
     {
-        MDLog.AddLogCategoryProperties(LOG_CAT, new MDLogProperties(MDLogLevel.Info));
+        MDLog.AddLogCategoryProperties(LOG_CAT, new MDLogProperties(MDLogLevel.Debug));
         SetupNetEntity();
         CheckArgsForConnectionInfo();
         this.RegisterCommandAttributes();
 
         GetTree().Connect("idle_frame", this, "PreProcess");
-
-        TestNode = new Node();
-        TestNode.SetName("ReplicatedNode");
-        AddChild(TestNode);
 
         this.RegisterReplicatedFields();
 
@@ -78,22 +74,12 @@ public class MDGameSession : Node
                 {
                     TestEnumVal = TestEnum.First;
                 }
-                TestNode.SetName(TestEnumVal.ToString());
 
                 MDLog.Info(LOG_CAT, "Setting TestEnumVal to [{0}]", TestEnumVal);
-                MDLog.Info(LOG_CAT, "TestNode path is [{0}] and name is [{1}]", TestNode.GetPath().ToString(), TestNode.GetName());
             }
             else
             {
                 MDLog.Info(LOG_CAT, "TestEnumVal is now [{0}]", TestEnumVal);
-                if (TestNode != null)
-                {
-                    MDLog.Info(LOG_CAT, "TestNode path now is [{0}] and name is now [{1}]", TestNode.GetPath().ToString(), TestNode.GetName());
-                }
-                else
-                {
-                    MDLog.Info(LOG_CAT, "TestNode is null");
-                }
             }
         }
     }
@@ -365,9 +351,6 @@ public class MDGameSession : Node
 
     [MDReplicated()]
     private TestEnum TestEnumVal = TestEnum.First;
-
-    [MDReplicated()]
-    private Node TestNode;
 
     private float WorldTime = 0.0f;
 

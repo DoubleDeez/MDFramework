@@ -18,7 +18,7 @@ public class MDReplicator
 
     public MDReplicator()
     {
-        MDLog.AddLogCategoryProperties(LOG_CAT, new MDLogProperties(MDLogLevel.Info));
+        MDLog.AddLogCategoryProperties(LOG_CAT, new MDLogProperties(MDLogLevel.Debug));
     }
 
     // Registers the given instance's fields marked with [MDReplicated()]
@@ -163,11 +163,6 @@ public class MDReplicator
             if (IsString)
             {
                 RepField.CachedValue = string.Copy(Field.GetValue(FieldOwner) as string);
-            }
-            else if (IsSubNode)
-            {
-                Node SubNode = Field.GetValue(FieldOwner) as Node;
-                RepField.CachedValue = string.Copy(SubNode.GetPath().ToString());
             }
             else
             {
@@ -356,19 +351,10 @@ public class ReplicatedField
             [Value data] byte[]
         */
         object CurrentValue = Field.GetValue(Container);
-        Type NodeType = typeof(Node);
-        bool IsNodeAsString = MDStatics.IsSameOrSubclass(Field.FieldType, NodeType);
-        if (IsNodeAsString)
-        {
-            Node SubNode = CurrentValue as Node;
-            CurrentValue = SubNode != null ? SubNode.GetPath().ToString() : "";
-        }
-
-        if (!ChangedValuesOnly || !CurrentValue.Equals(CachedValue))
+        if (!ChangedValuesOnly || (CurrentValue == null && CachedValue != null) || !CurrentValue.Equals(CachedValue))
         {
             CachedValue = CurrentValue;
-            Type ForcedType = IsNodeAsString ? NodeType : null;
-            return MDSerialization.SerializeSupportedTypeToBytes(Field.Name, CachedValue, ForcedType);
+            return MDSerialization.SerializeSupportedTypeToBytes(Field.Name, CachedValue);
         }
 
         return null;
@@ -382,7 +368,6 @@ public class ReplicatedField
             [Num Data] int - This is only here for variable sized types (eg. string)
             [Value data] byte[]
         */
-
         int NumBytesDeserialized = StartIndex;
         int ValueLength = 0;
         if (MDSerialization.DoesTypeRequireTrackingCount(ObjectType))
@@ -395,23 +380,10 @@ public class ReplicatedField
         }
 
         object ReplicatedValue = MDSerialization.ConvertBytesToSupportedType(ObjectType, Data.SubArray(NumBytesDeserialized, (NumBytesDeserialized += ValueLength) - 1));
-        if (ReplicatedValue != null && !ReplicatedValue.Equals(CachedValue))
+        if ((ReplicatedValue == null && CachedValue != null) || !ReplicatedValue.Equals(CachedValue))
         {
             CachedValue = ReplicatedValue;
-
-            Type NodeType = typeof(Node);
-            bool IsNodeAsString = MDStatics.IsSameOrSubclass(Field.FieldType, NodeType);
-            if (IsNodeAsString)
-            {
-                // For replicated Node fields, we want to get the node from the tree using the replicated node path
-                string StringPath = CachedValue as string;
-                SceneTree Tree = MDStatics.GetTree();
-                Field.SetValue(Container, Tree.GetRoot().GetNode(StringPath));
-            }
-            else
-            {
-                Field.SetValue(Container, CachedValue);
-            }
+            Field.SetValue(Container, CachedValue);
         }
 
         return NumBytesDeserialized - StartIndex;

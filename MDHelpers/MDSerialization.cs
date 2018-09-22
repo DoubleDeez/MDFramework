@@ -61,8 +61,7 @@ public static class MDSerialization
     }
 
     // Convert a supported type to byte array, prefixing with the name and serialized type int
-    // When setting ForcedType, instead of serializing the MDType of Data, the MDType of ForcedType will be used
-    public static byte[] SerializeSupportedTypeToBytes(string DataName, object Data, Type ForcedType = null)
+    public static byte[] SerializeSupportedTypeToBytes(string DataName, object Data)
     {
         /*
             Data Format:
@@ -81,7 +80,7 @@ public static class MDSerialization
         }
         
         byte[] NameBytes = ConvertSupportedTypeToBytes(DataName);
-        byte[] TypeBytes = ConvertSupportedTypeToBytes(ForcedType == null ? MDType : GetMDTypeFromType(ForcedType));
+        byte[] TypeBytes = ConvertSupportedTypeToBytes(MDType);
         byte[] DataBytes = ConvertSupportedTypeToBytes(Data);
         if (DoesTypeRequireTrackingCount(DataType))
         {
@@ -206,6 +205,11 @@ public static class MDSerialization
         {
             return Encoding.Unicode.GetByteCount((string)Data);
         }
+        
+        if (MDType == Type_Node)
+        {
+            return Encoding.Unicode.GetByteCount(((Node)Data).GetPath());
+        }
 
         return 0;
     }
@@ -273,8 +277,7 @@ public static class MDSerialization
         { typeof(uint),     o => BitConverter.GetBytes((uint)o) },
         { typeof(short),    o => BitConverter.GetBytes((short)o) },
         { typeof(ushort),   o => BitConverter.GetBytes((ushort)o) },
-        { typeof(Node),     o => Encoding.Unicode.GetBytes((string)o) }, // Node is done as node path string
-        //{ typeof(Node),     o => Encoding.Unicode.GetBytes(((Node)o).GetPath()) }, // Node is done as node path string
+        { typeof(Node),     o => Encoding.Unicode.GetBytes(((Node)o).GetPath()) }, // Node is done as node path string
     };
 
     private static readonly FromByteConverterDict FromBytes = new FromByteConverterDict()
@@ -290,8 +293,7 @@ public static class MDSerialization
         { typeof(uint),     bytes => BitConverter.ToUInt32(bytes, 0) },
         { typeof(short),    bytes => BitConverter.ToInt16(bytes, 0) },
         { typeof(ushort),   bytes => BitConverter.ToUInt16(bytes, 0) },
-        { typeof(Node),     bytes => Encoding.Unicode.GetString(bytes) },  // Node is done as node path string
-        //{ typeof(Node),     bytes => MDStatics.GetTree().GetRoot().GetNode(Encoding.Unicode.GetString(bytes)) },  // Node is done as node path string
+        { typeof(Node),     bytes => MDStatics.GetTree().GetRoot().GetNode(Encoding.Unicode.GetString(bytes)) },  // Node is done as node path string
     };
 
     private static readonly TypeToSizeDict TypeSize = new TypeToSizeDict()
