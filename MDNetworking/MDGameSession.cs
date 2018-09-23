@@ -78,7 +78,7 @@ public class MDGameSession : Node
 
                 MDLog.Info(LOG_CAT, "Setting TestEnumVal to [{0}]", TestEnumVal);
 
-                this.CallRPC(nameof(BroadcastTestRPC));
+                this.CallRPC(nameof(BroadcastTestRPC), TestEnumVal);
             }
             else
             {
@@ -236,7 +236,7 @@ public class MDGameSession : Node
                     OnReceivedConnectionData(PacketNoType);
                     break;
                 case MDPacketType.RPC:
-                    OnReceivedRpcData(PacketNoType);
+                    OnReceivedRpcData(PacketNoType, Event.GetPeerId());
                     break;
             }
         }
@@ -282,9 +282,9 @@ public class MDGameSession : Node
     }
 
     // We received an RPC call
-    protected virtual void OnReceivedRpcData(byte[] Data)
+    protected virtual void OnReceivedRpcData(byte[] Data, int SenderID)
     {
-        RemoteCaller.HandleRPCPacket(Data);
+        RemoteCaller.HandleRPCPacket(Data, SenderID);
     }
 
     // Create and initialize the player object
@@ -370,9 +370,9 @@ public class MDGameSession : Node
     }
 
     [MDRpc(RPCType.Broadcast, RPCReliability.Reliable)]
-    private void BroadcastTestRPC()
+    private void BroadcastTestRPC(TestEnum Val)
     {
-        MDLog.Info(LOG_CAT, "Test Broadcast RPC");
+        MDLog.Info(LOG_CAT, "Test Broadcast RPC Value [{0}]", Val);
     }
 
     [MDReplicated()]

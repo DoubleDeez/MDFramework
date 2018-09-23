@@ -22,12 +22,13 @@ public class MDPlayer : Node
     {
         PlayerName = Name;
         this.CallRPC(nameof(ClientSetPlayerName), Name);
+        MDLog.Info(LOG_CAT, "Test Server RPC {0}", Name);
     }
 
     [MDRpc(RPCType.Client, RPCReliability.Reliable)]
     public void ClientSetPlayerName(string Name)
     {
-        MDLog.Info(LOG_CAT, "Test Client RPC");
+        MDLog.Info(LOG_CAT, "Test Client RPC {0}", Name);
     }
 
     [MDReplicated()]

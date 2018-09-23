@@ -18,7 +18,7 @@ public class MDReplicator
 
     public MDReplicator()
     {
-        MDLog.AddLogCategoryProperties(LOG_CAT, new MDLogProperties(MDLogLevel.Debug));
+        MDLog.AddLogCategoryProperties(LOG_CAT, new MDLogProperties(MDLogLevel.Info));
     }
 
     // Registers the given instance's fields marked with [MDReplicated()]

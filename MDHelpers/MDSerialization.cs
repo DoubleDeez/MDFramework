@@ -82,15 +82,7 @@ public static class MDSerialization
         byte[] NameBytes = ConvertSupportedTypeToBytes(DataName);
         byte[] TypeBytes = ConvertSupportedTypeToBytes(MDType);
         byte[] DataBytes = ConvertSupportedTypeToBytes(Data);
-        if (DoesTypeRequireTrackingCount(DataType))
-        {
-            byte[] CountBytes = ConvertSupportedTypeToBytes(NumValuesToSerialize(Data, MDType));
-            return MDStatics.JoinByteArrays(NameBytes, TypeBytes, CountBytes, DataBytes);
-        }
-        else
-        {
-            return MDStatics.JoinByteArrays(NameBytes, TypeBytes, DataBytes);
-        }
+        return MDStatics.JoinByteArrays(NameBytes, TypeBytes, DataBytes);
     }
     
     // Convert a supported type to byte array
@@ -113,15 +105,13 @@ public static class MDSerialization
             return MDStatics.EmptyByteArray;
         }
 
-        return converter(Data);
-    }
+        if (DoesTypeRequireTrackingCount(DataType))
+        {
+            byte[] CountBytes = ConvertSupportedTypeToBytes(NumValuesToSerialize(Data, DataType));
+            return MDStatics.JoinByteArrays(CountBytes, converter(Data));
+        }
 
-    // Converts a string to [length of string][string data]
-    public static byte[] ConvertSupportedTypeToBytes(string String)
-    {
-        byte[] StringLengthBytes = ConvertSupportedTypeToBytes(Encoding.Unicode.GetByteCount(String));
-        byte[] StringBytes = ConvertSupportedTypeToBytes((object)String);
-        return MDStatics.JoinByteArrays(StringLengthBytes, StringBytes);
+        return converter(Data);
     }
 
     // Converts an array of support objects
@@ -130,14 +120,7 @@ public static class MDSerialization
         ByteArrayList ByteList = new ByteArrayList();
         foreach (object obj in args)
         {
-            if (obj.GetType() == typeof(string))
-            {
-                ByteList.Add(ConvertSupportedTypeToBytes((string)obj));
-            }
-            else
-            {
-                ByteList.Add(ConvertSupportedTypeToBytes(obj));
-            }
+            ByteList.Add(ConvertSupportedTypeToBytes(obj));
         }
 
         return MDStatics.JoinByteArrays(ByteList.ToArray());
@@ -156,10 +139,39 @@ public static class MDSerialization
     // Returns the number of bytes used in the byte[]
     public static int GetStringFromStartOfByteArray(byte[] Data, out string Converted)
     {
-        int StringSize = GetIntFromStartOfByteArray(Data);
-        Converted = (string)ConvertBytesToSupportedType(Type_String, Data.SubArray(4, 3 + StringSize));
+        object ObjString;
+        int BytesUsed = GetObjectFromStartOfByteArray(typeof(string), Data, out ObjString);
 
-        return StringSize + 4;
+        Converted = ObjString as string;
+        return BytesUsed;
+    }
+
+    // Get the string from the beginning of a byte[], assumes the array begins with string length.
+    // Returns the number of bytes used in the byte[]
+    public static int GetObjectFromStartOfByteArray(Type DataType, byte[] Data, out object Converted)
+    {
+        int BytePos = 0;
+        int TypeSize = 0;
+        if (DoesTypeRequireTrackingCount(DataType))
+        {
+            TypeSize = GetIntFromStartOfByteArray(Data);
+            BytePos += 4;
+        }
+        else
+        {
+            TypeSize = GetSizeInBytes(DataType);
+        }
+
+        if (TypeSize > Data.Length - BytePos)
+        {
+            MDLog.Error(LOG_CAT, "Not enough data [{0} bytes] to deserialize type [{1}] needed [{2} bytes]", Data.Length - BytePos, DataType.Name, TypeSize);
+            Converted = null;
+            return 0;
+        }
+
+        Converted = ConvertBytesToSupportedType(DataType, Data.SubArray(BytePos, BytePos + TypeSize - 1));
+
+        return BytePos + TypeSize;
     }
 
     // Convert a byte array to the supported data type stored in the bytes (Format: [MDType as byte][Optional Num][Data])
@@ -179,6 +191,15 @@ public static class MDSerialization
     // Convert a byte array to the supported data type
     public static object ConvertBytesToSupportedType(Type SupportedType, byte[] Data)
     {
+        if (MDStatics.IsSameOrSubclass(SupportedType, typeof(Node)))
+        {
+            SupportedType = typeof(Node);
+        }
+        else if (SupportedType.IsEnum)
+        {
+            SupportedType = typeof(int);
+        }
+        
         Func<byte[], object> converter;
         if (FromBytes.TryGetValue(SupportedType, out converter))
         {
@@ -224,9 +245,25 @@ public static class MDSerialization
         return 0;
     }
 
+    // Counts the number of values to store for serialization
+    public static int NumValuesToSerialize(object Data, Type DataType)
+    {
+        byte MDType = GetMDTypeFromType(DataType);
+        return NumValuesToSerialize(Data, MDType);
+    }
+
     // Get the size in bytes of a primitive type
     public static int GetSizeInBytes(Type InType)
     {
+        if (MDStatics.IsSameOrSubclass(InType, typeof(Node)))
+        {
+            InType = typeof(Node);
+        }
+        else if (InType.IsEnum)
+        {
+            InType = typeof(int);
+        }
+
         if (TypeSize.ContainsKey(InType))
         {
             return TypeSize[InType];

@@ -6,6 +6,7 @@ As this is being built along side my own Godot project, I will generally add fea
 ## Why?
 At the time of writing this framework, I found Godot's existing high-level networking framework too limited.
 So I wanted to build something that had the features and ease-of-use of a high-level networking framework but also offered the flexibility of something like ENet.
+Even then, this does reinvent the wheel a bit.
 
 # Features
 * [Command line parameter parsing](#command-line-arguments) that can be queried at any time
@@ -52,6 +53,8 @@ GameInstance="*res://src/MDFramework/MDGameInstance.cs"
 **Note:** It **must** be called `GameInstance` for the framework to work.
 
 # How to use MDFramework
+## Caveats and Assumptions
+MDFramework assumes the names of nodes do not change after they've been added to the scene.
 
 ## Command Line Arguments
 TODO
@@ -140,7 +143,6 @@ In no particular order:
 * Ability to enable command prompt in release builds
 * Command prompt auto-complete with help text
 * Notification of a change in a replicated field
-* Client/Server/Broadcast functions (RPCs)
 * Assign RPCs to net channels
 * Distance based replication relevancy
 * UI management framework
@@ -150,6 +152,5 @@ In no particular order:
 * Save system (Serialize a class to file)
 * Config file system
 * Optimizations
-* De-spaghetti Replication<->Serialization
 * Figure out a way to do replication without string compares/serializing names
 * Maybe use a large byte array buffer when serializing data instead of creating a ton of small byte[]

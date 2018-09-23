@@ -112,6 +112,8 @@ public class MDRemoteCaller
             return;
         }
 
+        // TODO - Validate arguments
+
         string NodeName = Instance.GetName();
         MDNetMode NetMode = MDStatics.GetNetMode();
         RPCType CallType = RpcAttribute.Type;
@@ -160,7 +162,7 @@ public class MDRemoteCaller
     }
 
     // Called when we receive an RPC packet
-    public void HandleRPCPacket(byte[] Data)
+    public void HandleRPCPacket(byte[] Data, int SenderID)
     {
         string NodeName;
         int BytesUsed = MDSerialization.GetStringFromStartOfByteArray(Data, out NodeName);
@@ -169,6 +171,89 @@ public class MDRemoteCaller
         BytesUsed += MDSerialization.GetStringFromStartOfByteArray(Data.SubArray(BytesUsed), out MethodName);
 
         MDLog.Info(LOG_CAT, "Received RPC call on Node [{0}] for function [{1}]", NodeName, MethodName);
+
+        if (!RPCNodes.ContainsKey(NodeName))
+        {
+            MDLog.Error(LOG_CAT, "Received RPC call for unregistered Node [{0}]", NodeName);
+            return;
+        }
+
+        WeakReference WeakNode = RPCNodes[NodeName];
+        Node RPCNode = WeakNode.Target as Node;
+        if (RPCNode == null)
+        {
+            // The node was destroyed
+            RPCNodes.Remove(NodeName);
+            return;
+        }
+
+        Type NodeType = RPCNode.GetType();
+        if (!NodeMethods.ContainsKey(NodeType))
+        {
+            MDLog.Error(LOG_CAT, "Received RPC call for unregistered Node Type [{0}]", NodeType.Name);
+            return;
+        }
+
+        MethodMap Methods = NodeMethods[NodeType];
+        if (!Methods.ContainsKey(MethodName))
+        {
+            MDLog.Error(LOG_CAT, "Received RPC call for unregistered method [{0}::{1}]", NodeType.Name, MethodName);
+            return;
+        }
+
+        MethodInfo Method = Methods[MethodName];
+        MDRpc RpcAttribute = Method.GetCustomAttribute(typeof(MDRpc)) as MDRpc;
+        MDNetMode NetMode = MDStatics.GetNetMode();
+        RPCType CallType = RpcAttribute.Type;
+
+        // Validate the RPC call before invoking
+        if (NetMode == MDNetMode.Server)
+        {
+            if (CallType != RPCType.Server)
+            {
+                MDLog.Error(LOG_CAT, "Server received RPC function [{0}::{1}] of type {2}", NodeType.Name, MethodName, CallType);
+                return;
+            }
+
+            int NetOwner = GetNetworkOwner(NodeName);
+            if (NetOwner != SenderID)
+            {
+                MDLog.Error(LOG_CAT, "Server received RPC function [{0}::{1}] from ID: [{2}] but owner is [{3}]", NodeType.Name, MethodName, SenderID, NetOwner);
+                return;
+            }
+        }
+        else
+        {
+            if (CallType == RPCType.Server)
+            {
+                MDLog.Error(LOG_CAT, "Client received server RPC function [{0}::{1}]", NodeType.Name, MethodName);
+                return;
+            }
+        }
+
+        ParameterInfo[] Params = Method.GetParameters();
+        object[] args = new object[Params.Length];
+        if (args.Length > 0)
+        {
+            byte[] ArgData = Data.SubArray(BytesUsed);
+            int ByteCount = ArgData.Length;
+            int BytePos = 0;
+            int ParamIndex = 0;
+            foreach(ParameterInfo Param in Params)
+            {
+                if (BytePos >= ByteCount)
+                {
+                    MDLog.Error(LOG_CAT, "Not enough argument data to call RPC");
+                    return;
+                }
+
+                object ParamObj;
+                BytePos += MDSerialization.GetObjectFromStartOfByteArray(Param.ParameterType, ArgData.SubArray(BytePos), out ParamObj);
+                args[ParamIndex] = ParamObj;
+            }
+        }
+
+        Method.Invoke(RPCNode, args);
     }
 
     // Builds the data array for the rpc call
@@ -180,6 +265,7 @@ public class MDRemoteCaller
             [Node name] string
             [Method name length] int
             [Method name] string
+            [Arguments] byte[]
          */
         byte[] NodeBytes = MDSerialization.ConvertSupportedTypeToBytes(NodeName);
         byte[] MethodBytes = MDSerialization.ConvertSupportedTypeToBytes(MethodName);
@@ -188,8 +274,8 @@ public class MDRemoteCaller
     }
 
     OwnerMap NetworkOwners = new OwnerMap();
+    // Map node names to their WeakReference instances
     NodeMap RPCNodes = new NodeMap();
-
     // Map of class type to RPC functions, used to save memory rather than storing per instance
     NodeMethodMap NodeMethods = new NodeMethodMap();
 }
