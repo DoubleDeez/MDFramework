@@ -15,22 +15,19 @@ public enum MDNetMode
  * Class that handles all the incoming and outgoing data with GDNet.
  * Can start a server or join an existing one.
  */
-public class MDNetEntity : Node
+public class MDNetEntity 
 {
     public delegate void OnNetEventDelegate(GDNetEvent NetEvent);
     public OnNetEventDelegate OnNetEvent;
 
     private const string LOG_CAT = "LogNetEntity";
 
-    public override void _Ready()
+    public MDNetEntity()
     {
-        NetHost = new GDNetHost();
         NetMode = MDNetMode.Standalone;
-
-        GetTree().Connect("idle_frame", this, "PreProcess");
     }
 
-    public void PreProcess()
+    public void ReadNetEvents()
     {
         if (NetMode > MDNetMode.Standalone)
         {
@@ -128,7 +125,7 @@ public class MDNetEntity : Node
         }
     }
 
-    public GDNetHost NetHost {get; private set;}
+    public GDNetHost NetHost {get; private set;} = new GDNetHost();
     public GDNetPeer ClientPeer {get; private set;}
     public MDNetMode NetMode {get; private set;} 
 }

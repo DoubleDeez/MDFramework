@@ -42,50 +42,19 @@ public class MDGameSession : Node
     public override void _Ready()
     {
         MDLog.AddLogCategoryProperties(LOG_CAT, new MDLogProperties(MDLogLevel.Info));
-        SetupNetEntity();
-        CheckArgsForConnectionInfo();
         this.RegisterCommandAttributes();
 
-        GetTree().Connect("idle_frame", this, nameof(PreProcess));
+        NetEntity.OnNetEvent = OnNetEvent;
 
-        SetProcess(true);
+        CheckArgsForConnectionInfo();
+
+        GetTree().Connect("idle_frame", this, nameof(PreTick));
     }
 
-    public override void _Process(float delta)
+    private void PreTick()
     {
-        WorldTime += delta;
+        NetEntity.ReadNetEvents();
 
-        if (WorldTime > 3)
-        {
-            WorldTime = 0.0f;
-            if (this.GetNetMode() == MDNetMode.Server)
-            {
-                if (TestEnumVal == TestEnum.First)
-                {
-                    TestEnumVal = TestEnum.Second;
-                }
-                else if (TestEnumVal == TestEnum.Second)
-                {
-                    TestEnumVal = TestEnum.Third;
-                }
-                else if (TestEnumVal == TestEnum.Third)
-                {
-                    TestEnumVal = TestEnum.First;
-                }
-
-                MDLog.Info(LOG_CAT, "Setting TestEnumVal to [{0}]", TestEnumVal);
-
-                this.CallRPC(nameof(BroadcastTestRPC), TestEnumVal);
-            }
-            else
-            {
-                MDLog.Info(LOG_CAT, "TestEnumVal is now [{0}]", TestEnumVal);
-            }
-        }
-    }
-
-    private void PreProcess()
-    {
         if (this.GetNetMode() == MDNetMode.Server)
         {
             Replicator.TickReplication();
@@ -326,17 +295,6 @@ public class MDGameSession : Node
         }
     }
 
-    // Ensure NetEntity is created
-    private void SetupNetEntity()
-    {
-        if (NetEntity == null)
-        {
-            NetEntity = new MDNetEntity();
-            NetEntity.OnNetEvent = OnNetEvent;
-            this.AddNodeToRoot(NetEntity);
-        }
-    }
-
     // Register the passed in node's rpc methods
     public void RegisterRPCs(Node Instance)
     {
@@ -372,23 +330,9 @@ public class MDGameSession : Node
         }
     }
 
-    [MDRpc(RPCType.Broadcast, RPCReliability.Reliable)]
-    private void BroadcastTestRPC(TestEnum Val)
-    {
-        MDLog.Info(LOG_CAT, "Test Broadcast RPC Value [{0}]", Val);
-    }
-
-    [MDReplicated()]
-    private TestEnum TestEnumVal = TestEnum.First;
-
-    private float WorldTime = 0.0f;
-
     private PeerDict Peers = new PeerDict();
 
-    [MDBindNode("/root")]
-    private Node RootField;
-
-    public MDNetEntity NetEntity {get; private set;}
+    public MDNetEntity NetEntity {get; private set;} = new MDNetEntity();
     public MDReplicator Replicator {get; private set;} = new MDReplicator();
     public MDRemoteCaller RemoteCaller {get; private set;} = new MDRemoteCaller();
     public int LocalPeerID {get; private set; } = STANDALONE_PEER_ID;

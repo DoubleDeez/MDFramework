@@ -167,3 +167,4 @@ In no particular order:
 * Figure out a way to do replication without string compares/serializing names
 * Maybe use a large byte array buffer when serializing data instead of creating a ton of small byte[]
 * Make a test project that gives examples on using all the features that can also be used to test them for development
+* When a client registers a replicated node, it should then request current data from the server
