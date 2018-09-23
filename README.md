@@ -91,16 +91,16 @@ RPC functions can only exist on Node objects. There are 3 types of RPC functions
 #### Server
 Server functions can only be called from the Server itself or from the network owner of the Node (the server by default).
 Server functions are a good way for a client to get data to the server, usually from the `MDPlayer` class, as each client is the network owner of an `MDPlayer` instance.
-To mark a function as a Server function, give it the attribute: `[MDRpc(RPCType.Server)]`.
+To mark a function as a Server function, give it the attribute: `[MDRpc(RPCType.Server, RPCReliability.Reliable)]`.
 
 #### Client
 Client functions can only be called from the Server and are sent to the network owner of the RPCs object.
 For example, the server could notify the player that they died via a Client function on `MDPlayer`.
-To mark a function as a Client function, give it the attribute: `[MDRpc(RPCType.Client)]`.
+To mark a function as a Client function, give it the attribute: `[MDRpc(RPCType.Client, RPCReliability.Reliable)]`.
 
 #### Broadcast
 Broadcast functions can only be called from the Server and are sent to every client and triggered on server and clients instances of the RPCs object.
-To mark a function as a Broadcast function, give it the attribute: `[MDRpc(RPCType.Broadcast)]`.
+To mark a function as a Broadcast function, give it the attribute: `[MDRpc(RPCType.Broadcast, RPCReliability.Reliable)]`.
 
 ### Field Replication
 Setting up replicating has a similar pattern to setting up console commands. Any field on a `Node` class marked with the `MDReplicated()` attribute can be replicated. The `Node` **must** have its name set before being added to the scene, and the name must be the same on the server and all clients as this is how `MDReplicator` determines where to send replicated data. Fields are always reliably replicated, although order isn't necessarily guaranteed since all fields are replicated as a post-process - they are not sent out as soon as you assign the variable. Replicated fields are automatically registered when a node is added to the tree.
