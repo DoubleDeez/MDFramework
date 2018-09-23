@@ -46,10 +46,7 @@ public class MDGameSession : Node
         CheckArgsForConnectionInfo();
         this.RegisterCommandAttributes();
 
-        GetTree().Connect("idle_frame", this, "PreProcess");
-
-        this.RegisterReplicatedFields();
-        this.RegisterRPCs();
+        GetTree().Connect("idle_frame", this, nameof(PreProcess));
 
         SetProcess(true);
     }
@@ -344,6 +341,12 @@ public class MDGameSession : Node
     public void RegisterRPCs(Node Instance)
     {
         RemoteCaller.RegisterRPCs(Instance);
+    }
+
+    // Unregister the passed in node's rpc methods
+    public void UnregisterRPCs(Node Instance)
+    {
+        RemoteCaller.UnregisterRPCs(Instance);
     }
 
     // Call an RPC function

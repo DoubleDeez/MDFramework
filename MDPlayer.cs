@@ -12,8 +12,6 @@ public class MDPlayer : Node
 
     public override void _Ready()
     {
-        this.RegisterReplicatedFields();
-        this.RegisterRPCs();
         this.CallRPC(nameof(ServerSetPlayerName), GetName());
     }
 

@@ -24,6 +24,12 @@ public static class MDCommands
         RegisterCommandAttributes(Instance.GetType(), Instance);
     }
 
+    // Unregisters all the methods marked with an MDCommand
+    public static void UnregisterCommandAttributes(object Instance)
+    {
+        UnregisterCommandAttributes(Instance.GetType(), Instance);
+    }
+
     // Registers all the methods marked with an MDCommand
     public static void RegisterCommandAttributes(Type ObjType, object Instance = null)
     {
@@ -34,6 +40,20 @@ public static class MDCommands
             if (CmdAttr != null)
             {
                 RegisterCommand(Instance, Method, CmdAttr.DefaultArgs);
+            }
+        }
+    }
+
+    // Unregisters all the methods marked with an MDCommand
+    public static void UnregisterCommandAttributes(Type ObjType, object Instance = null)
+    {
+        MethodInfo[] Methods = ObjType.GetMethods();
+        foreach (MethodInfo Method in Methods)
+        {
+            MDCommand CmdAttr = Method.GetCustomAttribute(typeof(MDCommand)) as MDCommand;
+            if (CmdAttr != null)
+            {
+                UnregisterCommand(Instance, Method);
             }
         }
     }
@@ -87,6 +107,33 @@ public static class MDCommands
         NewCommand.DefaultArgs = DefaultParams;
 
         CommandMap[MethodName] = NewCommand;
+    }
+
+    // Unregister a command
+    public static void UnregisterCommand(object Instance, MethodInfo Method)
+    {
+        if (Method == null)
+        {
+            return;
+        }
+
+        if (CommandMap == null)
+        {
+            CommandMap = new Dictionary<string, CommandInfo>();
+            return;
+        }
+
+        string MethodName = Method.Name.ToLower();
+        if (!CommandMap.ContainsKey(MethodName))
+        {
+            return;
+        }
+
+        CommandInfo Command = CommandMap[MethodName];
+        if (Command.Instance == Instance)
+        {
+            CommandMap.Remove(MethodName);
+        }
     }
 
     // Call a registered command via its name

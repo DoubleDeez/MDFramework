@@ -24,10 +24,13 @@ public class MDReplicator
     // Registers the given instance's fields marked with [MDReplicated()]
     public void RegisterReplication(Node Instance)
     {
-        if (!RegisterNode(Instance, NodeList))
-        {
-            MDLog.Warn(LOG_CAT, "Attempting to register node ({0}) that doesn't have any replicated fields or subfields.", Instance.GetPath());
-        }
+        RegisterNode(Instance);
+    }
+
+    // Unregisters the given instance's fields marked with [MDReplicated()]
+    public void UnregisterReplication(Node Instance)
+    {
+        UnregisterNode(Instance);
     }
 
     // Broadcasts out replicated modified variables if we're the server, propagates changes recieved from the server if client.
@@ -97,13 +100,13 @@ public class MDReplicator
     }
 
     // Registers a replicated node
-    private bool RegisterNode(Node Instance, ReplicatedNodeDict RepNodeList)
+    private void RegisterNode(Node Instance)
     {
         string NodeName = Instance.GetName();
-        if (RepNodeList.ContainsKey(NodeName))
+        if (NodeList.ContainsKey(NodeName))
         {
             MDLog.Warn(LOG_CAT, "Attempting to register already registered Node [{0}]", NodeName);
-            return true;
+            return;
         }
 
         bool HasReplicatedFields = false;
@@ -143,10 +146,15 @@ public class MDReplicator
 
         if (HasReplicatedFields)
         {
-            RepNodeList.Add(NodeName, RepNode);
+            NodeList.Add(NodeName, RepNode);
         }
+    }
 
-        return HasReplicatedFields;
+    // Unregisters a replicated node
+    private void UnregisterNode(Node Instance)
+    {
+        string NodeName = Instance.GetName();
+        NodeList.Remove(NodeName);
     }
 
     // Registers strings (or sub node paths) and POD types to the replicated object

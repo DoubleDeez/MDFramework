@@ -47,16 +47,34 @@ public static class MDNodeExtensions
         MDCommands.RegisterCommandAttributes(Instance);
     }
 
+    // Helper to unregister commands
+    public static void UnregisterCommandAttributes(this Node Instance)
+    {
+        MDCommands.UnregisterCommandAttributes(Instance);
+    }
+
     // Helper to register all replicated variables on the replicator
     public static void RegisterReplicatedFields(this Node Instance)
     {
         Instance.GetGameInstance().RegisterReplication(Instance);
     }
 
+    // Helper to unregister all replicated variables on the replicator
+    public static void UnregisterReplicatedFields(this Node Instance)
+    {
+        Instance.GetGameInstance().UnregisterReplication(Instance);
+    }
+
     // Helper to register all RPC functions on the remote caller
     public static void RegisterRPCs(this Node Instance)
     {
         Instance.GetGameSession().RegisterRPCs(Instance);
+    }
+
+    // Helper to unregister all RPC functions on the remote caller
+    public static void UnregisterRPCs(this Node Instance)
+    {
+        Instance.GetGameSession().UnregisterRPCs(Instance);
     }
 
     // Extension to call RPC functions

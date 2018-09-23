@@ -54,7 +54,9 @@ GameInstance="*res://src/MDFramework/MDGameInstance.cs"
 
 # How to use MDFramework
 ## Caveats and Assumptions
-MDFramework assumes the names of nodes do not change after they've been added to the scene.
+MDFramework makes the following assumptions:
+* The names of nodes do not change after they've been added to the scene.
+* The names of nodes are unique
 
 ## Command Line Arguments
 TODO
@@ -64,7 +66,7 @@ In game, the command console can be opened with the `~` key. Command history can
 
 In your code, you can add more commands by adding the `[MDCommand()]` attribute to any methods you wish to have as commands.
 Then from that same class call `MDCommands.RegisterCommandAttributes(this);` to have those commands registered.
-For classes extending `Node`, a good place to call it would be in `_Ready()`, `Node` classes have an extension helper for this, so you can just call `this.RegisterCommandAttributes();`.
+For classes extending `Node`, they aren't registered automatically as commands is a debug feature, so a good place to call it would be in `_Ready()`, `Node` classes have an extension helper for this, so you can just call `this.RegisterCommandAttributes();`.
 
 Only a single instance of a class can be registered for commands, this is because commands are invoked via their method name, which are the same for all instances of a class.
 
@@ -73,6 +75,7 @@ TODO
 
 ## Replication
 There are 2 methods of replication with this framework. RPCs (calling a function on a remote system) and field replication (copying the data of a variable from the server to clients).
+RPC functions are registered with the remote caller system automatically when the node is added to the scene.
 
 ### Network Ownership
 Only the server can set who has network ownership of a node. By default, all nodes except for `MDPlayer` player instances will have the server as their network owner.
@@ -86,16 +89,21 @@ RPC functions can only exist on Node objects. There are 3 types of RPC functions
 #### Server
 Server functions can only be called from the Server itself or from the network owner of the Node (the server by default).
 Server functions are a good way for a client to get data to the server, usually from the `MDPlayer` class, as each client is the network owner of an `MDPlayer` instance.
+To mark a function as a Server function, give it the attribute: `[MDRpc(RPCType.Server)]`.
 
 #### Client
 Client functions can only be called from the Server and are sent to the network owner of the RPCs object.
 For example, the server could notify the player that they died via a Client function on `MDPlayer`.
+To mark a function as a Client function, give it the attribute: `[MDRpc(RPCType.Client)]`.
 
 #### Broadcast
 Broadcast functions can only be called from the Server and are sent to every client and triggered on server and clients instances of the RPCs object.
+To mark a function as a Broadcast function, give it the attribute: `[MDRpc(RPCType.Broadcast)]`.
 
 ### Field Replication
-Setting up replicating has a similar pattern to setting up console commands. Any field on a `Node` class marked with the `MDReplicated()` attribute can be replicated. The registered `Node` **must** have its name set before being registered, and the name must be the same on the server and all clients as this is how `MDReplicator` determines where to send replicated data. Fields are always reliably replicated, although order isn't necessarily guaranteed since all fields are replicated as a post-process - they are not sent out as soon as you assign the variable. To register your `MDReplicated()` fields on your node, call `this.RegisterReplicatedFields();`, ideally in your `_Ready()` function.
+Setting up replicating has a similar pattern to setting up console commands. Any field on a `Node` class marked with the `MDReplicated()` attribute can be replicated. The registered `Node` **must** have its name set before being registered, and the name must be the same on the server and all clients as this is how `MDReplicator` determines where to send replicated data. Fields are always reliably replicated, although order isn't necessarily guaranteed since all fields are replicated as a post-process - they are not sent out as soon as you assign the variable. Replicated fields are automatically registered when a node is added to the tree.
+
+To register your `MDReplicated()` fields on your node, call `this.RegisterReplicatedFields();`, ideally in your `_Ready()` function.
 
 **Note:** Only the server can set the value of replicated values. Values set by the client will not be replicated. If you want the client to update a field, use a Server RPC.
 
@@ -146,7 +154,6 @@ In no particular order:
 * Assign RPCs to net channels
 * Distance based replication relevancy
 * UI management framework
-* Eliminate need for setup functions (eg. RegisterCommandAttributes(), RegisterReplicatedFields(), RegisterRPCs(), etc)
 * Automatic Field<->Node binding
 * Enable only specific instances of profile logging (rather than the entire system on/off)
 * Save system (Serialize a class to file)
@@ -154,3 +161,4 @@ In no particular order:
 * Optimizations
 * Figure out a way to do replication without string compares/serializing names
 * Maybe use a large byte array buffer when serializing data instead of creating a ton of small byte[]
+* Make a test project that gives examples on using all the features that can also be used to test them for development

@@ -66,6 +66,7 @@ public class MDRemoteCaller
     public void RegisterRPCs(Node Instance)
     {
         Type NodeType = Instance.GetType();
+        bool HasRPCs = true;
         if (!NodeMethods.ContainsKey(NodeType))
         {
             // Map function names to MethodInfo
@@ -81,10 +82,24 @@ public class MDRemoteCaller
                 }
             }
 
-            NodeMethods.Add(NodeType, Methods);
+            HasRPCs = Methods.Count > 0;
+            if (HasRPCs)
+            {
+                NodeMethods.Add(NodeType, Methods);
+            }
         }
 
-        RPCNodes[Instance.GetName()] = new WeakReference(Instance);
+        if (HasRPCs)
+        {
+            RPCNodes[Instance.GetName()] = new WeakReference(Instance);
+        }
+    }
+    
+    // Unregister the passed in node's rpc methods
+    public void UnregisterRPCs(Node Instance)
+    {
+        // We keep the node type <-> method list mapping (NodeMethods)
+        RPCNodes.Remove(Instance.GetName());
     }
 
     // Call the RPC function as appropriate
