@@ -77,6 +77,12 @@ public static class MDNodeExtensions
         Instance.GetGameSession().UnregisterRPCs(Instance);
     }
 
+    // Helper to populate members marked with [MDBindNode()]
+    public static void PopulateBindNodes(this Node Instance)
+    {
+        MDBindNode.PopulateBindNodes(Instance);
+    }
+
     // Extension to call RPC functions
     public static void CallRPC(this Node Instance, string FunctionName, params object[] args)
     {

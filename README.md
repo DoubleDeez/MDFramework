@@ -14,6 +14,7 @@ Even then, this does reinvent the wheel a bit.
 * A [console command](#command-console) prompt that allows you to add commands from single-instance classes
 * Attribute-based [field replication](#field-replication)
 * A simpler [profiler](#profiler) class to determine execution time of a code block
+* Bind editor-created nodes to member variables automatically with [node binding](#node-binding)
 
 # Installation
 0. (Optional) I recommend forking the repo so you can track your changes to it, easily merge updates, and reuse it in other projects you have.
@@ -23,6 +24,7 @@ Even then, this does reinvent the wheel a bit.
 2. Add the MDFramework files to your `Project.csproj`, inside of `<ItemGroup>`, making sure the path matches where you cloned the repo. 
 
 ```xml
+    <Compile Include="src\MDFramework\MDAttributes\MDBindNode.cs" />
     <Compile Include="src\MDFramework\MDAttributes\MDCommand.cs" />
     <Compile Include="src\MDFramework\MDAttributes\MDReplicated.cs" />
     <Compile Include="src\MDFramework\MDAttributes\MDRpc.cs" />
@@ -44,7 +46,7 @@ Even then, this does reinvent the wheel a bit.
     <Compile Include="src\MDFramework\MDPlayer.cs" />
 ```
 
-3. Setup your `project.godot` to AutoLoad either `MDGameInstance` or your subclass of it.
+3. Setup your `project.godot` to AutoLoad either `MDGameInstance` or your subclass of it:
 
 ```ini
 [autoload]
@@ -101,9 +103,7 @@ Broadcast functions can only be called from the Server and are sent to every cli
 To mark a function as a Broadcast function, give it the attribute: `[MDRpc(RPCType.Broadcast)]`.
 
 ### Field Replication
-Setting up replicating has a similar pattern to setting up console commands. Any field on a `Node` class marked with the `MDReplicated()` attribute can be replicated. The registered `Node` **must** have its name set before being registered, and the name must be the same on the server and all clients as this is how `MDReplicator` determines where to send replicated data. Fields are always reliably replicated, although order isn't necessarily guaranteed since all fields are replicated as a post-process - they are not sent out as soon as you assign the variable. Replicated fields are automatically registered when a node is added to the tree.
-
-To register your `MDReplicated()` fields on your node, call `this.RegisterReplicatedFields();`, ideally in your `_Ready()` function.
+Setting up replicating has a similar pattern to setting up console commands. Any field on a `Node` class marked with the `MDReplicated()` attribute can be replicated. The `Node` **must** have its name set before being added to the scene, and the name must be the same on the server and all clients as this is how `MDReplicator` determines where to send replicated data. Fields are always reliably replicated, although order isn't necessarily guaranteed since all fields are replicated as a post-process - they are not sent out as soon as you assign the variable. Replicated fields are automatically registered when a node is added to the tree.
 
 **Note:** Only the server can set the value of replicated values. Values set by the client will not be replicated. If you want the client to update a field, use a Server RPC.
 
@@ -146,6 +146,12 @@ Currently, this will enable logging for all MDProfiler instances and can get ver
 [2018-09-17 00:15:40.932][PEER 0] [LogProfiler::Info] Profiling [IDENTITYING STRING HERE] took 20us
 ```
 
+## Node Binding
+Node-type fields and properties on Node classes can be marked with the `[MDBindNode()]` attribute.
+The MD framework will automatically assign a child node with the same name to that member.
+You can specify the path to look for or specify a different name to look for by passing it the attribute:
+`[MDBindNode("/root/MyNode")]` or `[MDBindNode("MyChildNode")]`.
+
 # TODO
 In no particular order:
 * Ability to enable command prompt in release builds
@@ -154,7 +160,6 @@ In no particular order:
 * Assign RPCs to net channels
 * Distance based replication relevancy
 * UI management framework
-* Automatic Field<->Node binding
 * Enable only specific instances of profile logging (rather than the entire system on/off)
 * Save system (Serialize a class to file)
 * Config file system

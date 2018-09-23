@@ -10,6 +10,11 @@ public class MDRemoteCaller
 {
     private const string LOG_CAT = "LogRemoteCaller";
 
+    public MDRemoteCaller()
+    {
+        MDLog.AddLogCategoryProperties(LOG_CAT, new MDLogProperties(MDLogLevel.Info));
+    }
+
     // Set a peer ID as network owner
     public void SetNetworkOwner(string NodeName, int PeerID)
     {
@@ -185,7 +190,7 @@ public class MDRemoteCaller
         string MethodName;
         BytesUsed += MDSerialization.GetStringFromStartOfByteArray(Data.SubArray(BytesUsed), out MethodName);
 
-        MDLog.Info(LOG_CAT, "Received RPC call on Node [{0}] for function [{1}]", NodeName, MethodName);
+        MDLog.Debug(LOG_CAT, "Received RPC call on Node [{0}] for function [{1}]", NodeName, MethodName);
 
         if (!RPCNodes.ContainsKey(NodeName))
         {

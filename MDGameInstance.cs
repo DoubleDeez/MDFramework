@@ -81,6 +81,7 @@ public class MDGameInstance : Node
     {
         Instance.RegisterReplicatedFields();
         Instance.RegisterRPCs();
+        Instance.PopulateBindNodes();
     }
 
     // Unregisters a removed node from MDFramework systems

@@ -385,6 +385,12 @@ public class MDGameSession : Node
 
     private PeerDict Peers = new PeerDict();
 
+    [MDBindNode("/root")]
+    private Node RootField;
+
+    [MDBindNode("root")]
+    private Node root {get; set;}
+
     public MDNetEntity NetEntity {get; private set;}
     public MDReplicator Replicator {get; private set;} = new MDReplicator();
     public MDRemoteCaller RemoteCaller {get; private set;} = new MDRemoteCaller();
