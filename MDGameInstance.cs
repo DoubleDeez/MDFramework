@@ -42,6 +42,12 @@ public class MDGameInstance : Node
         }
     }
 
+    // Override this to provide the your GameSession subclass type
+    protected virtual Type GetGameSessionType()
+    {
+        return typeof(MDGameSession);
+    }
+
     // Called whenever a node is added to the scene
     protected virtual void OnNodeAdded(Node AddedNode)
     {
@@ -108,9 +114,16 @@ public class MDGameInstance : Node
     // Ensure GameSession is created
     private void CreateGameSession()
     {
+        Type GSType = GetGameSessionType();
+        if (!MDStatics.IsSameOrSubclass(GSType, typeof(MDGameSession)))
+        {
+            MDLog.Error(LOG_CAT, "Provided game session type [{0}] is not a subclass of MDGameSession", GSType.Name);
+            return;
+        }
+
         if (GameSession == null)
         {
-            GameSession = new MDGameSession();
+            GameSession = Activator.CreateInstance(GSType) as MDGameSession;
             GameSession.SetName("GameSession");
             this.AddNodeToRoot(GameSession, true);
         }

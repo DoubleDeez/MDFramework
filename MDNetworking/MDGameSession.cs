@@ -93,6 +93,7 @@ public class MDGameSession : Node
         if (Success)
         {
             LocalPeerID = SERVER_PEER_ID;
+            OnServerStarted();
         }
 
         return Success;
@@ -153,6 +154,11 @@ public class MDGameSession : Node
             PeerID = STANDALONE_PEER_ID;
             ClientOnDisconnectedFromServer();
         }
+    }
+
+    protected virtual void OnServerStarted()
+    {
+
     }
 
     protected virtual void ServerOnPeerConnected(int PeerId)

@@ -14,14 +14,10 @@ public class MDInterfaceManager : Control
 
     public override void _Ready()
     {
-        base._Ready();
-
         this.SetAnchor(0, 0, 1, 1);
         this.SetMargin(0);
 
         SetProcessInput(true);
-
-        MDLog.Log(LOG_CAT, MDLogLevel.Info, "Interface manager ready");
     }
 
     public override void _Input(InputEvent InEvent)

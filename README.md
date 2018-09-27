@@ -39,10 +39,10 @@ Even then, this does reinvent the wheel a bit.
     <Compile Include="src\MDFramework\MDInterface\MDConsole.cs" />
     <Compile Include="src\MDFramework\MDInterface\MDInterfaceManager.cs" />
     <Compile Include="src\MDFramework\MDNetworking\MDGameSession.cs" />
+    <Compile Include="src\MDFramework\MDNetworking\MDNetEntity.cs" />
     <Compile Include="src\MDFramework\MDNetworking\MDRemoteCaller.cs" />
     <Compile Include="src\MDFramework\MDNetworking\MDReplicator.cs" />
     <Compile Include="src\MDFramework\MDGameInstance.cs" />
-    <Compile Include="src\MDFramework\MDNetEntity.cs" />
     <Compile Include="src\MDFramework\MDPlayer.cs" />
 ```
 

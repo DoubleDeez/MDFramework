@@ -19,8 +19,8 @@ public class MDPlayer : Node
     public void ServerSetPlayerName(string Name)
     {
         PlayerName = Name;
-        this.CallRPC(nameof(ClientSetPlayerName), Name);
         MDLog.Info(LOG_CAT, "Test Server RPC {0}", Name);
+        this.CallRPC(nameof(ClientSetPlayerName), Name);
     }
 
     [MDRpc(RPCType.Client, RPCReliability.Reliable)]
