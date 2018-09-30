@@ -103,7 +103,7 @@ Broadcast functions can only be called from the Server and are sent to every cli
 To mark a function as a Broadcast function, give it the attribute: `[MDRpc(RPCType.Broadcast, RPCReliability.Reliable)]`.
 
 ### Field Replication
-Setting up replicating has a similar pattern to setting up console commands. Any field on a `Node` class marked with the `MDReplicated()` attribute can be replicated. The `Node` **must** have its name set before being added to the scene, and the name must be the same on the server and all clients as this is how `MDReplicator` determines where to send replicated data. Fields are always reliably replicated, although order isn't necessarily guaranteed since all fields are replicated as a post-process - they are not sent out as soon as you assign the variable. Replicated fields are automatically registered when a node is added to the tree.
+Setting up replicating has a similar pattern to setting up console commands. Any field on a `Node` class marked with the `MDReplicated()` attribute can be replicated. The `Node` **must** have its name set before being added to the scene, and the name must be the same on the server and all clients as this is how `MDReplicator` determines where to send replicated data. Fields are always reliably replicated, although order isn't necessarily guaranteed since all fields are replicated as a post-process - they are not sent out as soon as you assign the variable. Replicated fields are automatically registered when a node is added to the tree. When a replicated node is registered on a client, it will request up-to-date data from the server.
 
 **Note:** Only the server can set the value of replicated values. Values set by the client will not be replicated. If you want the client to update a field, use a Server RPC.
 
@@ -170,3 +170,4 @@ In no particular order:
  * Anytime the server has a new networked node, it adds its ID to the map
 * Maybe use a large byte array buffer when serializing data instead of creating a ton of small byte[]
 * Make a test project that gives examples on using all the features that can also be used to test them for development
+* Built in way for Server to spawn a node locally and on clients

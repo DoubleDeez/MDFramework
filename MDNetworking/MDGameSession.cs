@@ -163,11 +163,12 @@ public class MDGameSession : Node
         MDLog.Info(LOG_CAT, "Server started");
     }
 
-    protected virtual void ServerOnPeerConnected(int PeerID)
+    private void ServerOnPeerConnected(int PeerID)
     {
         MDLog.Info(LOG_CAT, "Peer [ID: {0}] connected", PeerID);
         SendConnectionDataToClient(PeerID);
         BroadcastNewPlayerJoined(PeerID);
+        OnPlayerJoined(PeerID);
     }
 
     protected virtual void ClientOnConnectedToServer()
@@ -175,11 +176,12 @@ public class MDGameSession : Node
         MDLog.Info(LOG_CAT, "Connected to server");
     }
 
-    protected virtual void ServerOnPeerDisconnected(int PeerID)
+    private void ServerOnPeerDisconnected(int PeerID)
     {
         MDLog.Info(LOG_CAT, "Peer [ID: {0}] disconnected", PeerID);
         RemovePlayerObject(PeerID);
         BroadcastPlayerLeft(PeerID);
+        OnPlayerLeft(PeerID);
     }
 
     protected virtual void ClientOnDisconnectedFromServer()
@@ -262,7 +264,7 @@ public class MDGameSession : Node
     }
 
     // Called on a client, notifying them that a player joined
-    protected virtual void ClientOnPlayerJoined(byte[] Data)
+    private void ClientOnPlayerJoined(byte[] Data)
     {
         if (this.GetNetMode() != MDNetMode.Client)
         {
@@ -273,10 +275,17 @@ public class MDGameSession : Node
         int Joiner = MDSerialization.GetIntFromStartOfByteArray(Data);
         MDLog.Info(LOG_CAT, "Player [ID: {0}] joined", Joiner);
         CreatePlayerObject(Joiner);
+        OnPlayerJoined(Joiner);
+    }
+
+    // Called whenever a player joined
+    protected virtual void OnPlayerJoined(int PeerID)
+    {
+
     }
 
     // Called on a client, notifying them that a player left
-    protected virtual void ClientOnPlayerLeft(byte[] Data)
+    private void ClientOnPlayerLeft(byte[] Data)
     {
         if (this.GetNetMode() != MDNetMode.Client)
         {
@@ -287,20 +296,34 @@ public class MDGameSession : Node
         int Leaver = MDSerialization.GetIntFromStartOfByteArray(Data);
         MDLog.Info(LOG_CAT, "Player [ID: {0}] left", Leaver);
         RemovePlayerObject(Leaver);
+        OnPlayerLeft(Leaver);
+    }
+
+    // Called whenever a player left
+    protected virtual void OnPlayerLeft(int PeerID)
+    {
+        
     }
 
     // After the client connects to the server, the server will send the client data to this function
-    protected virtual void OnReceivedConnectionData(byte[] Data)
+    private void OnReceivedConnectionData(byte[] Data)
     {
         if(this.GetNetMode() != MDNetMode.Server)
         {
             LocalPeerID = MDSerialization.ConvertBytesToSupportedType<int>(Data);
             CreatePlayerObject(LocalPeerID);
+            OnConnectedToServer(LocalPeerID);
         }
         else
         {
             MDLog.Error(LOG_CAT, "Received connection packet but we are the server");
         }
+    }
+
+    // Called once we've connected to the server and its acknowledged us
+    protected virtual void OnConnectedToServer(int LocalPeerID)
+    {
+
     }
 
     // When the client receives replication data from the server, this function is called
@@ -349,7 +372,7 @@ public class MDGameSession : Node
         Player.SetName(PlayerName);
         Player.PlayerName = PlayerName;
         Player.PeerID = PeerID;
-        this.AddNodeToRoot(Player);
+        AddChild(Player);
 
         Peers.Add(PeerID, Player);
         return Player;
