@@ -43,7 +43,7 @@ public class MDGameSession : Node
 
     public override void _Ready()
     {
-        MDLog.AddLogCategoryProperties(LOG_CAT, new MDLogProperties(MDLogLevel.Debug));
+        MDLog.AddLogCategoryProperties(LOG_CAT, new MDLogProperties(MDLogLevel.Info));
         this.RegisterCommandAttributes();
 
         NetEntity.OnNetEvent = OnNetEvent;
@@ -241,8 +241,9 @@ public class MDGameSession : Node
         {
             if (Peer != Joiner)
             {
-                MDLog.Debug(LOG_CAT, "Notifying Peer [{0}] that Peer [{1}] joined", Peer, Joiner);
+                MDLog.Debug(LOG_CAT, "Notifying Peer [{0}] that Peer [{1}] joined and vice-versa", Peer, Joiner);
                 SendPacket(Peer, MDPacketType.PlayerJoined, MDSerialization.ConvertSupportedTypeToBytes(Joiner));
+                SendPacket(Joiner, MDPacketType.PlayerJoined, MDSerialization.ConvertSupportedTypeToBytes(Peer));
             }
         }
     }
