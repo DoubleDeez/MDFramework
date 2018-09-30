@@ -43,7 +43,7 @@ public class MDGameSession : Node
 
     public override void _Ready()
     {
-        MDLog.AddLogCategoryProperties(LOG_CAT, new MDLogProperties(MDLogLevel.Info));
+        MDLog.AddLogCategoryProperties(LOG_CAT, new MDLogProperties(MDLogLevel.Debug));
         this.RegisterCommandAttributes();
 
         NetEntity.OnNetEvent = OnNetEvent;
@@ -168,11 +168,6 @@ public class MDGameSession : Node
         MDLog.Info(LOG_CAT, "Peer [ID: {0}] connected", PeerID);
         SendConnectionDataToClient(PeerID);
         BroadcastNewPlayerJoined(PeerID);
-
-        MDLog.Debug(LOG_CAT, "Peers: {0}", Peers.Keys.ToString());
-
-        // TODO - Call this in a spot that guarantees the client is ready for it
-        Replicator.BuildAllNodeDataAndSendToPeer(PeerID);
     }
 
     protected virtual void ClientOnConnectedToServer()
@@ -185,8 +180,6 @@ public class MDGameSession : Node
         MDLog.Info(LOG_CAT, "Peer [ID: {0}] disconnected", PeerID);
         RemovePlayerObject(PeerID);
         BroadcastPlayerLeft(PeerID);
-
-        MDLog.Debug(LOG_CAT, "Peers: {0}", Peers.Keys.ToString());
     }
 
     protected virtual void ClientOnDisconnectedFromServer()
@@ -210,7 +203,7 @@ public class MDGameSession : Node
                 case MDPacketType.None:
                     break;
                 case MDPacketType.Replication:
-                    OnReceivedReplicationData(PacketNoType);
+                    OnReceivedReplicationData(PacketNoType, Event.GetPeerId());
                     break;
                 case MDPacketType.Connection:
                     OnReceivedConnectionData(PacketNoType);
@@ -310,15 +303,22 @@ public class MDGameSession : Node
     }
 
     // When the client receives replication data from the server, this function is called
-    protected virtual void OnReceivedReplicationData(byte[] Data)
+    protected virtual void OnReceivedReplicationData(byte[] Data, int PeerID)
     {
         if(this.GetNetMode() != MDNetMode.Server)
         {
+            // Sending update to client
             Replicator.UpdateChanges(Data);
         }
         else
         {
-            MDLog.Error(LOG_CAT, "Received replication packet but we are the server");
+            // Client is requesting a full update for a specific node
+            string NodeName;
+            MDSerialization.GetStringFromStartOfByteArray(Data, out NodeName);
+            if (NodeName != null)
+            {
+                Replicator.BuildNodeDataAndSendToPeer(PeerID, NodeName);
+            }
         }
     }
 

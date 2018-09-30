@@ -5,7 +5,7 @@ using System.Text;
 using Generics = System.Collections.Generic;
 using BytesList = System.Collections.Generic.List<byte[]>;
 using ReplicatedNodeDict = System.Collections.Generic.Dictionary<string, ReplicatedNode>;
-using ReplicatedNonNodeDict = System.Collections.Generic.Dictionary<string, ReplicatedNonNode>;
+using ReplicatedStructDict = System.Collections.Generic.Dictionary<string, ReplicatedStruct>;
 using ReplicatedFieldDict = System.Collections.Generic.Dictionary<string, ReplicatedField>;
 using ReplicatedListDict = System.Collections.Generic.Dictionary<string, ReplicatedList>;
 using ReplicatedDictDict = System.Collections.Generic.Dictionary<string, ReplicatedDict>;
@@ -70,15 +70,14 @@ public class MDReplicator
         }
     }
 
-    // Sends ALL tracked replicated fields to the specified Peer. Generally used to update a peer when they join.
-    public void BuildAllNodeDataAndSendToPeer(int PeerID)
+    // Sends tracked replicated fields for the specified node to the specified Peer. Generally used to update a peer when they join.
+    public void BuildNodeDataAndSendToPeer(int PeerID, string NodeName)
     {
-        // TODO - Instead of this function, set it up so that when a client registers an object for replication, it requests the updated data from the server
-        MDGameSession GameSession = MDStatics.GetGameSession();
-        foreach(ReplicatedNode RepNode in NodeList.Values)
+        if (NodeList.ContainsKey(NodeName))
         {
-            byte[] NodeData = RepNode.BuildData(false);
-            if (NodeData != null)
+            MDGameSession GameSession = MDStatics.GetGameSession();
+            byte[] NodeData = NodeList[NodeName].BuildData(false);
+            if (NodeData != null && GameSession != null)
             {
                 GameSession.SendPacket(PeerID, MDPacketType.Replication, NodeData);
             }
@@ -123,19 +122,17 @@ public class MDReplicator
                 {
                     HasReplicatedFields = true;
                 }
-                // Is this a List/Array?
                 else if (typeof(Generics.IList<>).IsAssignableFrom(FieldType))
                 {
                     // TODO
                 }
-                // Is this a dictionary
                 else if (FieldType.IsGenericType && FieldType.GetGenericTypeDefinition() == typeof(Generics.Dictionary<,>))
                 {
                     // TODO
                 }
-                else if (false /* How to detect Non-node class/structs? */)
+                else if (FieldType.IsValueType)
                 {
-
+                    // TODO - Pretty sure this is guaranteed to be a struct now
                 }
                 else
                 {
@@ -147,6 +144,13 @@ public class MDReplicator
         if (HasReplicatedFields)
         {
             NodeList.Add(NodeName, RepNode);
+
+            // If were a client, we should request up-to-date values from the server
+            if (MDStatics.GetNetMode() == MDNetMode.Client)
+            {
+                MDGameSession GameSession = MDStatics.GetGameSession();
+                GameSession.SendPacket(MDPacketType.Replication, MDSerialization.ConvertSupportedTypeToBytes(NodeName));
+            }
         }
     }
 
@@ -191,7 +195,7 @@ public class ReplicatedObject
 {
     public ReplicatedFieldDict ReplicatedFields = new ReplicatedFieldDict();
 
-    public ReplicatedNonNodeDict ReplicatedNonNodes = new ReplicatedNonNodeDict();
+    public ReplicatedStructDict ReplicatedNonNodes = new ReplicatedStructDict();
 
     public ReplicatedListDict ReplicatedLists = new ReplicatedListDict();
 
@@ -331,8 +335,8 @@ public class ReplicatedNode : ReplicatedObject
     }
 }
 
-// Data of a replicated non-Node class or struct
-public class ReplicatedNonNode : ReplicatedObject
+// Data of a replicated struct
+public class ReplicatedStruct : ReplicatedObject
 {
     public FieldInfo Field;
 

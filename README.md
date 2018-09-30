@@ -61,7 +61,7 @@ MDFramework makes the following assumptions:
 * The names of nodes are unique
 
 ## Command Line Arguments
-TODO
+TODO docs
 
 ## Command Console
 In game, the command console can be opened with the `~` key. Command history can be navigated using the `Up` and `Down` arrow keys.
@@ -73,7 +73,7 @@ For classes extending `Node`, they aren't registered automatically as commands i
 Only a single instance of a class can be registered for commands, this is because commands are invoked via their method name, which are the same for all instances of a class.
 
 ## Logging
-TODO
+TODO docs
 
 ## Replication
 There are 2 methods of replication with this framework. RPCs (calling a function on a remote system) and field replication (copying the data of a variable from the server to clients).
@@ -124,7 +124,7 @@ The following types are able to be used for field replication and RPC parameters
 * Nodes (must be on the tree as their path gets serialized not the whole node)
   * Compares the address of replicated Node to determine if a change has occurred, so changing the name or path of the node will not update clients. Use [RPCs](#RPCs) for that.
 * Dictionary/List/Array of the above types // TODO
-* Any of the above types on Classes/Structs (Only structs for RPC params) // TODO
+* Structs containing any of the above types // TODO
 
 ## Profiler
 MDProfiler is a _very_ simple profiler. It will track the time it takes for a block of code to run and if enabled, log it.
@@ -170,4 +170,3 @@ In no particular order:
  * Anytime the server has a new networked node, it adds its ID to the map
 * Maybe use a large byte array buffer when serializing data instead of creating a ton of small byte[]
 * Make a test project that gives examples on using all the features that can also be used to test them for development
-* When a client registers a replicated node, it should then request current data from the server
