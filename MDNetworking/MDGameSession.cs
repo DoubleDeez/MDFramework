@@ -9,6 +9,8 @@ public static class MDPacketType
     public const int Replication = 1;
     public const int Connection = 2;
     public const int RPC = 3;
+    public const int PlayerJoined = 4;
+    public const int PlayerLeft = 5;
 
     // Start your own packet types from this value
     public const int MDMaxPacketType = 255;
@@ -161,13 +163,16 @@ public class MDGameSession : Node
 
     }
 
-    protected virtual void ServerOnPeerConnected(int PeerId)
+    protected virtual void ServerOnPeerConnected(int PeerID)
     {
-        MDLog.Info(LOG_CAT, "Peer [ID: {0}] connected", PeerId);
-        SendConnectionDataToClient(PeerId);
+        MDLog.Info(LOG_CAT, "Peer [ID: {0}] connected", PeerID);
+        SendConnectionDataToClient(PeerID);
+        BroadcastNewPlayerJoined(PeerID);
+
+        MDLog.Debug(LOG_CAT, "Peers: {0}", Peers.Keys.ToString());
 
         // TODO - Call this in a spot that guarantees the client is ready for it
-        Replicator.BuildAllNodeDataAndSendToPeer(PeerId);
+        Replicator.BuildAllNodeDataAndSendToPeer(PeerID);
     }
 
     protected virtual void ClientOnConnectedToServer()
@@ -175,10 +180,13 @@ public class MDGameSession : Node
         MDLog.Info(LOG_CAT, "Connected to server");
     }
 
-    protected virtual void ServerOnPeerDisconnected(int PeerId)
+    protected virtual void ServerOnPeerDisconnected(int PeerID)
     {
-        MDLog.Info(LOG_CAT, "Peer [ID: {0}] disconnected", PeerId);
-        Peers.Remove(PeerId);
+        MDLog.Info(LOG_CAT, "Peer [ID: {0}] disconnected", PeerID);
+        RemovePlayerObject(PeerID);
+        BroadcastPlayerLeft(PeerID);
+
+        MDLog.Debug(LOG_CAT, "Peers: {0}", Peers.Keys.ToString());
     }
 
     protected virtual void ClientOnDisconnectedFromServer()
@@ -210,6 +218,15 @@ public class MDGameSession : Node
                 case MDPacketType.RPC:
                     OnReceivedRpcData(PacketNoType, Event.GetPeerId());
                     break;
+                case MDPacketType.PlayerJoined:
+                    ClientOnPlayerJoined(PacketNoType);
+                    break;
+                case MDPacketType.PlayerLeft:
+                    ClientOnPlayerLeft(PacketNoType);
+                    break;
+                default:
+                    MDLog.Error(LOG_CAT, "Received unknown packet type [{0}]", PacketType);
+                    break;
             }
         }
     }
@@ -221,9 +238,61 @@ public class MDGameSession : Node
         SendPacket(PeerID, MDPacketType.Connection, PeerIDAsBytes);
 
         MDPlayer Player = CreatePlayerObject(PeerID);
-        Peers.Add(PeerID, Player);
-
         RemoteCaller.SetNetworkOwner(Player.GetName(), PeerID);
+    }
+
+    // Notifies all clients (except the new one) that a new player has joined
+    protected virtual void BroadcastNewPlayerJoined(int Joiner)
+    {
+        foreach (int Peer in Peers.Keys)
+        {
+            if (Peer != Joiner)
+            {
+                MDLog.Debug(LOG_CAT, "Notifying Peer [{0}] that Peer [{1}] joined", Peer, Joiner);
+                SendPacket(Peer, MDPacketType.PlayerJoined, MDSerialization.ConvertSupportedTypeToBytes(Joiner));
+            }
+        }
+    }
+
+    // Notifies all clients that a player has left
+    protected virtual void BroadcastPlayerLeft(int Leaver)
+    {
+        foreach (int Peer in Peers.Keys)
+        {
+            if (Peer != Leaver)
+            {
+                MDLog.Debug(LOG_CAT, "Notifying Peer [{0}] that Peer [{1}] left", Peer, Leaver);
+                SendPacket(Peer, MDPacketType.PlayerLeft, MDSerialization.ConvertSupportedTypeToBytes(Leaver));
+            }
+        }
+    }
+
+    // Called on a client, notifying them that a player joined
+    protected virtual void ClientOnPlayerJoined(byte[] Data)
+    {
+        if (this.GetNetMode() != MDNetMode.Client)
+        {
+            MDLog.Error(LOG_CAT, "Received PlayerJoined packet but we are not a client");
+            return;
+        }
+
+        int Joiner = MDSerialization.GetIntFromStartOfByteArray(Data);
+        MDLog.Info(LOG_CAT, "Player [ID: {0}] joined", Joiner);
+        CreatePlayerObject(Joiner);
+    }
+
+    // Called on a client, notifying them that a player left
+    protected virtual void ClientOnPlayerLeft(byte[] Data)
+    {
+        if (this.GetNetMode() != MDNetMode.Client)
+        {
+            MDLog.Error(LOG_CAT, "Received PlayerLeft packet but we are not a client");
+            return;
+        }
+
+        int Leaver = MDSerialization.GetIntFromStartOfByteArray(Data);
+        MDLog.Info(LOG_CAT, "Player [ID: {0}] left", Leaver);
+        RemovePlayerObject(Leaver);
     }
 
     // After the client connects to the server, the server will send the client data to this function
@@ -232,7 +301,7 @@ public class MDGameSession : Node
         if(this.GetNetMode() != MDNetMode.Server)
         {
             LocalPeerID = MDSerialization.ConvertBytesToSupportedType<int>(Data);
-            Peers.Add(LocalPeerID, CreatePlayerObject(LocalPeerID));
+            CreatePlayerObject(LocalPeerID);
         }
         else
         {
@@ -262,12 +331,31 @@ public class MDGameSession : Node
     // Create and initialize the player object
     protected virtual MDPlayer CreatePlayerObject(int PeerID)
     {
-        MDPlayer Player = new MDPlayer();
+        if (Peers.ContainsKey(PeerID))
+        {
+            return Peers[PeerID];
+        }
+
         string PlayerName = String.Format(PlayerNameFormat, PeerID);
+        MDPlayer Player = new MDPlayer();
         Player.SetName(PlayerName);
+        Player.PlayerName = PlayerName;
+        Player.PeerID = PeerID;
         this.AddNodeToRoot(Player);
 
+        Peers.Add(PeerID, Player);
         return Player;
+    }
+
+    // Removes the MDPlayer belonging to the PeerID
+    protected virtual void RemovePlayerObject(int PeerID)
+    {
+        if (Peers.ContainsKey(PeerID))
+        {
+            MDPlayer Player = Peers[PeerID];
+            Player.RemoveAndFree();
+            Peers.Remove(PeerID);
+        }
     }
 
     // Gets the MDPacketType from the beginning of a byte array

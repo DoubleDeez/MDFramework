@@ -106,4 +106,11 @@ public static class MDNodeExtensions
     {
         Instance.GetGameSession().RegisterRPCs(Instance);
     }
+
+    // Removes this node from its parent and frees it
+    public static void RemoveAndFree(this Node Instance)
+    {
+        Instance.GetParent().RemoveChild(Instance);
+        Instance.QueueFree();
+    }
 }

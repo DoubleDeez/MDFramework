@@ -156,6 +156,7 @@ You can specify the path to look for or specify a different name to look for by 
 In no particular order:
 * Ability to enable command prompt in release builds
 * Command prompt auto-complete with help text
+* Ability to call console commands on the server from the client
 * Notification of a change in a replicated field
 * Assign RPCs to net channels
 * Distance based replication relevancy
@@ -165,6 +166,8 @@ In no particular order:
 * Config file system
 * Optimizations
 * Figure out a way to do replication without string compares/serializing names
+ * Server could generate a map of Network IDs to node paths
+ * Anytime the server has a new networked node, it adds its ID to the map
 * Maybe use a large byte array buffer when serializing data instead of creating a ton of small byte[]
 * Make a test project that gives examples on using all the features that can also be used to test them for development
 * When a client registers a replicated node, it should then request current data from the server
