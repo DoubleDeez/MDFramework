@@ -160,7 +160,7 @@ public class MDGameSession : Node
 
     protected virtual void OnServerStarted()
     {
-
+        MDLog.Info(LOG_CAT, "Server started");
     }
 
     protected virtual void ServerOnPeerConnected(int PeerID)
@@ -336,8 +336,15 @@ public class MDGameSession : Node
             return Peers[PeerID];
         }
 
+        Type PlayerType = GetPlayerType();
+        if (!MDStatics.IsSameOrSubclass(PlayerType, typeof(MDPlayer)))
+        {
+            MDLog.Error(LOG_CAT, "Provided player type [{0}] is not a subclass of MDPlayer", PlayerType.Name);
+            return null;
+        }
+
         string PlayerName = String.Format(PlayerNameFormat, PeerID);
-        MDPlayer Player = new MDPlayer();
+        MDPlayer Player = Activator.CreateInstance(PlayerType) as MDPlayer;
         Player.SetName(PlayerName);
         Player.PlayerName = PlayerName;
         Player.PeerID = PeerID;
@@ -387,6 +394,12 @@ public class MDGameSession : Node
                 MDLog.Error(LOG_CAT, "Failed to parse client arg {0}, expecting -{1}=[IPAddres:Port]", ClientArg, ARG_CLIENT);
             }
         }
+    }
+
+    // Override this to provide your own Player class type
+    protected virtual Type GetPlayerType()
+    {
+        return typeof(MDPlayer);
     }
 
     // Register the passed in node's rpc methods
