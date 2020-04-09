@@ -68,10 +68,10 @@ public class MDBindNode : Attribute
     private static Node FindNode(Node Instance, string PathToNode)
     {
         // First check if we have a child with the same name
-        Godot.Array Children = Instance.GetChildren();
+        Godot.Collections.Array Children = Instance.GetChildren();
         foreach (Node Child in Children)
         {
-            if (Child != null && Child.GetName() == PathToNode)
+            if (Child != null && Child.Name == PathToNode)
             {
                 return Child;
             }
@@ -83,7 +83,7 @@ public class MDBindNode : Attribute
         // If it's still not found, log an error
         if (BoundNode == null)
         {
-            MDLog.Error(LOG_CAT, "Failed to find BindNode with path [{0}] on Node [{1}] of type [{2}]", PathToNode, Instance.GetName(), Instance.GetType().Name);
+            MDLog.Error(LOG_CAT, "Failed to find BindNode with path [{0}] on Node [{1}] of type [{2}]", PathToNode, Instance.Name, Instance.GetType().Name);
             return BoundNode;
         }
 

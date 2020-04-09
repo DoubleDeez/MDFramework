@@ -228,11 +228,11 @@ public static class MDCommands
             File CmdFile = new File();
             if (!CmdFile.FileExists(FullFilePath))
             {
-                CmdFile.Open(FullFilePath, (int) File.ModeFlags.Write);
+                CmdFile.Open(FullFilePath, File.ModeFlags.Write);
                 CmdFile.Close();
             }
 
-            CmdFile.Open(FullFilePath, (int) File.ModeFlags.ReadWrite);
+            CmdFile.Open(FullFilePath, File.ModeFlags.ReadWrite);
             return CmdFile;
         }
 

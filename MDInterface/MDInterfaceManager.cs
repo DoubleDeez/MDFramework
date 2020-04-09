@@ -6,7 +6,7 @@ using System;
  *
  * Class that manages all our UI.
  */
-public class MDInterfaceManager : Control
+public class MDInterfaceManager : CanvasLayer
 {
     private const int ConsoleKey = (int)KeyList.Quoteleft;
     private const string ConsoleName = "Console";
@@ -14,9 +14,6 @@ public class MDInterfaceManager : Control
 
     public override void _Ready()
     {
-        this.SetAnchor(0, 0, 1, 1);
-        this.SetMargin(0);
-
         SetProcessInput(true);
     }
 
@@ -25,7 +22,7 @@ public class MDInterfaceManager : Control
         #if DEBUG
         if (InEvent is InputEventKey EventKey)
         {
-            if (EventKey.Pressed && !EventKey.Echo && EventKey.GetScancode() == ConsoleKey)
+            if (EventKey.Pressed && !EventKey.Echo && EventKey.Scancode == ConsoleKey)
             {
                 ToggleConsole();
                 this.SetInputHandled();
@@ -41,7 +38,7 @@ public class MDInterfaceManager : Control
         if (Console == null)
         {
             Console = new MDConsole();
-            Console.SetName(ConsoleName);
+            Console.Name = ConsoleName;
             AddChild(Console);
         }
         else

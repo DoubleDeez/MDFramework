@@ -58,16 +58,15 @@ public static class MDStatics
         return JoinedArray;
     }
 
-    // Gets the peer ID from the game session, 0 for server or standalone
+    // Gets the peer ID from the game session, 1 for server or 0 for standalone
     public static int GetPeerID()
     {
-        MDGameSession GS = GetGameSession();
-        if (GS == null)
+        if (GetTree().HasNetworkPeer())
         {
-            return MDGameSession.STANDALONE_PEER_ID;
+            return GetTree().GetNetworkUniqueId();
         }
 
-        return GS.LocalPeerID;
+        return 0;
     }
 
     // Gets the net mode of the local client

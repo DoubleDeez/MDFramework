@@ -38,9 +38,9 @@ public static class MDControlExtensions
     // Set each margin component individually
     public static void SetMargin(this Control instance, float LeftMargin, float TopMargin, float RightMargin, float BottomMargin)
     {
-        instance.SetMargin(Margin.Left, LeftMargin);
-        instance.SetMargin(Margin.Top, TopMargin);
-        instance.SetMargin(Margin.Right, RightMargin);
-        instance.SetMargin(Margin.Bottom, BottomMargin);
+        instance.MarginLeft = LeftMargin;
+        instance.MarginTop = TopMargin;
+        instance.MarginRight = RightMargin;
+        instance.MarginBottom = BottomMargin;
     }
 }

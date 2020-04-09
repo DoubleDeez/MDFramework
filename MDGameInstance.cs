@@ -85,8 +85,6 @@ public class MDGameInstance : Node
     // Registers a new node to MDFramework systems
     private void RegisterNewNode(Node Instance)
     {
-        Instance.RegisterReplicatedFields();
-        Instance.RegisterRPCs();
         Instance.PopulateBindNodes();
     }
 
@@ -95,20 +93,6 @@ public class MDGameInstance : Node
     {
         // We automatically unregister commands even though we don't automatically register them to avoid relying on the user to do so
         Instance.UnregisterCommandAttributes();
-        Instance.UnregisterReplicatedFields();
-        Instance.UnregisterRPCs();
-    }
-
-    // Registers the given instance's fields marked with [MDReplicated()]
-    public void RegisterReplication(Node Instance)
-    {
-        GameSession.Replicator.RegisterReplication(Instance);
-    }
-
-    // Unregisters the given instance's fields marked with [MDReplicated()]
-    public void UnregisterReplication(Node Instance)
-    {
-        GameSession.Replicator.UnregisterReplication(Instance);
     }
 
     // Ensure GameSession is created
@@ -124,7 +108,7 @@ public class MDGameInstance : Node
         if (GameSession == null)
         {
             GameSession = Activator.CreateInstance(GSType) as MDGameSession;
-            GameSession.SetName("GameSession");
+            GameSession.Name = "GameSession";
             this.AddNodeToRoot(GameSession, true);
         }
     }
@@ -135,7 +119,7 @@ public class MDGameInstance : Node
         if (InterfaceManager == null)
         {
             InterfaceManager = new MDInterfaceManager();
-            InterfaceManager.SetName("InterfaceManager");
+            InterfaceManager.Name = "InterfaceManager";
             this.AddNodeToRoot(InterfaceManager, true);
         }
     }

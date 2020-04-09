@@ -27,11 +27,11 @@ public static class MDNodeExtensions
     {
         if (Deferred)
         {
-            Instance.GetTree().GetRoot().CallDeferred("add_child", Child);
+            Instance.GetTree().Root.CallDeferred("add_child", Child);
         }
         else
         {
-            Instance.GetTree().GetRoot().AddChild(Child);
+            Instance.GetTree().Root.AddChild(Child);
         }
     }
 
@@ -53,44 +53,14 @@ public static class MDNodeExtensions
         MDCommands.UnregisterCommandAttributes(Instance);
     }
 
-    // Helper to register all replicated variables on the replicator
-    public static void RegisterReplicatedFields(this Node Instance)
-    {
-        Instance.GetGameInstance().RegisterReplication(Instance);
-    }
-
-    // Helper to unregister all replicated variables on the replicator
-    public static void UnregisterReplicatedFields(this Node Instance)
-    {
-        Instance.GetGameInstance().UnregisterReplication(Instance);
-    }
-
-    // Helper to register all RPC functions on the remote caller
-    public static void RegisterRPCs(this Node Instance)
-    {
-        Instance.GetGameSession().RegisterRPCs(Instance);
-    }
-
-    // Helper to unregister all RPC functions on the remote caller
-    public static void UnregisterRPCs(this Node Instance)
-    {
-        Instance.GetGameSession().UnregisterRPCs(Instance);
-    }
-
     // Helper to populate members marked with [MDBindNode()]
     public static void PopulateBindNodes(this Node Instance)
     {
         MDBindNode.PopulateBindNodes(Instance);
     }
 
-    // Extension to call RPC functions
-    public static void CallRPC(this Node Instance, string FunctionName, params object[] args)
-    {
-        Instance.GetGameSession().CallRPC(Instance, FunctionName, args);
-    }
-
     // Returns true if this application can set replicated variables, call client RPCs, and broadcast RPCs
-    public static bool HasNetworkAuthority(this Node Instance)
+    public static bool IsServer(this Node Instance)
     {
         return Instance.GetNetMode() < MDNetMode.Client;
     }
@@ -98,13 +68,15 @@ public static class MDNodeExtensions
     // Returns the net mode of the game session
     public static MDNetMode GetNetMode(this Node Instance)
     {
-        return Instance.GetGameSession().NetEntity.NetMode;
-    }
+        if (Instance.GetTree().HasNetworkPeer()) {
+            if (Instance.GetTree().IsNetworkServer()) {
+                return MDNetMode.Server;
+            }
 
-    // Registers this classes MDRpc() methods
-    public static void SetNetOwner(this Node Instance)
-    {
-        Instance.GetGameSession().RegisterRPCs(Instance);
+            return MDNetMode.Client;
+        }
+
+        return MDNetMode.Standalone;
     }
 
     // Removes this node from its parent and frees it

@@ -29,12 +29,12 @@ public class MDConsole : Panel
         {
             if (EventKey.Pressed && !EventKey.Echo)
             {
-                if ( EventKey.GetScancode() == (int)KeyList.Up)
+                if ( EventKey.Scancode == (int)KeyList.Up)
                 {
                     NavigateHistory(1);
                     this.SetInputHandled();
                 }
-                else if ( EventKey.GetScancode() == (int)KeyList.Down)
+                else if ( EventKey.Scancode == (int)KeyList.Down)
                 {
                     NavigateHistory(-1);
                     this.SetInputHandled();
@@ -61,18 +61,18 @@ public class MDConsole : Panel
 
         if (CmdHistoryIndex == -1)
         {
-            StoredCommand = ConsoleInput.GetText();
+            StoredCommand = ConsoleInput.Text;
         }
 
         CmdHistoryIndex = Mathf.Clamp(CmdHistoryIndex + Direction, -1, HistoryCount - 1);
 
         if (CmdHistoryIndex == -1)
         {
-            ConsoleInput.SetText(StoredCommand);
+            ConsoleInput.Text = StoredCommand;
         }
         else
         {
-            ConsoleInput.SetText(CommandHistory[CmdHistoryIndex]);
+            ConsoleInput.Text = CommandHistory[CmdHistoryIndex];
         }
     }
 
@@ -80,12 +80,12 @@ public class MDConsole : Panel
     private void CreateLineEdit()
     {
         ConsoleInput = new LineEdit();
-        ConsoleInput.SetName("ConsoleInput");
+        ConsoleInput.Name = "ConsoleInput";
         AddChild(ConsoleInput);
 
         ConsoleInput.SetAnchor(0, 0, 1, 1);
         ConsoleInput.SetMargin(0);
-        ConsoleInput.SetContextMenuEnabled(false);
+        ConsoleInput.ContextMenuEnabled = false;
         ConsoleInput.Connect("text_entered", this, "OnCommandEntered");
         ConsoleInput.GrabFocus();
     }

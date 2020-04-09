@@ -14,7 +14,7 @@ public enum MDLogLevel
     Warn,
     Error,
     Fatal,
-    Log // Always logs
+    Force // Always logs
 }
 
 public struct MDLogProperties
@@ -74,17 +74,19 @@ public static class MDLog
         if (LogFile || LogConsole)
         {
             int PeerID = MDStatics.GetPeerID();
+            MDNetMode NetMode = MDStatics.GetNetMode();
             string ClientID = "PEER " + PeerID.ToString();
-            if (PeerID == MDGameSession.STANDALONE_PEER_ID)
+            if (NetMode == MDNetMode.Standalone)
             {
                 ClientID = "STANDALONE";
             }
-            else if (PeerID == MDGameSession.SERVER_PEER_ID)
+            else if (NetMode == MDNetMode.Server)
             {
                 ClientID = "SERVER";
             }
 
             string FullMessage = "[" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + "]" +
+                "[" + (Godot.Engine.GetIdleFrames() % 1000) + "]" +
                 "[" + ClientID + "] " +
                 "[" + CategoryName + "::" + LogLevel.ToString() + "] " +
                 string.Format(Message, args);
@@ -104,6 +106,12 @@ public static class MDLog
         {
             DebugBreak();
         }
+    }
+
+    // Calls Log with level == force
+    public static void Force(string CategoryName, string Message, params object[] args)
+    {
+        Log(CategoryName, MDLogLevel.Force, Message, args);
     }
 
     // Calls Log with level == fatal
@@ -166,7 +174,7 @@ public static class MDLog
         CLog(Condition, CategoryName, MDLogLevel.Debug, Message, args);
     }
 
-    // Sames os Log() expect it only logs if Condition == true
+    // Sames as Log() except it only logs if Condition == true
     public static void CLog(bool Condition, string CategoryName, MDLogLevel LogLevel, string Message, params object[] args)
     {
         if (Condition)
@@ -208,7 +216,7 @@ public static class MDLog
         if (CreateLogDirectoryIfNotExists(LOG_DIR))
         {
             LogFile = new File();
-            LogFile.Open(FullLogFilePath, (int) File.ModeFlags.Write);
+            LogFile.Open(FullLogFilePath, File.ModeFlags.Write);
             Log(LOG_CAT, MDLogLevel.Info, "Created log file {0}", FullLogFilePath);
             LogFile.Close();
         }
@@ -221,7 +229,7 @@ public static class MDLog
     // Opens the log file for writing
     private static void OpenLogFile()
     {
-        LogFile.Open(FullLogFilePath, (int) File.ModeFlags.ReadWrite);
+        LogFile.Open(FullLogFilePath, File.ModeFlags.ReadWrite);
         LogFile.SeekEnd();
     }
 
