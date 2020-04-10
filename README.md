@@ -17,6 +17,9 @@ There are a lot of features from other game engines that I'm used to, so I wante
 0. (Optional) I recommend forking the repo so you can track your changes to it, easily merge updates, and reuse it in other projects you have.
 
 1. Add the repo as a submodule to your Godot project's directory (for me I added it to `src\MDFramework`).
+```bash
+git submodule add https://github.com/DoubleDeez/MDFramework.git src/MDFramework
+```
 
 2. Add the MDFramework files to your `Project.csproj`, inside of `<ItemGroup>`, making sure the path matches where you cloned the repo. 
 
@@ -33,6 +36,7 @@ There are a lot of features from other game engines that I'm used to, so I wante
     <Compile Include="src\MDFramework\MDInterface\MDConsole.cs" />
     <Compile Include="src\MDFramework\MDInterface\MDInterfaceManager.cs" />
     <Compile Include="src\MDFramework\MDNetworking\MDGameSession.cs" />
+    <Compile Include="src\MDFramework\MDNetworking\MDPlayerInfo.cs" />
     <Compile Include="src\MDFramework\MDGameInstance.cs" />
 ```
 
@@ -45,11 +49,6 @@ GameInstance="*res://src/MDFramework/MDGameInstance.cs"
 **Note:** It **must** be called `GameInstance` for the framework to work.
 
 # How to use MDFramework
-## Caveats and Assumptions
-MDFramework makes the following assumptions for certain features:
-* The names of nodes do not change after they've been added to the scene.
-* The names of nodes are unique
-
 ## Command Line Arguments
 TODO docs
 
@@ -67,6 +66,7 @@ TODO docs
 
 ## Profiler
 MDProfiler is a _very_ simple profiler. It will track the time it takes for a block of code to run and if enabled, log it.
+It's intended to be used to compare timings that are also captured with MDProfiler, don't expect measurements to be accurate to real-world timings.
 
 To use MDProfiler in code is simple:
 ```csharp
@@ -99,7 +99,6 @@ In no particular order:
 * UI management framework
 * Enable only specific instances of profile logging (rather than the entire system on/off)
 * Save system (Serialize a class to file)
-* Config file system
 * Optimizations
 * Make a test project that gives examples on using all the features that can also be used to test them for development
 * Built in way for Server to spawn a node locally and on clients
