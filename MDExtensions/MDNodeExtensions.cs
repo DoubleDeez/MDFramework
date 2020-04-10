@@ -22,6 +22,13 @@ public static class MDNodeExtensions
         return GI.GameSession;
     }
 
+    public static T GetPlayerInfo<T>(this Node Instance, int PeerId) where T : MDPlayerInfo
+    {
+        MDGameSession Session = Instance.GetGameSession();
+        MDPlayerInfo PlayerInfo = Session.GetPlayerInfo(PeerId);
+        return PlayerInfo as T;
+    }
+
     // Shortcut for GetTree().GetRoot().AddChild()
     public static void AddNodeToRoot(this Node Instance, Node Child, bool Deferred = false)
     {

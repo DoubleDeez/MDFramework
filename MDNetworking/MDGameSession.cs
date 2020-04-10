@@ -12,6 +12,7 @@ public class MDGameSession : Node
     private const string DEFAULT_IP = "127.0.0.1";
     private const int DEFAULT_PORT = 7777;
     private const int DEFAULT_MAX_PLAYERS = 32;
+    private const string ARG_STANDALONE = "standalone";
     private const string ARG_SERVER = "server";
     private const string ARG_CLIENT = "client";
     private const string LOG_CAT = "LogGameSession";
@@ -19,6 +20,17 @@ public class MDGameSession : Node
     public const int STANDALONE_ID = 0;
     public const int SERVER_ID = 1;
     public const string PlayerNameFormat = "Player{0}";
+
+    public delegate void PlayerEventHandler(int PeerId);
+
+    // Triggered whenever a player joined, includes self and existing players when initially joining
+    public event PlayerEventHandler OnPlayerJoinedEvent = delegate {};
+    public event PlayerEventHandler OnPlayerLeftEvent = delegate {};
+
+    public delegate void SessionEventHandler();
+    public event SessionEventHandler OnSessionStartedEvent = delegate {};
+    public event SessionEventHandler OnSessionFailedEvent = delegate {};
+    public event SessionEventHandler OnSessionEndedEvent = delegate {};
 
     public override void _Ready()
     {
@@ -28,6 +40,7 @@ public class MDGameSession : Node
         CheckArgsForConnectionInfo();
     }
 
+    // Technically unnecessary but this will trigger the game session delegates so implementations won't need to make a special case for offline games
     [MDCommand]
     public bool StartStandalone()
     {
@@ -107,38 +120,40 @@ public class MDGameSession : Node
         return null;
     }
 
-    protected virtual void StandaloneOnStarted()
+    private void StandaloneOnStarted()
     {
-        GetOrCreatePlayerObject(STANDALONE_ID);
-        OnPlayerJoined(STANDALONE_ID);
+        OnPlayerJoined_Internal(STANDALONE_ID);
+        OnSessionStartedEvent();
     }
 
-    protected virtual void ServerOnStarted()
+    private void ServerOnStarted()
     {
         MDLog.Info(LOG_CAT, "Server started");
         // TODO - Dedicated server support
-        GetOrCreatePlayerObject(SERVER_ID);
-        OnPlayerJoined(SERVER_ID);
+        OnPlayerJoined_Internal(SERVER_ID);
+        OnSessionStartedEvent();
     }
-    protected virtual void ServerOnFailedToStart()
+    private void ServerOnFailedToStart()
     {
         MDLog.Error(LOG_CAT, "Failed to start server");
+        OnSessionFailedEvent();
     }
 
-    protected virtual void ClientOnConnected()
+    private void ClientOnConnected()
     {
         MDLog.Info(LOG_CAT, "Client connected to server");
         int PeerId = MDStatics.GetPeerID();
-        GetOrCreatePlayerObject(PeerId);
-        OnPlayerJoined(PeerId);
+        OnPlayerJoined_Internal(PeerId);
+        OnSessionStartedEvent();
     }
 
-    protected virtual void ClientOnFailedToConnect()
+    private void ClientOnFailedToConnect()
     {
         MDLog.Error(LOG_CAT, "Client failed to connect to server");
+        OnSessionFailedEvent();
     }
 
-    protected void ClientOnServerDisconnect()
+    private void ClientOnServerDisconnect()
     {
         MDLog.Error(LOG_CAT, "Client was disconnected from server");
         ClientOnDisconnectedFromServer();
@@ -148,8 +163,7 @@ public class MDGameSession : Node
     private void ServerOnPeerConnected(int PeerId)
     {
         MDLog.Info(LOG_CAT, "Peer [ID: {0}] connected", PeerId);
-        GetOrCreatePlayerObject(PeerId);
-        OnPlayerJoined(PeerId);
+        OnPlayerJoined_Internal(PeerId);
         BroadcastNewPlayerJoined(PeerId);
         SendConnectionDataToClient(PeerId);
     }
@@ -158,7 +172,7 @@ public class MDGameSession : Node
     private void ServerOnPeerDisconnected(int PeerId)
     {
         MDLog.Info(LOG_CAT, "Peer [ID: {0}] disconnected", PeerId);
-        OnPlayerLeft(PeerId);
+        OnPlayerLeft_Internal(PeerId);
         BroadcastPlayerLeft(PeerId);
     }
 
@@ -212,42 +226,44 @@ public class MDGameSession : Node
     [Puppet]
     private void ClientOnPlayerJoined(int PeerId)
     {
-        GetOrCreatePlayerObject(PeerId);
-        OnPlayerJoined(PeerId);
+        OnPlayerJoined_Internal(PeerId);
     }
 
-    // Called whenever a player joined, includes self and existing players when initially joining
-    protected virtual void OnPlayerJoined(int PeerId)
+    private void OnPlayerJoined_Internal(int PeerId)
     {
+        GetOrCreatePlayerObject(PeerId);
+        OnPlayerJoinedEvent(PeerId);
     }
 
     // Called on a client, notifying them that a player left
     [Puppet]
     private void ClientOnPlayerLeft(int PeerId)
     {
-        OnPlayerLeft(PeerId);
-        RemovePlayerObject(PeerId);
+        OnPlayerLeft_Internal(PeerId);
     }
 
-    // Called whenever a player left
-    protected virtual void OnPlayerLeft(int PeerId)
+    private void OnPlayerLeft_Internal(int PeerId)
     {
+        RemovePlayerObject(PeerId);
+        OnPlayerLeftEvent(PeerId);
     }
 
     // Called when disconnected from the server or as the server
-    protected virtual void OnDisconnect()
+    private void OnDisconnect()
     {
         foreach (int PeerId in Players.Keys)
         {
             MDPlayerInfo Player = Players[PeerId];
             Player.RemoveAndFree();
+            OnPlayerLeftEvent(PeerId);
         }
 
         Players.Clear();
+        OnSessionEndedEvent();
     }
 
     // Create and initialize the player object
-    protected virtual MDPlayerInfo GetOrCreatePlayerObject(int PeerId)
+    private MDPlayerInfo GetOrCreatePlayerObject(int PeerId)
     {
         if (Players.ContainsKey(PeerId))
         {
@@ -264,28 +280,52 @@ public class MDGameSession : Node
         string PlayerName = String.Format(PlayerNameFormat, PeerId);
         MDPlayerInfo Player = Activator.CreateInstance(PlayerType) as MDPlayerInfo;
         Player.InitPlayerInfo(PeerId);
+        InitializePlayerInfo(Player);
         AddChild(Player);
 
         Players.Add(PeerId, Player);
         return Player;
     }
 
+    protected virtual void InitializePlayerInfo(MDPlayerInfo PlayerInfo)
+    {
+    }
+
+    public MDPlayerInfo GetPlayerInfo(int PeerId)
+    {
+        if (Players.ContainsKey(PeerId))
+        {
+            return Players[PeerId];
+        }
+
+        return null;
+    }
+
     // Removes the MDPlayerInfo belonging to the PeerId
-    protected virtual void RemovePlayerObject(int PeerId)
+    private void RemovePlayerObject(int PeerId)
     {
         if (Players.ContainsKey(PeerId))
         {
             MDPlayerInfo Player = Players[PeerId];
+            PreparePlayerInfoForRemoval(Player);
             Player.RemoveAndFree();
             Players.Remove(PeerId);
         }
     }
 
+    protected virtual void PreparePlayerInfoForRemoval(MDPlayerInfo PlayerInfo)
+    {
+    }
+
     // Starts a server or client based on the command args
     private void CheckArgsForConnectionInfo()
     {
+        if (MDArguments.HasArg(ARG_STANDALONE))
+        {
+            StartStandalone();
+        }
         // Expects -server=[port]
-        if (MDArguments.HasArg(ARG_SERVER))
+        else if (MDArguments.HasArg(ARG_SERVER))
         {
             int Port = MDArguments.GetArgInt(ARG_SERVER);
             StartServer(Port);
