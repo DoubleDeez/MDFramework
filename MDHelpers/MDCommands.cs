@@ -146,6 +146,7 @@ public static class MDCommands
             return false;
         }
 
+        MDLog.Info(LOG_CAT, Command);
         AddCommandToHistory(Command);
 
         string CmdName = Args[0].ToLower();

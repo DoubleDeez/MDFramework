@@ -16,6 +16,7 @@ public class MDGameSession : Node
     private const string ARG_CLIENT = "client";
     private const string LOG_CAT = "LogGameSession";
 
+    public const int STANDALONE_ID = 0;
     public const int SERVER_ID = 1;
     public const string PlayerNameFormat = "Player{0}";
 
@@ -25,6 +26,14 @@ public class MDGameSession : Node
         this.RegisterCommandAttributes();
 
         CheckArgsForConnectionInfo();
+    }
+
+    [MDCommand]
+    public bool StartStandalone()
+    {
+        MDLog.Info(LOG_CAT, "Starting Standalone Game Session");
+        StandaloneOnStarted();
+        return true;
     }
 
     [MDCommand(DefaultArgs = new object[] {DEFAULT_PORT, DEFAULT_MAX_PLAYERS})]
@@ -96,6 +105,12 @@ public class MDGameSession : Node
         }
 
         return null;
+    }
+
+    protected virtual void StandaloneOnStarted()
+    {
+        GetOrCreatePlayerObject(STANDALONE_ID);
+        OnPlayerJoined(STANDALONE_ID);
     }
 
     protected virtual void ServerOnStarted()
