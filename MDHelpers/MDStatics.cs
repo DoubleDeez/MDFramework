@@ -69,6 +69,12 @@ public static class MDStatics
         return 0;
     }
 
+    // Is the game session started in non-standalone?
+    public static bool IsNetworkActive()
+    {
+        return GetPeerID() != 0;
+    }
+
     // Gets the net mode of the local client
     public static MDNetMode GetNetMode()
     {

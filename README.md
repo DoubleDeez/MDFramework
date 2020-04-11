@@ -49,6 +49,9 @@ GameInstance="*res://src/MDFramework/MDGameInstance.cs"
 **Note:** It **must** be called `GameInstance` for the framework to work.
 
 # How to use MDFramework
+## Game Session and Player Info
+TODO docs
+
 ## Command Line Arguments
 TODO docs
 
@@ -57,7 +60,7 @@ In game, the command console can be opened with the `~` key. Command history can
 
 In your code, you can add more commands by adding the `[MDCommand()]` attribute to any methods you wish to have as commands.
 Then from that same class call `MDCommands.RegisterCommandAttributes(this);` to have those commands registered.
-For classes extending `Node`, they aren't registered automatically as commands is a debug feature, so a good place to call it would be in `_Ready()`, `Node` classes have an extension helper for this, so you can just call `this.RegisterCommandAttributes();`.
+For classes extending `Node`, they aren't registered automatically as commands are a debug feature, so a good place to call it would be in `_Ready()`, `Node` classes have an extension helper for this, so you can just call `this.RegisterCommandAttributes();`.
 
 Only a single instance of a class can be registered for commands, this is because commands are invoked via their method name, which are the same for all instances of a class.
 
@@ -86,10 +89,14 @@ Currently, this will enable logging for all MDProfiler instances and can get ver
 ```
 
 ## Node Binding
-Node-type fields and properties on Node classes can be marked with the `[MDBindNode()]` attribute.
+Node-type fields and properties on Node classes can be marked with the `[MDBindNode]` attribute.
 The MD framework will automatically assign a child node with the same name to that member.
 You can specify the path to look for or specify a different name to look for by passing it the attribute:
-`[MDBindNode("/root/MyNode")]` or `[MDBindNode("MyChildNode")]`.
+`[MDBindNode("/root/MyNode")]` or `[MDBindNode("MyChildNode")]`, this will pass the path to Godot's `Node.GetNodeOrNull()` method.
+
+**Note:** Due to [This Issue](https://github.com/godotengine/godot/issues/37813), nodes in your main scene will have to explicitly call `MDBindNode.PopulateBindNodes(this);`.
+
+
 
 # TODO
 In no particular order:

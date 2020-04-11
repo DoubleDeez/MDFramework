@@ -31,7 +31,7 @@ public class MDBindNode : Attribute
                 if (!MDStatics.IsSameOrSubclass(Field.FieldType, typeof(Node)))
                 {
                     MDLog.Error(LOG_CAT, "Not Node-Type field [{0}] on Node Type [{0}] was marked with [MDBindNode()]", Field.Name, Instance.GetType().Name);
-                    break;
+                    continue;
                 }
 
                 string PathToNode = BindAttr.GetNodePath(Field.Name);
@@ -52,7 +52,7 @@ public class MDBindNode : Attribute
                 if (!MDStatics.IsSameOrSubclass(Prop.PropertyType, typeof(Node)))
                 {
                     MDLog.Error(LOG_CAT, "Non Node-Type property [{0}] on Node Type [{0}] was marked with [MDBindNode()]", Prop.Name, Instance.GetType().Name);
-                    break;
+                    continue;
                 }
 
                 string PathToNode = BindAttr.GetNodePath(Prop.Name);
@@ -67,7 +67,14 @@ public class MDBindNode : Attribute
 
     private static Node FindNode(Node Instance, string PathToNode)
     {
-        // First check if we have a child with the same name
+        // First, if we have an explicit node path, try that
+        Node BoundNode = Instance.GetNodeOrNull(PathToNode);
+        if (BoundNode != null)
+        {
+            return BoundNode;
+        }
+
+        // Check if we have a child with the same name
         Godot.Collections.Array Children = Instance.GetChildren();
         foreach (Node Child in Children)
         {
@@ -77,16 +84,18 @@ public class MDBindNode : Attribute
             }
         }
 
-        // We haven't found it in our children, try using the path
-        Node BoundNode = Instance.GetNode(PathToNode);
-
-        // If it's still not found, log an error
-        if (BoundNode == null)
+        // Then check if a child has the node instead
+        foreach (Node Child in Children)
         {
-            MDLog.Error(LOG_CAT, "Failed to find BindNode with path [{0}] on Node [{1}] of type [{2}]", PathToNode, Instance.Name, Instance.GetType().Name);
-            return BoundNode;
+            BoundNode = FindNode(Child, PathToNode);
+            if (BoundNode != null)
+            {
+                return BoundNode;
+            }
         }
 
-        return BoundNode;
+        // If it's still not found, log an error
+        MDLog.Error(LOG_CAT, "Failed to find BindNode with path [{0}] on Node [{1}] of type [{2}]", PathToNode, Instance.Name, Instance.GetType().Name);
+        return null;
     }
 }
