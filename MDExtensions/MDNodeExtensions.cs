@@ -72,6 +72,12 @@ public static class MDNodeExtensions
         return Instance.GetNetMode() < MDNetMode.Client;
     }
 
+    // Returns true if the local peer is the network master of the node (or we're not networks)
+    public static bool IsNetworkMaster(this Node Instance)
+    {
+        return MDStatics.IsNetworkActive() == false || Instance.GetNetworkMaster() == MDStatics.GetPeerId();
+    }
+
     // Returns the net mode of the game session
     public static MDNetMode GetNetMode(this Node Instance)
     {

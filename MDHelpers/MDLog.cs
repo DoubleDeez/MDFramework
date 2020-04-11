@@ -73,7 +73,7 @@ public static class MDLog
 
         if (LogFile || LogConsole)
         {
-            int PeerID = MDStatics.GetPeerID();
+            int PeerID = MDStatics.GetPeerId();
             MDNetMode NetMode = MDStatics.GetNetMode();
             string ClientID = "PEER " + PeerID.ToString();
             if (NetMode == MDNetMode.Standalone)

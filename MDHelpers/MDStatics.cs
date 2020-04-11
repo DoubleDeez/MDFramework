@@ -59,7 +59,7 @@ public static class MDStatics
     }
 
     // Gets the peer ID from the game session, 1 for server or 0 for standalone
-    public static int GetPeerID()
+    public static int GetPeerId()
     {
         if (GetTree().HasNetworkPeer())
         {
@@ -72,7 +72,7 @@ public static class MDStatics
     // Is the game session started in non-standalone?
     public static bool IsNetworkActive()
     {
-        return GetPeerID() != 0;
+        return GetPeerId() != 0;
     }
 
     // Gets the net mode of the local client

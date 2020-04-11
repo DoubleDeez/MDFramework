@@ -142,7 +142,7 @@ public class MDGameSession : Node
     private void ClientOnConnected()
     {
         MDLog.Info(LOG_CAT, "Client connected to server");
-        int PeerId = MDStatics.GetPeerID();
+        int PeerId = MDStatics.GetPeerId();
         OnPlayerJoined_Internal(PeerId);
         OnSessionStartedEvent();
     }
