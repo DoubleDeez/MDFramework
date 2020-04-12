@@ -250,13 +250,11 @@ public class MDGameSession : Node
             OnPlayerLeftEvent(PeerId);
         }
 
-        using (NetworkedMultiplayerENet peer = GetPeer())
+        NetworkedMultiplayerENet peer = GetPeer();
+        if (peer != null)
         {
-            if (peer != null)
-            {
-                peer.CloseConnection();
-                GetTree().NetworkPeer = null;
-            }
+            peer.CloseConnection();
+            GetTree().NetworkPeer = null;
         }
 
         Players.Clear();
