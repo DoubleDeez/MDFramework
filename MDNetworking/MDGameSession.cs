@@ -98,15 +98,7 @@ public class MDGameSession : Node
     [MDCommand()]
     public void Disconnect()
     {
-        using (NetworkedMultiplayerENet peer = GetPeer())
-        {
-            OnDisconnect();
-            if (peer != null)
-            {
-                peer.CloseConnection();
-                GetTree().NetworkPeer = null;
-            }
-        }
+        OnDisconnect();
     }
 
     public NetworkedMultiplayerENet GetPeer()
@@ -256,6 +248,15 @@ public class MDGameSession : Node
             MDPlayerInfo Player = Players[PeerId];
             Player.RemoveAndFree();
             OnPlayerLeftEvent(PeerId);
+        }
+
+        using (NetworkedMultiplayerENet peer = GetPeer())
+        {
+            if (peer != null)
+            {
+                peer.CloseConnection();
+                GetTree().NetworkPeer = null;
+            }
         }
 
         Players.Clear();
