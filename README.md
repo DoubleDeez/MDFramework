@@ -7,6 +7,7 @@ As this is being built along side my own Godot project, I will generally add fea
 There are a lot of features from other game engines that I'm used to, so I wanted to build something that made those features available in Godot.
 
 # Features
+* Automatically [replicate members](#automatic-member-replication) without calling `Rset`.
 * [Command line parameter parsing](#command-line-arguments) that can be queried at any time
 * A simple [logging system](#logging) with logging categories and different log levels for each category for both writing to file and stdout
 * A [console command](#command-console) prompt that allows you to add commands from single-instance classes
@@ -27,6 +28,7 @@ git submodule add https://github.com/DoubleDeez/MDFramework.git src/MDFramework
 ```xml
     <Compile Include="src\MDFramework\MDAttributes\MDBindNode.cs" />
     <Compile Include="src\MDFramework\MDAttributes\MDCommand.cs" />
+    <Compile Include="src\MDFramework\MDAttributes\MDReplicated.cs" />
     <Compile Include="src\MDFramework\MDExtensions\MDControlExtensions.cs" />
     <Compile Include="src\MDFramework\MDExtensions\MDNodeExtensions.cs" />
     <Compile Include="src\MDFramework\MDHelpers\MDArguments.cs" />
@@ -38,6 +40,7 @@ git submodule add https://github.com/DoubleDeez/MDFramework.git src/MDFramework
     <Compile Include="src\MDFramework\MDInterface\MDInterfaceManager.cs" />
     <Compile Include="src\MDFramework\MDNetworking\MDGameSession.cs" />
     <Compile Include="src\MDFramework\MDNetworking\MDPlayerInfo.cs" />
+    <Compile Include="src\MDFramework\MDNetworking\MDReplicator.cs" />
     <Compile Include="src\MDFramework\MDGameInstance.cs" />
 ```
 or to include all C# files:
@@ -108,6 +111,17 @@ protected override Type GetPlayerInfoType()
 ```
 
 On your custom player info class, override `PerformFullSync()` to do any sync-ing that needs to happen when a new player joins.
+
+## Automatic Member Replication
+Thanks to C#'s reflection, `MDReplicated` is able to detect if a value has changed and call `Rset` for you automatically.
+
+To use it, mark your Node's field or property with the `[MDReplicated]` attribute. You can also set one of Godot's RPCModes (Master, Puppet, Remote, etc), but if you don't `MDReplicator` will automatically set it to `Puppet` for you.
+
+By default, it uses reliable replication, but you can change that by using `[MDReplicated(MDReliablity.Unreliable)]`, which is recommended if the value changes very frequently.
+
+By default, only the network master for the node will send out updated values, unless if the member is marked with `[Master]`, in which case the puppets will send values - with more than 1 puppet, this will lead to some unnecessary `Rset` calls.
+
+**Note:** Due to [This Issue](https://github.com/godotengine/godot/issues/37813), nodes in your main scene will have to explicitly call `this.RegisterReplicatedAttributes()`, otherwise they are automatically registered.
 
 ## Command Line Arguments
 The class `MDArguments` provides many helpers for checking and parsing the command line arguments that your game launched with.
@@ -184,6 +198,8 @@ To configure the log level for a specific category call:
 MDLog.AddLogCategoryProperties(LOG_CAT, new MDLogProperties(MDLogLevel FileLogLevel, MDLogLevel ConsoleFileLogLevel));
 ```
 
+You can change the log level of a category at runtime using the command `SetLogLevel [Category] [LogLevel]`. For example `SetLogLevel LogMDGameSession Debug`.
+
 ## Profiler
 MDProfiler is a _very_ simple profiler. It will track the time it takes for a block of code to run and if enabled, log it.
 It's intended to be used to compare timings that are also captured with MDProfiler, don't expect measurements to be accurate to real-world timings.
@@ -211,7 +227,7 @@ The MD framework will automatically assign a child node with the same name to th
 You can specify the path to look for or specify a different name to look for by passing it the attribute:
 `[MDBindNode("/root/MyNode")]` or `[MDBindNode("MyChildNode")]`, this will pass the path to Godot's `Node.GetNodeOrNull()` method.
 
-**Note:** Due to [This Issue](https://github.com/godotengine/godot/issues/37813), nodes in your main scene will have to explicitly call `MDBindNode.PopulateBindNodes(this);`.
+**Note:** Due to [This Issue](https://github.com/godotengine/godot/issues/37813), nodes in your main scene will have to explicitly call `MDBindNode.PopulateBindNodes(this);`, otherwise they are automatically populated.
 
 
 

@@ -60,6 +60,18 @@ public static class MDNodeExtensions
         MDCommands.UnregisterCommandAttributes(Instance);
     }
 
+    // Helper to register replication
+    public static void RegisterReplicatedAttributes(this Node Instance)
+    {
+        Instance.GetGameSession().Replicator.RegisterReplication(Instance);
+    }
+
+    // Helper to unregister replication
+    public static void UnregisterReplicatedAttributes(this Node Instance)
+    {
+        Instance.GetGameSession().Replicator.UnregisterReplication(Instance);
+    }
+
     // Helper to populate members marked with [MDBindNode()]
     public static void PopulateBindNodes(this Node Instance)
     {

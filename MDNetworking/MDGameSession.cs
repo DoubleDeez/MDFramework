@@ -38,6 +38,13 @@ public class MDGameSession : Node
         this.RegisterCommandAttributes();
 
         CheckArgsForConnectionInfo();
+
+        GetTree().Connect("idle_frame", this, nameof(PreTick));
+    }
+
+    private void PreTick()
+    {
+        Replicator.TickReplication();
     }
 
     // Technically unnecessary but this will trigger the game session delegates so implementations won't need to make a special case for offline games
@@ -375,4 +382,5 @@ public class MDGameSession : Node
     }
 
     protected PlayerListType Players = new PlayerListType();
+    public MDReplicator Replicator {get; private set;} = new MDReplicator();
 }

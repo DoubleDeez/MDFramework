@@ -92,6 +92,7 @@ public class MDGameInstance : Node
     private void RegisterNewNode(Node Instance)
     {
         Instance.PopulateBindNodes();
+        Instance.RegisterReplicatedAttributes();
     }
 
     // Unregisters a removed node from MDFramework systems
@@ -99,6 +100,7 @@ public class MDGameInstance : Node
     {
         // We automatically unregister commands even though we don't automatically register them to avoid relying on the user to do so
         Instance.UnregisterCommandAttributes();
+        Instance.UnregisterReplicatedAttributes();
     }
 
     // Ensure GameSession is created
