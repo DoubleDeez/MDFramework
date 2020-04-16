@@ -146,6 +146,8 @@ For classes extending `Node`, they aren't registered automatically as commands a
 
 Only a single instance of a class can be registered for commands, this is because commands are invoked via their method name, which are the same for all instances of a class.
 
+To call a command on the server from the client, prefix the command with `ServerCommand`, for example `ServerCommand Disconnect`.
+
 ## Logging
 MDLog proivdes various levels of logging and allows you to have separate log levels of logging for console and file. Each category can be set independently.
 
@@ -172,7 +174,7 @@ Will give something like
 Conditional variants are also available, where the first parameter is a condition that must be true for the log to happen:
 ```csharp
 bool Success = error == Error.Ok;
-MDLog.CLog(Success, LOG_CAT, MDLogLevel.Info, "Connecting to server at {0}:{1}", Address, Port);
+MDLog.CInfo(Success, LOG_CAT, "Connecting to server at {0}:{1}", Address, Port);
 ```
 
 Logging with a log level of `Fatal` will trigger a break if the debugger is attached.
@@ -217,7 +219,6 @@ You can specify the path to look for or specify a different name to look for by 
 In no particular order:
 * Ability to enable command prompt in release builds
 * Command prompt auto-complete with help text
-* Ability to call console commands on the server from the client
 * UI management framework
 * Enable only specific instances of profile logging (rather than the entire system on/off)
 * Save system (Serialize a class to file)

@@ -359,5 +359,20 @@ public class MDGameSession : Node
         }
     }
 
+    public void ServerCommand(string Command)
+    {
+        #if DEBUG
+        RpcId(this.GetNetworkMaster(), nameof(ClientToServerCommand), Command);
+        #endif
+    }
+
+    [Master]
+    private void ClientToServerCommand(string Command)
+    {
+        #if DEBUG
+        MDCommands.InvokeCommand(Command);
+        #endif
+    }
+
     protected PlayerListType Players = new PlayerListType();
 }

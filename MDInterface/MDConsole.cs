@@ -93,7 +93,14 @@ public class MDConsole : Panel
     // Called when the user hits enter on the ConsoleInput
     private void OnCommandEntered(string Command)
     {
-        MDCommands.InvokeCommand(Command);
+        if (Command.ToLower().StartsWith("servercommand"))
+        {
+            this.GetGameSession().ServerCommand(Command.Substring(Command.IndexOf(' ') + 1));
+        }
+        else
+        {
+            MDCommands.InvokeCommand(Command);
+        }
         Close();
     }
 
