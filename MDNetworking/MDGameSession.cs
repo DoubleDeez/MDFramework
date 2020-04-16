@@ -183,9 +183,23 @@ public class MDGameSession : Node
             {
                 MDLog.Debug(LOG_CAT, "Notifying Peer [{0}] that Peer [{1}] exists", Joiner, PeerId);
                 RpcId(Joiner, nameof(ClientOnPlayerJoined), PeerId);
-                Players[PeerId].PerformFullSync(Joiner);
+                if (PeerId == MDStatics.GetPeerId())
+                {
+                    Players[PeerId].PerformFullSync(Joiner);
+                }
+                else
+                {
+                    RpcId(PeerId, nameof(ClientSendConnectionDataToClient), Joiner);
+                }
             }
         }
+    }
+
+    // Tells the network master of a player info to sync a new player
+    [Puppet]
+    protected virtual void ClientSendConnectionDataToClient(int Joiner)
+    {
+        GetPlayerInfo(MDStatics.GetPeerId()).PerformFullSync(Joiner);
     }
 
     // Notifies all clients (except the new one) that a new player has joined
@@ -269,7 +283,7 @@ public class MDGameSession : Node
             return Players[PeerId];
         }
 
-        Type PlayerType = GetPlayerInfoType();
+        Type PlayerType = this.GetGameInstance().GetPlayerInfoType();
         if (!MDStatics.IsSameOrSubclass(PlayerType, typeof(MDPlayerInfo)))
         {
             MDLog.Error(LOG_CAT, "Provided player type [{0}] is not a subclass of MDPlayerInfo", PlayerType.Name);
@@ -343,12 +357,6 @@ public class MDGameSession : Node
                 MDLog.Error(LOG_CAT, "Failed to parse client arg {0}, expecting -{1}=[IPAddres:Port]", ClientArg, ARG_CLIENT);
             }
         }
-    }
-
-    // Override this to provide your own Player class type
-    protected virtual Type GetPlayerInfoType()
-    {
-        return typeof(MDPlayerInfo);
     }
 
     protected PlayerListType Players = new PlayerListType();

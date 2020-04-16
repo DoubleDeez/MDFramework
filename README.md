@@ -10,8 +10,9 @@ There are a lot of features from other game engines that I'm used to, so I wante
 * [Command line parameter parsing](#command-line-arguments) that can be queried at any time
 * A simple [logging system](#logging) with logging categories and different log levels for each category for both writing to file and stdout
 * A [console command](#command-console) prompt that allows you to add commands from single-instance classes
-* A simpler [profiler](#profiler) class to determine execution time of a code block
+* A simple [profiler](#profiler) class to determine execution time of a code block
 * Bind editor-created nodes to member variables automatically with [node binding](#node-binding)
+* A [Game Session and Player Info](#game-Session-and-player-info) system for managing networked multiplayer
 
 # Installation
 0. (Optional) I recommend forking the repo so you can track your changes to it, easily merge updates, and reuse it in other projects you have.
@@ -39,6 +40,10 @@ git submodule add https://github.com/DoubleDeez/MDFramework.git src/MDFramework
     <Compile Include="src\MDFramework\MDNetworking\MDPlayerInfo.cs" />
     <Compile Include="src\MDFramework\MDGameInstance.cs" />
 ```
+or to include all C# files:
+```xml
+    <Compile Include="**\*.cs" />
+```
 
 3. Setup your `project.godot` to AutoLoad either `MDGameInstance` or your subclass of it:
 
@@ -50,10 +55,87 @@ GameInstance="*res://src/MDFramework/MDGameInstance.cs"
 
 # How to use MDFramework
 ## Game Session and Player Info
-TODO docs
+
+### Game Session Basics
+The `MDGameSession` class is initialized by the `MDGameInstance` and can by accessed by any `Node` by calling `this.GetGameSession()` or elsewhere by using `MDStatics.GetGameSession()`.
+
+The class has 3 useful methods for managing your networked session.
+
+For starting the server you can call:
+```csharp
+bool StartServer(int Port, int MaxPlayers);
+```
+
+For connecting to the server from the client:
+```csharp
+bool StartClient(string Address, int Port);
+```
+
+And finally for disconnecting (as either server or client)
+```csharp
+void Disconnect();
+```
+
+There's also a method to start the session with network but still triggers the Game Session events to make it easier when implementing your game:
+```csharp
+bool StartStandalone();
+```
+
+Those 4 methods are all available as console commands to make it easier for you to start testing.
+
+### Game Session Events
+There are 5 events that you can hook into for building your game.
+
+The `OnPlayerJoinedEvent` and `OnPlayerLeftEvent` events will pass in the player's peer Id.
+
+There's also `OnSessionStartedEvent`, `OnSessionFailedEvent`, and `OnSessionEndedEvent` so that you can be notified of the session's state.
+
+### Player Info
+
+The `MDPlayerInfo` class is the location for you to store all the information specific to a player.
+A player info instance is create for each player on each player's game, and the corresponding player is set as the network master for their player info node.
+
+The player info is meant to be extended.
+
+To do this, you must override the Game Instance class to specify your player info class, just change the autoload path to point to your extended game instance class. (See step 3 of [Installation](#installation))
+
+Then override `GetPlayerInfoType()` on your Game Instance and return the type of your player info:
+```csharp
+protected override Type GetPlayerInfoType()
+{
+    return typeof(MyPlayerInfo);
+}
+```
+
+On your custom player info class, override `PerformFullSync()` to do any sync-ing that needs to happen when a new player joins.
 
 ## Command Line Arguments
-TODO docs
+The class `MDArguments` provides many helpers for checking and parsing the command line arguments that your game launched with.
+
+To check if a particular argument exists:
+```csharp
+if (MDArguments.HasArg("logprofile"))
+{
+    MDLog.Info(LOG_CAT, "Profiling [{0}] took {1}us", ProfileName, GetMicroSeconds());
+}
+```
+
+To get the value that an argument was set to, you can use `MDArguments.GetArg()`, `MDArguments.GetArgInt()`, or `MDArguments.GetArgFloat()`, depending on what type you need:
+```csharp
+// Expects -server=port
+if (MDArguments.HasArg("server"))
+{
+    int Port = MDArguments.GetArgInt("server");
+    StartServer(Port);
+}
+// Expects -client=[IPAddres:Port]
+else if (MDArguments.HasArg("client"))
+{
+    string ClientArg = MDArguments.GetArg("client");
+    string[] HostPort = ClientArg.Split(":");
+    StartClient(HostPort[0], HostPort[1].ToInt());
+}
+```
 
 ## Command Console
 In game, the command console can be opened with the `~` key. Command history can be navigated using the `Up` and `Down` arrow keys.
@@ -65,7 +147,40 @@ For classes extending `Node`, they aren't registered automatically as commands a
 Only a single instance of a class can be registered for commands, this is because commands are invoked via their method name, which are the same for all instances of a class.
 
 ## Logging
-TODO docs
+MDLog proivdes various levels of logging and allows you to have separate log levels of logging for console and file. Each category can be set independently.
+
+The available log levels are:
+```json
+    Trace,
+    Debug,
+    Info,
+    Warn,
+    Error,
+    Fatal,
+    Force
+```
+
+To log with a specific level, use the log level as the function. For example, to log an error use `MDLog.Error()`.
+The first parameter is the log category string, the second is the format string, and then any arguments to want to pass to your format string:
+```csharp
+MDLog.Info(LOG_CAT, "Peer [ID: {0}] connected", PeerId);
+```
+Will give something like
+```log
+[2020-04-12 16:48:03.404][58][SERVER] [LogGameSession::Info] Peer [ID: 168151027] connected
+```
+Conditional variants are also available, where the first parameter is a condition that must be true for the log to happen:
+```csharp
+bool Success = error == Error.Ok;
+MDLog.CLog(Success, LOG_CAT, MDLogLevel.Info, "Connecting to server at {0}:{1}", Address, Port);
+```
+
+Logging with a log level of `Fatal` will trigger a break if the debugger is attached.
+
+To configure the log level for a specific category call:
+```csharp
+MDLog.AddLogCategoryProperties(LOG_CAT, new MDLogProperties(MDLogLevel FileLogLevel, MDLogLevel ConsoleFileLogLevel));
+```
 
 ## Profiler
 MDProfiler is a _very_ simple profiler. It will track the time it takes for a block of code to run and if enabled, log it.
@@ -109,3 +224,7 @@ In no particular order:
 * Optimizations
 * Make a test project that gives examples on using all the features that can also be used to test them for development
 * Built in way for Server to spawn a node locally and on clients
+* Automatic variable/property replication
+* Notification on variable/property replication
+* Output profiler results to csv
+* UPNP for game session

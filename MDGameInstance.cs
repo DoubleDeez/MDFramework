@@ -48,6 +48,12 @@ public class MDGameInstance : Node
         return typeof(MDGameSession);
     }
 
+    // Override this to provide your own Player class type
+    public virtual Type GetPlayerInfoType()
+    {
+        return typeof(MDPlayerInfo);
+    }
+
     // Called whenever a node is added to the scene
     protected virtual void OnNodeAdded(Node AddedNode)
     {

@@ -144,6 +144,12 @@ public static class MDLog
         Log(CategoryName, MDLogLevel.Debug, Message, args);
     }
 
+    // Calls Log with level == force
+    public static void CForce(bool Condition, string CategoryName, string Message, params object[] args)
+    {
+        CLog(Condition, CategoryName, MDLogLevel.Force, Message, args);
+    }
+
     // Calls Log with level == fatal
     public static void CFatal(bool Condition, string CategoryName, string Message, params object[] args)
     {
