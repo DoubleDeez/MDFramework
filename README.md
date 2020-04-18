@@ -8,6 +8,7 @@ There are a lot of features from other game engines that I'm used to, so I wante
 
 # Features
 * Automatically [replicate members](#automatic-member-replication) without calling `Rset`.
+* Allows the server to [spawn nodes over the network](#networked-node-spawning) to all clients.
 * [Command line parameter parsing](#command-line-arguments) that can be queried at any time
 * A simple [logging system](#logging) with logging categories and different log levels for each category for both writing to file and stdout
 * A [console command](#command-console) prompt that allows you to add commands from single-instance classes
@@ -123,6 +124,18 @@ By default, only the network master for the node will send out updated values, u
 
 **Note:** Due to [This Issue](https://github.com/godotengine/godot/issues/37813), nodes in your main scene will have to explicitly call `this.RegisterReplicatedAttributes()`, otherwise they are automatically registered.
 
+## Networked Node Spawning
+The server has the ability to create a node for all clients over the network. It works by calling `this.SpawnNetworkedNode()` which is available on any `Node` object.
+
+`SpawnNetworkedNode()` has 3 overloads, allowing you to spawn a Node from a C# Type, a PackedScene, or a path string to a scene:
+```csharp
+    public Node SpawnNetworkedNode(Type NodeType, string NodeName, int NetworkMaster = -1);
+    public Node SpawnNetworkedNode(PackedScene Scene, string NodeName, int NetworkMaster = -1);
+    public Node SpawnNetworkedNode(string ScenePath, string NodeName, int NetworkMaster = -1);
+```
+
+They all return the reference to the Server's instance of the new node. The Node is added as a child to whatever Node you call `SpawnNetworkedNode()` on.
+
 ## Command Line Arguments
 The class `MDArguments` provides many helpers for checking and parsing the command line arguments that your game launched with.
 
@@ -233,15 +246,14 @@ You can specify the path to look for or specify a different name to look for by 
 
 # TODO
 In no particular order:
-* Ability to enable command prompt in release builds
-* Command prompt auto-complete with help text
+* Ability to enable command console in release builds
+* Command console auto-complete with help text
 * UI management framework
 * Enable only specific instances of profile logging (rather than the entire system on/off)
 * Save system (Serialize a class to file)
 * Optimizations
 * Make a test project that gives examples on using all the features that can also be used to test them for development
-* Built in way for Server to spawn a node locally and on clients
-* Automatic variable/property replication
 * Notification on variable/property replication
 * Output profiler results to csv
 * UPNP for game session
+* Join-in-progress support for MDReplicated and Nodes spawned by the server

@@ -28,6 +28,22 @@ public static class MDNodeExtensions
         MDPlayerInfo PlayerInfo = Session.GetPlayerInfo(PeerId);
         return PlayerInfo as T;
     }
+    
+    public static Node SpawnNetworkedNode(this Node Instance, Type NodeType, string NodeName, int NetworkMaster = -1)
+    {
+        MDGameSession GameSession = Instance.GetGameSession();
+        return GameSession.SpawnNetworkedNode(NodeType, Instance, NodeName, NetworkMaster);
+    }
+    public static Node SpawnNetworkedNode(this Node Instance, PackedScene Scene, string NodeName, int NetworkMaster = -1)
+    {
+        MDGameSession GameSession = Instance.GetGameSession();
+        return GameSession.SpawnNetworkedNode(Scene, Instance, NodeName, NetworkMaster);
+    }
+    public static Node SpawnNetworkedNode(this Node Instance, string ScenePath, string NodeName, int NetworkMaster = -1)
+    {
+        MDGameSession GameSession = Instance.GetGameSession();
+        return GameSession.SpawnNetworkedNode(ScenePath, Instance, NodeName, NetworkMaster);
+    }
 
     // Shortcut for GetTree().GetRoot().AddChild()
     public static void AddNodeToRoot(this Node Instance, Node Child, bool Deferred = false)

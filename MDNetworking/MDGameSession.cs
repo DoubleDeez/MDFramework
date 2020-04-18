@@ -381,6 +381,116 @@ public class MDGameSession : Node
         #endif
     }
 
+    public Node SpawnNetworkedNode(Type NodeType, Node Parent, string NodeName, int NetworkMaster = -1)
+    {
+        if (this.IsMaster() == false)
+        {
+            MDLog.Error(LOG_CAT, "Only server can spawn networked nodes");
+            return null;
+        }
+
+        if (!MDStatics.IsSameOrSubclass(NodeType, typeof(Node)))
+        {
+            MDLog.Error(LOG_CAT, "Provided type [{0}] is not a subclass of Node", NodeType.Name);
+            return null;
+        }
+
+        if (!Parent.IsInsideTree())
+        {
+            MDLog.Error(LOG_CAT, "Parent [{0}] is not inside the tree", Parent.Name);
+            return null;
+        }
+
+        int NodeMaster = (NetworkMaster != -1) ? NetworkMaster : MDStatics.GetPeerId();
+        string NodeTypeString = NodeType.AssemblyQualifiedName;
+        string ParentPath = Parent.GetPath();
+
+        if (MDStatics.IsNetworkActive())
+        {
+            Rpc(nameof(SpawnNodeType), NodeTypeString, ParentPath, NodeName, NodeMaster);
+        }
+        return SpawnNodeType(NodeTypeString, ParentPath, NodeName, NodeMaster);
+    }
+
+    public Node SpawnNetworkedNode(PackedScene Scene, Node Parent, string NodeName, int NetworkMaster = -1)
+    {
+        return SpawnNetworkedNode(Scene.ResourcePath, Parent, NodeName, NetworkMaster);
+    }
+
+    public Node SpawnNetworkedNode(string ScenePath, Node Parent, string NodeName, int NetworkMaster = -1)
+    {
+        if (this.IsMaster() == false)
+        {
+            MDLog.Error(LOG_CAT, "Only server can spawn networked nodes");
+            return null;
+        }
+
+        if (!Parent.IsInsideTree())
+        {
+            MDLog.Error(LOG_CAT, "Parent [{0}] is not inside the tree", Parent.Name);
+            return null;
+        }
+
+        int NodeMaster = (NetworkMaster != -1) ? NetworkMaster : MDStatics.GetPeerId();
+        string ParentPath = Parent.GetPath();
+
+        if (MDStatics.IsNetworkActive())
+        {
+            Rpc(nameof(SpawnNodeScene), ScenePath, ParentPath, NodeName, NodeMaster);
+        }
+        return SpawnNodeScene(ScenePath, ParentPath, NodeName, NodeMaster);
+    }
+
+    [Puppet]
+    private Node SpawnNodeType(string NodeTypeString, string ParentPath, string NodeName, int NetworkMaster)
+    {
+        Node Parent = GetNodeOrNull(ParentPath);
+        if (Parent == null)
+        {
+            MDLog.Error(LOG_CAT, "Could not find Parent with path {0}", ParentPath);
+            return null;
+        }
+
+        Type NodeType = Type.GetType(NodeTypeString);
+        if (NodeType == null)
+        {
+            MDLog.Error(LOG_CAT, "Could not find Type {0}", NodeTypeString);
+            return null;
+        }
+
+        Node NewNode = Activator.CreateInstance(NodeType) as Node;
+        NewNode.Name = NodeName;
+        NewNode.SetNetworkMaster(NetworkMaster);
+        Parent.AddChild(NewNode);
+
+        return NewNode;
+    }
+
+    [Puppet]
+    private Node SpawnNodeScene(string ScenePath, string ParentPath, string NodeName, int NetworkMaster)
+    {
+        Node Parent = GetNodeOrNull(ParentPath);
+        if (Parent == null)
+        {
+            MDLog.Error(LOG_CAT, "Could not find Parent with path", ParentPath);
+            return null;
+        }
+
+        // TODO - Support async loading
+        PackedScene Scene = ResourceLoader.Load(ScenePath) as PackedScene;
+        if (Scene != null)
+        {
+            Node NewNode = Scene.Instance();
+            NewNode.Name = NodeName;
+            NewNode.SetNetworkMaster(NetworkMaster);
+            Parent.AddChild(NewNode);
+
+            return NewNode;
+        }
+
+        return null;
+    }
+
     protected PlayerListType Players = new PlayerListType();
     public MDReplicator Replicator {get; private set;} = new MDReplicator();
 }
