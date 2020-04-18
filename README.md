@@ -175,6 +175,8 @@ Only a single instance of a class can be registered for commands, this is becaus
 
 To call a command on the server from the client, prefix the command with `ServerCommand`, for example `ServerCommand Disconnect`.
 
+You can override `IsConsoleAvailable()` on your GameInstance implementation to change when the console is available, by default it's only available in DEBUG builds.
+
 ## Logging
 MDLog proivdes various levels of logging and allows you to have separate log levels of logging for console and file. Each category can be set independently.
 
@@ -246,7 +248,6 @@ You can specify the path to look for or specify a different name to look for by 
 
 # TODO
 In no particular order:
-* Ability to enable command console in release builds
 * Command console auto-complete with help text
 * UI management framework
 * Enable only specific instances of profile logging (rather than the entire system on/off)

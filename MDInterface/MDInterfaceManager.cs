@@ -19,16 +19,17 @@ public class MDInterfaceManager : CanvasLayer
 
     public override void _Input(InputEvent InEvent)
     {
-        #if DEBUG
-        if (InEvent is InputEventKey EventKey)
+        if (this.GetGameInstance().IsConsoleAvailable())
         {
-            if (EventKey.Pressed && !EventKey.Echo && EventKey.Scancode == ConsoleKey)
+            if (InEvent is InputEventKey EventKey)
             {
-                ToggleConsole();
-                this.SetInputHandled();
+                if (EventKey.Pressed && !EventKey.Echo && EventKey.Scancode == ConsoleKey)
+                {
+                    ToggleConsole();
+                    this.SetInputHandled();
+                }
             }
         }
-        #endif
     }
 
     // Opens and focuses the console UI

@@ -132,6 +132,16 @@ public class MDGameInstance : Node
         }
     }
 
+    // Override to change when the console is available
+    public bool IsConsoleAvailable()
+    {
+        #if DEBUG
+        return true;
+        #else
+        return false;
+        #endif
+    }
+
     public MDGameSession GameSession {get; private set;}
     public MDInterfaceManager InterfaceManager {get; private set;}
 }
