@@ -61,7 +61,8 @@ public static class MDStatics
     // Gets the peer ID from the game session, 1 for server or 0 for standalone
     public static int GetPeerId()
     {
-        if (GetTree().HasNetworkPeer())
+        SceneTree Tree = GetTree();
+        if (Tree != null && Tree.HasNetworkPeer())
         {
             return GetTree().GetNetworkUniqueId();
         }
@@ -78,13 +79,13 @@ public static class MDStatics
     // Gets the net mode of the local client
     public static MDNetMode GetNetMode()
     {
-        return GI.GetNetMode();
+        return GI != null ? GI.GetNetMode() : MDNetMode.Standalone;
     }
 
     // Gets the SceneTree from the GameInstance
     public static SceneTree GetTree()
     {
-        return GI.GetTree();
+        return GI != null ? GI.GetTree() : null;
     }
 
     // Returns true if the types are equal or is SubClass is a a subclass of Base
