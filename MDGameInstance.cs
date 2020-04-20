@@ -85,6 +85,10 @@ public class MDGameInstance : Node
         {
             UnregisterNode(RemovedNode);
             OnNodeRemoved(RemovedNode);
+            if (GameSession != null && GameSession != RemovedNode)
+            {
+                GameSession.OnNodeRemoved(RemovedNode);
+            }
         }
     }
 

@@ -1,6 +1,6 @@
 using Godot;
 using System;
-using PlayerListType = System.Collections.Generic.Dictionary<int, MDPlayerInfo>;
+using System.Collections.Generic;
 
 /*
  * MDGameSession
@@ -21,6 +21,8 @@ public class MDGameSession : Node
     public const int SERVER_ID = 1;
     public const string PlayerNameFormat = "Player{0}";
 
+    public bool IsSessionStarted { get; private set; } = false;
+
     public delegate void PlayerEventHandler(int PeerId);
 
     // Triggered whenever a player joined, includes self and existing players when initially joining
@@ -31,6 +33,12 @@ public class MDGameSession : Node
     public event SessionEventHandler OnSessionStartedEvent = delegate {};
     public event SessionEventHandler OnSessionFailedEvent = delegate {};
     public event SessionEventHandler OnSessionEndedEvent = delegate {};
+
+    public MDReplicator Replicator {get; private set;} = new MDReplicator();
+    protected Dictionary<int, MDPlayerInfo> Players = new Dictionary<int, MDPlayerInfo>();
+    protected Dictionary<Node, string> NetworkedTypes = new Dictionary<Node, string>();
+    protected Dictionary<Node, string> NetworkedScenes = new Dictionary<Node, string>();
+    protected List<Node> OrderedNetworkedNodes = new List<Node>();
 
     public override void _Ready()
     {
@@ -123,6 +131,7 @@ public class MDGameSession : Node
     {
         OnPlayerJoined_Internal(STANDALONE_ID);
         OnSessionStartedEvent();
+        IsSessionStarted = true;
     }
 
     private void ServerOnStarted()
@@ -131,6 +140,7 @@ public class MDGameSession : Node
         // TODO - Dedicated server support
         OnPlayerJoined_Internal(SERVER_ID);
         OnSessionStartedEvent();
+        IsSessionStarted = true;
     }
     private void ServerOnFailedToStart()
     {
@@ -144,6 +154,7 @@ public class MDGameSession : Node
         int PeerId = MDStatics.GetPeerId();
         OnPlayerJoined_Internal(PeerId);
         OnSessionStartedEvent();
+        IsSessionStarted = true;
     }
 
     private void ClientOnFailedToConnect()
@@ -165,6 +176,7 @@ public class MDGameSession : Node
         OnPlayerJoined_Internal(PeerId);
         BroadcastNewPlayerJoined(PeerId);
         SendConnectionDataToClient(PeerId);
+        SynchronizeNetworkedNodes(PeerId);
     }
 
     // Called on the server when a client disconnects
@@ -264,6 +276,7 @@ public class MDGameSession : Node
     // Called when disconnected from the server or as the server
     private void OnDisconnect()
     {
+        IsSessionStarted = false;
         foreach (int PeerId in Players.Keys)
         {
             MDPlayerInfo Player = Players[PeerId];
@@ -409,7 +422,15 @@ public class MDGameSession : Node
         {
             Rpc(nameof(SpawnNodeType), NodeTypeString, ParentPath, NodeName, NodeMaster);
         }
-        return SpawnNodeType(NodeTypeString, ParentPath, NodeName, NodeMaster);
+
+        Node NewNode = SpawnNodeType(NodeTypeString, ParentPath, NodeName, NodeMaster);
+        if (NewNode != null)
+        {
+            NetworkedTypes.Add(NewNode, NodeTypeString);
+            OrderedNetworkedNodes.Add(NewNode);
+        }
+
+        return NewNode;
     }
 
     public Node SpawnNetworkedNode(PackedScene Scene, Node Parent, string NodeName, int NetworkMaster = -1)
@@ -438,7 +459,14 @@ public class MDGameSession : Node
         {
             Rpc(nameof(SpawnNodeScene), ScenePath, ParentPath, NodeName, NodeMaster);
         }
-        return SpawnNodeScene(ScenePath, ParentPath, NodeName, NodeMaster);
+
+        Node NewNode = SpawnNodeScene(ScenePath, ParentPath, NodeName, NodeMaster);
+        if (NewNode != null)
+        {
+            NetworkedScenes.Add(NewNode, ScenePath);
+            OrderedNetworkedNodes.Add(NewNode);
+        }
+        return NewNode;
     }
 
     [Puppet]
@@ -491,6 +519,61 @@ public class MDGameSession : Node
         return null;
     }
 
-    protected PlayerListType Players = new PlayerListType();
-    public MDReplicator Replicator {get; private set;} = new MDReplicator();
+    public void OnNodeRemoved(Node RemovedNode)
+    {
+        if (this.IsMaster() == false || MDStatics.IsNetworkActive() == false)
+        {
+            return;
+        }
+        
+        bool WasNetworked = NetworkedTypes.Remove(RemovedNode);
+        if (WasNetworked == false)
+        {
+            WasNetworked = NetworkedScenes.Remove(RemovedNode);
+        }
+
+        if (WasNetworked == false)
+        {
+            return;
+        }
+
+        OrderedNetworkedNodes.Remove(RemovedNode);
+
+        string NodePath = RemovedNode.GetPath();
+        if (MDStatics.IsNetworkActive())
+        {
+            Rpc(nameof(RemoveAndFreeNode), NodePath);
+        }
+    }
+
+    [Puppet]
+    private void RemoveAndFreeNode(string NodePath)
+    {
+        Node NetworkedNode = GetNodeOrNull(NodePath);
+        if (NetworkedNode == null)
+        {
+            MDLog.Error(LOG_CAT, "Could not find Node with path {0}", NodePath);
+            return;
+        }
+
+        NetworkedNode.RemoveAndFree();
+    }
+
+    private void SynchronizeNetworkedNodes(int PeerId)
+    {
+        foreach(Node NetworkedNode in OrderedNetworkedNodes)
+        {
+            string ParentPath = NetworkedNode.GetParent().GetPath();
+            if (NetworkedTypes.ContainsKey(NetworkedNode))
+            {
+                string TypePath = NetworkedTypes[NetworkedNode];
+                RpcId(PeerId, nameof(SpawnNodeType), TypePath, ParentPath, NetworkedNode.Name, NetworkedNode.GetNetworkMaster());
+            }
+            else if (NetworkedScenes.ContainsKey(NetworkedNode))
+            {
+                string ScenePath = NetworkedScenes[NetworkedNode];
+                RpcId(PeerId, nameof(SpawnNodeScene), ScenePath, ParentPath, NetworkedNode.Name, NetworkedNode.GetNetworkMaster());
+            }
+        }
+    }
 }

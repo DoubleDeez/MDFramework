@@ -94,8 +94,6 @@ public class MDBindNode : Attribute
             }
         }
 
-        // If it's still not found, log an error
-        MDLog.Error(LOG_CAT, "Failed to find BindNode with path [{0}] on Node [{1}] of type [{2}]", PathToNode, Instance.Name, Instance.GetType().Name);
         return null;
     }
 }

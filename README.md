@@ -135,6 +135,8 @@ The server has the ability to create a node for all clients over the network. It
 ```
 
 They all return the reference to the Server's instance of the new node. The Node is added as a child to whatever Node you call `SpawnNetworkedNode()` on.
+When the server removes the Networked Node from the tree, it will be removed for all players.
+When a new player connects, all previously networked Nodes will be created for that player. Synchronizing properties will have to be done manually after that.
 
 ## Command Line Arguments
 The class `MDArguments` provides many helpers for checking and parsing the command line arguments that your game launched with.
@@ -257,4 +259,5 @@ In no particular order:
 * Notification on variable/property replication
 * Output profiler results to csv
 * UPNP for game session
-* Join-in-progress support for MDReplicated and Nodes spawned by the server
+* Join-in-progress support for MDReplicated
+* MDReplicated should frame-slice over a set amount of frames rather than sending every frame
