@@ -85,7 +85,7 @@ public static class MDStatics
     // Gets the SceneTree from the GameInstance
     public static SceneTree GetTree()
     {
-        return GI != null ? GI.GetTree() : null;
+        return (GI != null && GI.IsInsideTree()) ? GI.GetTree() : null;
     }
 
     // Returns true if the types are equal or is SubClass is a a subclass of Base

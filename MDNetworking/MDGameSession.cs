@@ -40,6 +40,7 @@ public class MDGameSession : Node
     protected Dictionary<Node, string> NetworkedScenes = new Dictionary<Node, string>();
     protected List<Node> OrderedNetworkedNodes = new List<Node>();
 
+
     public override void _Ready()
     {
         MDLog.AddLogCategoryProperties(LOG_CAT, new MDLogProperties(MDLogLevel.Debug));
@@ -177,6 +178,7 @@ public class MDGameSession : Node
         BroadcastNewPlayerJoined(PeerId);
         SendConnectionDataToClient(PeerId);
         SynchronizeNetworkedNodes(PeerId);
+        Replicator.OnPlayerJoined(PeerId);
     }
 
     // Called on the server when a client disconnects

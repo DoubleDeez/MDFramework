@@ -122,6 +122,10 @@ By default, it uses reliable replication, but you can change that by using `[MDR
 
 By default, only the network master for the node will send out updated values, unless if the member is marked with `[Master]`, in which case the puppets will send values - with more than 1 puppet, this will lead to some unnecessary `Rset` calls.
 
+When a new player connects, they will receive `[MDReplicated]` values a short time after connect (about 1 second).
+
+If you wish to be notified on the client when a replicated value changes, use a custom property setter.
+
 **Note:** Due to [This Issue](https://github.com/godotengine/godot/issues/37813), nodes in your main scene will have to explicitly call `this.RegisterReplicatedAttributes()`, otherwise they are automatically registered.
 
 ## Networked Node Spawning
@@ -249,15 +253,13 @@ You can specify the path to look for or specify a different name to look for by 
 
 
 # TODO
-In no particular order:
-* Command console auto-complete with help text
-* UI management framework
 * Enable only specific instances of profile logging (rather than the entire system on/off)
-* Save system (Serialize a class to file)
 * Optimizations
+    * MDReplicated should frame-slice over a set amount of frames rather than sending every frame
+    * Opt-in attribute for auto registration (BindNode, Replicated, Command) instead of iterating every new node's members
 * Make a test project that gives examples on using all the features that can also be used to test them for development
-* Notification on variable/property replication
+* Save system (Serialize a class to file)
 * Output profiler results to csv
+* UI management framework
+* Command console auto-complete with help text
 * UPNP for game session
-* Join-in-progress support for MDReplicated
-* MDReplicated should frame-slice over a set amount of frames rather than sending every frame
