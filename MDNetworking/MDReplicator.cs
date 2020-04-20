@@ -25,7 +25,7 @@ public class MDReplicator
 
     public MDReplicator()
     {
-        MDLog.AddLogCategoryProperties(LOG_CAT, new MDLogProperties(MDLogLevel.Debug));
+        MDLog.AddLogCategoryProperties(LOG_CAT, new MDLogProperties(MDLogLevel.Info));
     }
 
     public void OnPlayerJoined(int PeerId)
@@ -101,7 +101,7 @@ public class MDReplicator
             NewPlayer JIPPlayer = JIPPlayers.Peek();
             if ((JIPPlayer.JoinTime + JIPWaitTime) < OS.GetTicksMsec())
             {
-                MDLog.Debug(LOG_CAT, "JIP Peer Id {0} reply for MDReplicated", JIPPlayer.PeerId);
+                MDLog.Debug(LOG_CAT, "JIP Peer Id {0} ready for MDReplicated", JIPPlayer.PeerId);
                 return JIPPlayers.Dequeue().PeerId;
             }
         }
