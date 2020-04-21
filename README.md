@@ -94,6 +94,8 @@ The `OnPlayerJoinedEvent` and `OnPlayerLeftEvent` events will pass in the player
 
 There's also `OnSessionStartedEvent`, `OnSessionFailedEvent`, and `OnSessionEndedEvent` so that you can be notified of the session's state.
 
+By default, [UPNP](https://docs.godotengine.org/en/latest/classes/class_upnp.html) is enabled and its status is printed to the log. To disable UPNP, override `bool UseUPNP();` on your GameInstance.
+
 ### Player Info
 
 The `MDPlayerInfo` class is the location for you to store all the information specific to a player.
@@ -250,8 +252,6 @@ You can specify the path to look for or specify a different name to look for by 
 
 **Note:** Due to [This Issue](https://github.com/godotengine/godot/issues/37813), nodes in your main scene will have to explicitly call `MDBindNode.PopulateBindNodes(this);`, otherwise they are automatically populated.
 
-
-
 # TODO
 * Enable only specific instances of profile logging (rather than the entire system on/off)
 * Optimizations
@@ -262,4 +262,3 @@ You can specify the path to look for or specify a different name to look for by 
 * Output profiler results to csv
 * UI management framework
 * Command console auto-complete with help text
-* UPNP for game session

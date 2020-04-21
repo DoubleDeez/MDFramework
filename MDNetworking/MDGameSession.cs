@@ -21,10 +21,11 @@ public class MDGameSession : Node
     public const int SERVER_ID = 1;
     public const string PlayerNameFormat = "Player{0}";
 
-    public bool IsSessionStarted { get; private set; } = false;
+    public bool IsSessionStarted { get; protected set; } = false;
+
+    public string ExternalAddress { get; protected set; } = "";
 
     public delegate void PlayerEventHandler(int PeerId);
-
     // Triggered whenever a player joined, includes self and existing players when initially joining
     public event PlayerEventHandler OnPlayerJoinedEvent = delegate {};
     public event PlayerEventHandler OnPlayerLeftEvent = delegate {};
@@ -39,6 +40,8 @@ public class MDGameSession : Node
     protected Dictionary<Node, string> NetworkedTypes = new Dictionary<Node, string>();
     protected Dictionary<Node, string> NetworkedScenes = new Dictionary<Node, string>();
     protected List<Node> OrderedNetworkedNodes = new List<Node>();
+    protected UPNP ServerUPNP = null;
+    protected int UPNPPort;
 
 
     public override void _Ready()
@@ -79,6 +82,7 @@ public class MDGameSession : Node
 
         if (Success)
         {
+            UPNPPort = Port;
             GetTree().NetworkPeer = peer;
             ServerOnStarted();
         }
@@ -137,6 +141,10 @@ public class MDGameSession : Node
 
     private void ServerOnStarted()
     {
+        if (this.GetGameInstance().UseUPNP())
+        {
+            ServerUPNP = InitUPNP(UPNPPort);
+        }
         MDLog.Info(LOG_CAT, "Server started");
         #if !GODOT_SERVER
         OnPlayerJoined_Internal(SERVER_ID);
@@ -294,6 +302,7 @@ public class MDGameSession : Node
             GetTree().NetworkPeer = null;
         }
 
+        StopUPNP();
         Players.Clear();
         OnSessionEndedEvent();
     }
@@ -577,6 +586,29 @@ public class MDGameSession : Node
                 string ScenePath = NetworkedScenes[NetworkedNode];
                 RpcId(PeerId, nameof(SpawnNodeScene), ScenePath, ParentPath, NetworkedNode.Name, NetworkedNode.GetNetworkMaster());
             }
+        }
+    }
+
+    protected UPNP InitUPNP(int Port)
+    {
+        UPNP NewUPNP = new UPNP();
+        UPNP.UPNPResult DiscoverResult = (UPNP.UPNPResult)NewUPNP.Discover();
+        MDLog.Info(LOG_CAT, "UPNP Result for Discover is {0}", DiscoverResult);
+        UPNP.UPNPResult MappingResult = (UPNP.UPNPResult)NewUPNP.AddPortMapping(Port);
+        MDLog.Info(LOG_CAT, "UPNP Result for Mapping Port {0} is {1}", Port, MappingResult);
+        ExternalAddress = NewUPNP.QueryExternalAddress();
+        MDLog.Info(LOG_CAT, "UPNP External address found [{0}]", ExternalAddress);
+        return NewUPNP;
+    }
+
+    protected void StopUPNP()
+    {
+        ExternalAddress = "";
+        if (ServerUPNP != null)
+        {
+            ServerUPNP.DeletePortMapping(UPNPPort);
+            ServerUPNP.Free();
+            ServerUPNP = null;
         }
     }
 }

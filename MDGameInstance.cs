@@ -137,13 +137,19 @@ public class MDGameInstance : Node
     }
 
     // Override to change when the console is available
-    public bool IsConsoleAvailable()
+    public virtual bool IsConsoleAvailable()
     {
         #if DEBUG
         return true;
         #else
         return false;
         #endif
+    }
+
+    // Override to change when UPNP is used for the server
+    public virtual bool UseUPNP()
+    {
+        return true;
     }
 
     public MDGameSession GameSession {get; private set;}
