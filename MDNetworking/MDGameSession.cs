@@ -138,8 +138,9 @@ public class MDGameSession : Node
     private void ServerOnStarted()
     {
         MDLog.Info(LOG_CAT, "Server started");
-        // TODO - Dedicated server support
+        #if !GODOT_SERVER
         OnPlayerJoined_Internal(SERVER_ID);
+        #endif
         OnSessionStartedEvent();
         IsSessionStarted = true;
     }
@@ -365,7 +366,7 @@ public class MDGameSession : Node
             int Port = MDArguments.GetArgInt(ARG_SERVER);
             StartServer(Port);
         }
-        // Expects -client=[IPAddres:Port]
+        // Expects -client=[IPAddress:Port]
         else if (MDArguments.HasArg(ARG_CLIENT))
         {
             string ClientArg = MDArguments.GetArg(ARG_CLIENT);

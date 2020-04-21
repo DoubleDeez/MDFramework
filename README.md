@@ -80,7 +80,7 @@ And finally for disconnecting (as either server or client)
 void Disconnect();
 ```
 
-There's also a method to start the session with network but still triggers the Game Session events to make it easier when implementing your game:
+There's also a method to start the session without the network but still trigger the Game Session events to make it easier when implementing your game:
 ```csharp
 bool StartStandalone();
 ```
@@ -161,7 +161,7 @@ if (MDArguments.HasArg("server"))
     int Port = MDArguments.GetArgInt("server");
     StartServer(Port);
 }
-// Expects -client=[IPAddres:Port]
+// Expects -client=[IPAddress:Port]
 else if (MDArguments.HasArg("client"))
 {
     string ClientArg = MDArguments.GetArg("client");
