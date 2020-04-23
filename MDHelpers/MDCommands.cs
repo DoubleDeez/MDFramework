@@ -211,7 +211,7 @@ public static class MDCommands
     public static void AddCommandToHistory(string Command)
     {
         List<string> History = GetCommandHistory();
-        if (History.Count > 0 && History[History.Count - 1].Equals(Command))
+        if (History.Count > 0 && History[0].Equals(Command))
         {
             // Don't store the last as last command
             return;
