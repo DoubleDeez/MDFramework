@@ -203,13 +203,20 @@ public static class MDCommands
         CmdFile.Close();
 
         List<string> CommandHistory = new List<string>(HistoryText.Split('\n'));
-        CommandHistory = CommandHistory.Where(s => !string.IsNullOrWhiteSpace(s)).Distinct().ToList();
+        CommandHistory = CommandHistory.Where(s => !string.IsNullOrWhiteSpace(s)).ToList();
         CommandHistory.Reverse();
         return CommandHistory;
     }
 
     public static void AddCommandToHistory(string Command)
     {
+        List<string> History = GetCommandHistory();
+        if (History.Count > 0 && History[History.Count - 1].Equals(Command))
+        {
+            // Don't store the last as last command
+            return;
+        }
+
         File CmdFile = GetHistoryFile();
         if (CmdFile == null)
         {
@@ -219,6 +226,21 @@ public static class MDCommands
         CmdFile.SeekEnd();
         CmdFile.StoreLine(Command);
         CmdFile.Close();
+    }
+
+    public static List<String> GetCommandList()
+    {
+        return CommandMap.Keys.ToList();
+    }
+
+    public static string GetHelpText(string Command)
+    {
+        if (CommandMap.ContainsKey(Command))
+        {
+            return CommandMap[Command].HelpText;
+        }
+
+        return "";
     }
 
     private static File GetHistoryFile()

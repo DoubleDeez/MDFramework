@@ -173,7 +173,7 @@ else if (MDArguments.HasArg("client"))
 ```
 
 ## Command Console
-In game, the command console can be opened with the `~` key. Command history can be navigated using the `Up` and `Down` arrow keys.
+In game, the command console can be opened with the `~` key. Command history can be navigated using the `Up` and `Down` arrow keys. To auto complete the command, hit `Tab`.
 
 In your code, you can add more commands by adding the `[MDCommand()]` attribute to any methods you wish to have as commands.
 Then from that same class call `MDCommands.RegisterCommandAttributes(this);` to have those commands registered.
@@ -258,7 +258,7 @@ You can specify the path to look for or specify a different name to look for by 
     * MDReplicated should frame-slice over a set amount of frames rather than sending every frame
     * Opt-in attribute for auto registration (BindNode, Replicated, Command) instead of iterating every new node's members
 * Make a test project that gives examples on using all the features that can also be used to test them for development
+    * If you have an open source project that uses MDFramework, please submit a PR to the README that adds a link to it
 * Save system (Serialize a class to file)
 * Output profiler results to csv
 * UI management framework
-* Command console auto-complete with help text
