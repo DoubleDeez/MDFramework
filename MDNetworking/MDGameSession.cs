@@ -7,6 +7,7 @@ using System.Collections.Generic;
  *
  * Class that manages the current multiplayer state of the game.
  */
+ [MDAutoRegister]
 public class MDGameSession : Node
 {
     private const string DEFAULT_IP = "127.0.0.1";

@@ -15,6 +15,7 @@ struct NewPlayer
     }
 }
 
+[MDAutoRegister]
 public class MDReplicator
 {
     private List<ReplicatedNode> NodeList = new List<ReplicatedNode>();

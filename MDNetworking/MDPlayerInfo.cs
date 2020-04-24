@@ -6,6 +6,7 @@ using System;
  *
  * Class that tracks the players game data that should be replicated to other players
  */
+ [MDAutoRegister]
 public class MDPlayerInfo : Node
 {
     private const string LOG_CAT = "LogPlayerInfo";

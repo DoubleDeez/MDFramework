@@ -24,6 +24,8 @@ public class MDGameInstance : Node
         // Init instances
         CreateGameSession();
         CreateInterfaceManager();
+
+        RegisterNodeAndChildren(GetTree().Root);
     }
 
     public override void _Notification(int NotificationType)
@@ -66,6 +68,21 @@ public class MDGameInstance : Node
 
     }
 
+    // Travels the tree and registers the existing nodes
+    private void RegisterNodeAndChildren(Node RootNode)
+    {
+        if (RootNode != null)
+        {
+            OnNodeAdded_Internal(RootNode);
+
+            int ChildCount = RootNode.GetChildCount();
+            for (int i = 0; i < ChildCount; ++i)
+            {
+                RegisterNodeAndChildren(RootNode.GetChild(i));
+            }
+        }
+    }
+
     // Bound to SceneTree.node_added
     private void OnNodeAdded_Internal(Godot.Object NodeObj)
     {
@@ -95,8 +112,21 @@ public class MDGameInstance : Node
     // Registers a new node to MDFramework systems
     private void RegisterNewNode(Node Instance)
     {
+        bool RegisterDebug = false;
+        MDAutoRegister AutoRegAtr = MDStatics.FindClassAttribute<MDAutoRegister>(Instance.GetType());
+        if ((RequireAutoRegister() && AutoRegAtr == null) || (AutoRegAtr != null && AutoRegAtr.RegisterType == MDAutoRegisterType.None))
+        {
+            return;
+        }
+
+        RegisterDebug = AutoRegAtr.RegisterType == MDAutoRegisterType.Debug;
+
         Instance.PopulateBindNodes();
         Instance.RegisterReplicatedAttributes();
+        if (RegisterDebug)
+        {
+            Instance.RegisterCommandAttributes();
+        }
     }
 
     // Unregisters a removed node from MDFramework systems
@@ -150,6 +180,12 @@ public class MDGameInstance : Node
     public virtual bool UseUPNP()
     {
         return true;
+    }
+
+    // Override to change is MDAutoRegister is required
+    public virtual bool RequireAutoRegister()
+    {
+        return false;
     }
 
     public MDGameSession GameSession {get; private set;}

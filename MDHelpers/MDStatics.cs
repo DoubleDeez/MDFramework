@@ -93,4 +93,26 @@ public static class MDStatics
     {
         return SubClass.IsSubclassOf(Base) || SubClass == Base;
     }
+
+    // Returns the attribute object for the specified type, climbing the hierarchy until Node is reached or the attribute is found
+    public static T FindClassAttribute<T>(Type InstanceType) where T : Attribute
+    {
+        if (IsSameOrSubclass(InstanceType, typeof(Node)) == false)
+        {
+            return null;
+        }
+
+        T FoundAtr = Attribute.GetCustomAttribute(InstanceType, typeof(T)) as T;
+        if (FoundAtr != null)
+        {
+            return FoundAtr;
+        }
+
+        if (InstanceType != typeof(Node))
+        {
+            return FindClassAttribute<T>(InstanceType.BaseType);
+        }
+
+        return null;
+    }
 }

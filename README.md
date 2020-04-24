@@ -128,7 +128,7 @@ When a new player connects, they will receive `[MDReplicated]` values a short ti
 
 If you wish to be notified on the client when a replicated value changes, use a custom property setter.
 
-**Note:** Due to [This Issue](https://github.com/godotengine/godot/issues/37813), nodes in your main scene will have to explicitly call `this.RegisterReplicatedAttributes()`, otherwise they are automatically registered.
+See the [Automatic Registration](#automatic-registration) section for information on how these are populated and how you can configure that.
 
 ## Networked Node Spawning
 The server has the ability to create a node for all clients over the network. It works by calling `this.SpawnNetworkedNode()` which is available on any `Node` object.
@@ -176,7 +176,7 @@ else if (MDArguments.HasArg("client"))
 In game, the command console can be opened with the `~` key. Command history can be navigated using the `Up` and `Down` arrow keys. To auto complete the command, hit `Tab`.
 
 In your code, you can add more commands by adding the `[MDCommand()]` attribute to any methods you wish to have as commands.
-Then from that same class call `MDCommands.RegisterCommandAttributes(this);` to have those commands registered.
+Then from that same class call `this.RegisterCommandAttributes();` to have those commands registered or see the [Automatic Registration](#automatic-registration) section to have it done automatically.
 For classes extending `Node`, they aren't registered automatically as commands are a debug feature, so a good place to call it would be in `_Ready()`, `Node` classes have an extension helper for this, so you can just call `this.RegisterCommandAttributes();`.
 
 Only a single instance of a class can be registered for commands, this is because commands are invoked via their method name, which are the same for all instances of a class.
@@ -250,15 +250,49 @@ The MD framework will automatically assign a child node with the same name to th
 You can specify the path to look for or specify a different name to look for by passing it the attribute:
 `[MDBindNode("/root/MyNode")]` or `[MDBindNode("MyChildNode")]`, this will pass the path to Godot's `Node.GetNodeOrNull()` method.
 
-**Note:** Due to [This Issue](https://github.com/godotengine/godot/issues/37813), nodes in your main scene will have to explicitly call `MDBindNode.PopulateBindNodes(this);`, otherwise they are automatically populated.
+See the [Automatic Registration](#automatic-registration) section for information on how these are populated and how you can configure that.
+
+## Automatic Registration
+Many of MDFrameworks features require new nodes to be registered with the MDFramework system. By default MDGameInstance will perform these registrations for you automatically.
+
+There are 2 ways to override that behaviour, the first is to override `public virtual bool RequireAutoRegister();` in your GameInstance to return `true`.
+This will then check the Node's class's attributes for `[MDAutoRegister]` before registering.
+
+The second method is to instead give the class you don't want to auto register an attribute:
+```cs
+[MDAutoRegister(MDAutoRegisterType.None)]
+public class NodeThatWontRegister : Node
+{}
+```
+
+Both these methods will require that you call the registration methods manually:
+```cs
+this.PopulateBindNodes();
+this.RegisterReplicatedAttributes();
+this.RegisterCommandAttributes();
+```
+
+By default you have to manually register `MDCommand` using `this.RegisterCommandAttributes();` but you can configure a class to auto register everything using
+```cs
+[MDAutoRegister(MDAutoRegisterType.Debug)]
+public class NodeThatAutoRegistersEverything : Node
+{}
+```
+
+This will autoregister all features, including debug ones like commands.
+
+# Contributing
+There are many ways to contribute
+* Report bugs using the GitHub issue tracker
+* Suggest features that would improve the framework using the GitHub issue tracker
+* Submit a pull request that improves documentation or fixes an issue
 
 # TODO
 * Enable only specific instances of profile logging (rather than the entire system on/off)
 * Optimizations
     * MDReplicated should frame-slice over a set amount of frames rather than sending every frame
-    * Opt-in attribute for auto registration (BindNode, Replicated, Command) instead of iterating every new node's members
+    * Add interpolation to relevant MDReplicated values (floats, Vectors, etc)
 * Make a test project that gives examples on using all the features that can also be used to test them for development
-    * If you have an open source project that uses MDFramework, please submit a PR to the README that adds a link to it
 * Save system (Serialize a class to file)
 * Output profiler results to csv
 * UI management framework
