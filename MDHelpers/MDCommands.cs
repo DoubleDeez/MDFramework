@@ -182,8 +182,16 @@ public static class MDCommands
         int ArgIndex = 0;
         foreach (ParameterInfo ParamInfo in Params)
         {
-            object Param = Convert.ChangeType(ParamArray[ArgIndex++], ParamInfo.ParameterType);
-            CmdParams.Add(Param);
+            if (ParamInfo.ParameterType.IsEnum)
+            {
+                object Param = Enum.Parse(ParamInfo.ParameterType, ParamArray[ArgIndex++] as string, true);
+                CmdParams.Add(Param);
+            }
+            else
+            {
+                object Param = Convert.ChangeType(ParamArray[ArgIndex++], ParamInfo.ParameterType);
+                CmdParams.Add(Param);
+            }
         }
 
         CmdInfo.Method.Invoke(CmdInfo.Instance, CmdParams.ToArray());
