@@ -253,10 +253,10 @@ You can specify the path to look for or specify a different name to look for by 
 See the [Automatic Registration](#automatic-registration) section for information on how these are populated and how you can configure that.
 
 ## Automatic Registration
-Many of MDFrameworks features require new nodes to be registered with the MDFramework system. By default MDGameInstance will perform these registrations for you automatically.
+Many of MDFramework's features require new nodes to be registered with the MDFramework system. By default MDGameInstance will perform these registrations for you automatically.
 
 There are 2 ways to override that behaviour, the first is to override `public virtual bool RequireAutoRegister();` in your GameInstance to return `true`.
-This will then check the Node's class's attributes for `[MDAutoRegister]` before registering.
+This will then check the Node's class's attributes for `[MDAutoRegister]` before registering. Saving you CPU time from iterating every field on the class when a new node is added.
 
 The second method is to instead give the class you don't want to auto register an attribute:
 ```cs

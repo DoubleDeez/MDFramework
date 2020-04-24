@@ -37,33 +37,10 @@ public class MDReplicator
     // Registers the given instance's fields marked with [MDReplicated()]
     public void RegisterReplication(Node Instance)
     {
-        List<MemberInfo> Members = new List<MemberInfo>();
-        Type NodeType = Instance.GetType();
-        while (NodeType != typeof(Node))
-        {
-            Members.AddRange(NodeType.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance));
-            Members.AddRange(NodeType.GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance));
-            NodeType = NodeType.BaseType;
-        }
-
+        List<MemberInfo> Members = MDStatics.GetTypeMemberInfos(Instance);
         List<ReplicatedMember> NodeMembers = new List<ReplicatedMember>();
         foreach(MemberInfo Member in Members)
         {
-            bool AlreadyExists = false;
-            foreach (ReplicatedMember NodeMember in NodeMembers)
-            {
-                if (NodeMember.Member.DeclaringType == Member.DeclaringType && NodeMember.Member.Name == Member.Name)
-                {
-                    AlreadyExists = true;
-                    break;
-                }
-            }
-
-            if (AlreadyExists)
-            {
-                continue;
-            }
-
             MDReplicated RepAttribute = Member.GetCustomAttribute(typeof(MDReplicated)) as MDReplicated;
             if (RepAttribute != null)
             {

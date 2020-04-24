@@ -1,5 +1,7 @@
 using Godot;
 using System;
+using System.Collections.Generic;
+using System.Reflection;
 
 public static class MDStatics
 {
@@ -114,5 +116,39 @@ public static class MDStatics
         }
 
         return null;
+    }
+
+    // Returns a list of all the unique members for a Node, including the hierarchy
+    public static List<MemberInfo> GetTypeMemberInfos(Node CurNode)
+    {
+        List<MemberInfo> Members = new List<MemberInfo>();
+        Type NodeType = CurNode.GetType();
+        while (NodeType != typeof(Node))
+        {
+            Members.AddRange(NodeType.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance));
+            Members.AddRange(NodeType.GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance));
+            NodeType = NodeType.BaseType;
+        }
+
+        List<MemberInfo> DeDupedMembers = new List<MemberInfo>();
+        foreach(MemberInfo Member in Members)
+        {
+            bool IsUnique = true;
+            foreach(MemberInfo DeDupedMember in DeDupedMembers)
+            {
+                if (DeDupedMember.DeclaringType == Member.DeclaringType && DeDupedMember.Name == Member.Name)
+                {
+                    IsUnique = false;
+                    break;
+                }
+            }
+
+            if (IsUnique)
+            {
+                DeDupedMembers.Add(Member);
+            }
+        }
+
+        return DeDupedMembers;
     }
 }

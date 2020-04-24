@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Reflection;
 using Godot;
 
@@ -22,44 +23,42 @@ public class MDBindNode : Attribute
 
     public static void PopulateBindNodes(Node Instance)
     {
-        FieldInfo[] Fields = Instance.GetType().GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-        foreach(FieldInfo Field in Fields)
+        List<MemberInfo> Members = MDStatics.GetTypeMemberInfos(Instance);
+        foreach (MemberInfo Member in Members)
         {
-            MDBindNode BindAttr = Field.GetCustomAttribute(typeof(MDBindNode)) as MDBindNode;
+            MDBindNode BindAttr = Member.GetCustomAttribute(typeof(MDBindNode)) as MDBindNode;
             if (BindAttr != null)
             {
-                if (!MDStatics.IsSameOrSubclass(Field.FieldType, typeof(Node)))
+                Type MemberType = null;
+                FieldInfo Field = Member as FieldInfo;
+                PropertyInfo Property = Member as PropertyInfo;
+                if (Field != null)
                 {
-                    MDLog.Error(LOG_CAT, "Not Node-Type field [{0}] on Node Type [{0}] was marked with [MDBindNode()]", Field.Name, Instance.GetType().Name);
+                    MemberType = Field.FieldType;
+                }
+                else if (Property != null)
+                {
+                    MemberType = Property.PropertyType;
+                }
+
+                if (!MDStatics.IsSameOrSubclass(MemberType, typeof(Node)))
+                {
+                    MDLog.Error(LOG_CAT, "Not Node-Type field [{0}] on Node {1} with Type [{2}] was marked with [MDBindNode()]", Member.Name, Instance.Name, Instance.GetType().Name);
                     continue;
                 }
 
-                string PathToNode = BindAttr.GetNodePath(Field.Name);
+                string PathToNode = BindAttr.GetNodePath(Member.Name);
                 Node BoundNode = FindNode(Instance, PathToNode);
                 if (BoundNode != null)
                 {
-                    Field.SetValue(Instance, BoundNode);
-                }
-            }
-        }
-
-        PropertyInfo[] Props = Instance.GetType().GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-        foreach(PropertyInfo Prop in Props)
-        {
-            MDBindNode BindAttr = Prop.GetCustomAttribute(typeof(MDBindNode)) as MDBindNode;
-            if (BindAttr != null)
-            {
-                if (!MDStatics.IsSameOrSubclass(Prop.PropertyType, typeof(Node)))
-                {
-                    MDLog.Error(LOG_CAT, "Non Node-Type property [{0}] on Node Type [{0}] was marked with [MDBindNode()]", Prop.Name, Instance.GetType().Name);
-                    continue;
-                }
-
-                string PathToNode = BindAttr.GetNodePath(Prop.Name);
-                Node BoundNode = FindNode(Instance, PathToNode);
-                if (BoundNode != null)
-                {
-                    Prop.SetValue(Instance, BoundNode);
+                    if (Field != null)
+                    {
+                        Field.SetValue(Instance, BoundNode);
+                    }
+                    else if (Property != null)
+                    {
+                        Property.SetValue(Instance, BoundNode);
+                    }
                 }
             }
         }
