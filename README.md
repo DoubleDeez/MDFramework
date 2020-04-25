@@ -148,10 +148,12 @@ The server has the ability to create a node for all clients over the network. It
 
 `SpawnNetworkedNode()` has 3 overloads, allowing you to spawn a Node from a C# Type, a PackedScene, or a path string to a scene:
 ```csharp
-    public Node SpawnNetworkedNode(Type NodeType, string NodeName, int NetworkMaster = -1);
-    public Node SpawnNetworkedNode(PackedScene Scene, string NodeName, int NetworkMaster = -1);
-    public Node SpawnNetworkedNode(string ScenePath, string NodeName, int NetworkMaster = -1);
+    public Node SpawnNetworkedNode(Type NodeType, string NodeName, int NetworkMaster = -1, Vector3? SpawnPos = null);
+    public Node SpawnNetworkedNode(PackedScene Scene, string NodeName, int NetworkMaster = -1, Vector3? SpawnPos = null);
+    public Node SpawnNetworkedNode(string ScenePath, string NodeName, int NetworkMaster = -1, Vector3? SpawnPos = null);
 ```
+
+`SpawnPos` is only used if the spawned node is a `Node2D` or `Spatial`. For `Node2D`, only the `x` and `y` components are used.
 
 They all return the reference to the Server's instance of the new node. The Node is added as a child to whatever Node you call `SpawnNetworkedNode()` on.
 When the server removes the Networked Node from the tree, it will be removed for all players.

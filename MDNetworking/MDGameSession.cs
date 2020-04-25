@@ -407,7 +407,7 @@ public class MDGameSession : Node
         #endif
     }
 
-    public Node SpawnNetworkedNode(Type NodeType, Node Parent, string NodeName, int NetworkMaster = -1)
+    public Node SpawnNetworkedNode(Type NodeType, Node Parent, string NodeName, int NetworkMaster = -1, Vector3? SpawnPos = null)
     {
         if (this.IsMaster() == false)
         {
@@ -431,12 +431,13 @@ public class MDGameSession : Node
         string NodeTypeString = NodeType.AssemblyQualifiedName;
         string ParentPath = Parent.GetPath();
 
+        Vector3 SpawnPosVal = SpawnPos.GetValueOrDefault();
         if (MDStatics.IsNetworkActive())
         {
-            Rpc(nameof(SpawnNodeType), NodeTypeString, ParentPath, NodeName, NodeMaster);
+            Rpc(nameof(SpawnNodeType), NodeTypeString, ParentPath, NodeName, NodeMaster, SpawnPosVal);
         }
 
-        Node NewNode = SpawnNodeType(NodeTypeString, ParentPath, NodeName, NodeMaster);
+        Node NewNode = SpawnNodeType(NodeTypeString, ParentPath, NodeName, NodeMaster, SpawnPosVal);
         if (NewNode != null)
         {
             NetworkedTypes.Add(NewNode, NodeTypeString);
@@ -446,12 +447,12 @@ public class MDGameSession : Node
         return NewNode;
     }
 
-    public Node SpawnNetworkedNode(PackedScene Scene, Node Parent, string NodeName, int NetworkMaster = -1)
+    public Node SpawnNetworkedNode(PackedScene Scene, Node Parent, string NodeName, int NetworkMaster = -1, Vector3? SpawnPos = null)
     {
-        return SpawnNetworkedNode(Scene.ResourcePath, Parent, NodeName, NetworkMaster);
+        return SpawnNetworkedNode(Scene.ResourcePath, Parent, NodeName, NetworkMaster, SpawnPos);
     }
 
-    public Node SpawnNetworkedNode(string ScenePath, Node Parent, string NodeName, int NetworkMaster = -1)
+    public Node SpawnNetworkedNode(string ScenePath, Node Parent, string NodeName, int NetworkMaster = -1, Vector3? SpawnPos = null)
     {
         if (this.IsMaster() == false)
         {
@@ -468,12 +469,13 @@ public class MDGameSession : Node
         int NodeMaster = (NetworkMaster != -1) ? NetworkMaster : MDStatics.GetPeerId();
         string ParentPath = Parent.GetPath();
 
+        Vector3 SpawnPosVal = SpawnPos.GetValueOrDefault();
         if (MDStatics.IsNetworkActive())
         {
-            Rpc(nameof(SpawnNodeScene), ScenePath, ParentPath, NodeName, NodeMaster);
+            Rpc(nameof(SpawnNodeScene), ScenePath, ParentPath, NodeName, NodeMaster, SpawnPosVal);
         }
 
-        Node NewNode = SpawnNodeScene(ScenePath, ParentPath, NodeName, NodeMaster);
+        Node NewNode = SpawnNodeScene(ScenePath, ParentPath, NodeName, NodeMaster, SpawnPosVal);
         if (NewNode != null)
         {
             NetworkedScenes.Add(NewNode, ScenePath);
@@ -483,7 +485,7 @@ public class MDGameSession : Node
     }
 
     [Puppet]
-    private Node SpawnNodeType(string NodeTypeString, string ParentPath, string NodeName, int NetworkMaster)
+    private Node SpawnNodeType(string NodeTypeString, string ParentPath, string NodeName, int NetworkMaster, Vector3 SpawnPos)
     {
         Node Parent = GetNodeOrNull(ParentPath);
         if (Parent == null)
@@ -504,11 +506,22 @@ public class MDGameSession : Node
         NewNode.SetNetworkMaster(NetworkMaster);
         Parent.AddChild(NewNode);
 
+        Node2D NewNode2D = NewNode as Node2D;
+        Spatial NewNodeSpatial = NewNode as Spatial;
+        if (NewNode2D != null)
+        {
+            NewNode2D.Position = SpawnPos.To2D();
+        }
+        else if (NewNodeSpatial != null)
+        {
+            NewNodeSpatial.Translation = SpawnPos;
+        }
+
         return NewNode;
     }
 
     [Puppet]
-    private Node SpawnNodeScene(string ScenePath, string ParentPath, string NodeName, int NetworkMaster)
+    private Node SpawnNodeScene(string ScenePath, string ParentPath, string NodeName, int NetworkMaster, Vector3 SpawnPos)
     {
         Node Parent = GetNodeOrNull(ParentPath);
         if (Parent == null)
@@ -525,6 +538,17 @@ public class MDGameSession : Node
             NewNode.Name = NodeName;
             NewNode.SetNetworkMaster(NetworkMaster);
             Parent.AddChild(NewNode);
+
+            Node2D NewNode2D = NewNode as Node2D;
+            Spatial NewNodeSpatial = NewNode as Spatial;
+            if (NewNode2D != null)
+            {
+                NewNode2D.Position = SpawnPos.To2D();
+            }
+            else if (NewNodeSpatial != null)
+            {
+                NewNodeSpatial.Translation = SpawnPos;
+            }
 
             return NewNode;
         }
@@ -576,16 +600,28 @@ public class MDGameSession : Node
     {
         foreach(Node NetworkedNode in OrderedNetworkedNodes)
         {
+            Vector3 SpawnPos = new Vector3();
+            Node2D NetworkedNode2D = NetworkedNode as Node2D;
+            Spatial NetworkedNodeSpatial = NetworkedNode as Spatial;
+            if (NetworkedNode2D != null)
+            {
+                SpawnPos = NetworkedNode2D.Position.To3D();
+            }
+            else if (NetworkedNodeSpatial != null)
+            {
+                SpawnPos = NetworkedNodeSpatial.Translation;
+            }
+
             string ParentPath = NetworkedNode.GetParent().GetPath();
             if (NetworkedTypes.ContainsKey(NetworkedNode))
             {
                 string TypePath = NetworkedTypes[NetworkedNode];
-                RpcId(PeerId, nameof(SpawnNodeType), TypePath, ParentPath, NetworkedNode.Name, NetworkedNode.GetNetworkMaster());
+                RpcId(PeerId, nameof(SpawnNodeType), TypePath, ParentPath, NetworkedNode.Name, NetworkedNode.GetNetworkMaster(), SpawnPos);
             }
             else if (NetworkedScenes.ContainsKey(NetworkedNode))
             {
                 string ScenePath = NetworkedScenes[NetworkedNode];
-                RpcId(PeerId, nameof(SpawnNodeScene), ScenePath, ParentPath, NetworkedNode.Name, NetworkedNode.GetNetworkMaster());
+                RpcId(PeerId, nameof(SpawnNodeScene), ScenePath, ParentPath, NetworkedNode.Name, NetworkedNode.GetNetworkMaster(), SpawnPos);
             }
         }
     }

@@ -29,20 +29,20 @@ public static class MDNodeExtensions
         return PlayerInfo as T;
     }
     
-    public static Node SpawnNetworkedNode(this Node Instance, Type NodeType, string NodeName, int NetworkMaster = -1)
+    public static Node SpawnNetworkedNode(this Node Instance, Type NodeType, string NodeName, int NetworkMaster = -1, Vector3? SpawnPos = null)
     {
         MDGameSession GameSession = Instance.GetGameSession();
-        return GameSession.SpawnNetworkedNode(NodeType, Instance, NodeName, NetworkMaster);
+        return GameSession.SpawnNetworkedNode(NodeType, Instance, NodeName, NetworkMaster, SpawnPos);
     }
-    public static Node SpawnNetworkedNode(this Node Instance, PackedScene Scene, string NodeName, int NetworkMaster = -1)
+    public static Node SpawnNetworkedNode(this Node Instance, PackedScene Scene, string NodeName, int NetworkMaster = -1, Vector3? SpawnPos = null)
     {
         MDGameSession GameSession = Instance.GetGameSession();
-        return GameSession.SpawnNetworkedNode(Scene, Instance, NodeName, NetworkMaster);
+        return GameSession.SpawnNetworkedNode(Scene, Instance, NodeName, NetworkMaster, SpawnPos);
     }
-    public static Node SpawnNetworkedNode(this Node Instance, string ScenePath, string NodeName, int NetworkMaster = -1)
+    public static Node SpawnNetworkedNode(this Node Instance, string ScenePath, string NodeName, int NetworkMaster = -1, Vector3? SpawnPos = null)
     {
         MDGameSession GameSession = Instance.GetGameSession();
-        return GameSession.SpawnNetworkedNode(ScenePath, Instance, NodeName, NetworkMaster);
+        return GameSession.SpawnNetworkedNode(ScenePath, Instance, NodeName, NetworkMaster, SpawnPos);
     }
 
     // Shortcut for GetTree().GetRoot().AddChild()
