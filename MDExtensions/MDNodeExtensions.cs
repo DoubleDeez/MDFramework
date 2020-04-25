@@ -126,4 +126,63 @@ public static class MDNodeExtensions
         Instance.GetParent().RemoveChild(Instance);
         Instance.QueueFree();
     }
+
+    // Same as Rpc except it checks if the network is activate first
+    public static object MDRpc(this Node Instance, string Method, params object[] Args)
+    {
+        if (MDStatics.IsNetworkActive())
+        {
+            return Instance.Rpc(Method, Args);
+        }
+
+        return null;
+    }
+
+    // Same as RpcId except it checks if the network is activate first
+    public static object MDRpcId(this Node Instance, int PeerId, string Method, params object[] Args)
+    {
+        if (MDStatics.IsNetworkActive())
+        {
+            return Instance.RpcId(PeerId, Method, Args);
+        }
+
+        return null;
+    }
+
+    // Same as RpcUnreliable except it checks if the network is activate first
+    public static object MDRpcUnreliable(this Node Instance, string Method, params object[] Args)
+    {
+        if (MDStatics.IsNetworkActive())
+        {
+            return Instance.RpcUnreliable(Method, Args);
+        }
+
+        return null;
+    }
+
+    // Same as RpcUnreliableId except it checks if the network is activate first
+    public static object MDRpcUnreliableId(this Node Instance, int PeerId, string Method, params object[] Args)
+    {
+        if (MDStatics.IsNetworkActive())
+        {
+            return Instance.RpcUnreliableId(PeerId, Method, Args);
+        }
+
+        return null;
+    }
+
+    // Sends the RPC to the server only
+    public static object MDServerRpc(this Node Instance, string Method, params object[] Args)
+    {
+        int ServerId = Instance.GetGameSession().GetNetworkMaster();
+        return Instance.MDRpcId(ServerId, Method, Args);
+    }
+
+    // Sends the unreliable RPC to the server only
+    public static object MDServerRpcUnreliable(this Node Instance, string Method, params object[] Args)
+    {
+        int ServerId = Instance.GetGameSession().GetNetworkMaster();
+        return Instance.MDRpcUnreliableId(ServerId, Method, Args);
+    }
+
 }

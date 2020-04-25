@@ -77,6 +77,12 @@ public static class MDStatics
     {
         return GetPeerId() != 0;
     }
+    
+    // Is the game session the server?
+    public static bool IsServer()
+    {
+        return GetPeerId() == GetGameSession().GetNetworkMaster();
+    }
 
     // Gets the net mode of the local client
     public static MDNetMode GetNetMode()

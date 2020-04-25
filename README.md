@@ -126,7 +126,20 @@ By default, only the network master for the node will send out updated values, u
 
 When a new player connects, they will receive `[MDReplicated]` values a short time after connect (about 1 second).
 
-If you wish to be notified on the client when a replicated value changes, use a custom property setter.
+If you wish to be notified on the client when a replicated value changes, use a custom property setter:
+```cs
+    float _BarrelRotation = 0;
+    [MDReplicated]
+    float BarrelRotation
+    {
+        get { return _BarrelRotation; }
+        set
+        {
+            _BarrelRotation = value;
+            Barrel.Rotation = value;
+        }
+    }
+```
 
 See the [Automatic Registration](#automatic-registration) section for information on how these are populated and how you can configure that.
 
