@@ -305,6 +305,7 @@ public class MDGameSession : Node
 
         StopUPNP();
         Players.Clear();
+        ClearNetworkedNodes();
         OnSessionEndedEvent();
     }
 
@@ -437,14 +438,7 @@ public class MDGameSession : Node
             Rpc(nameof(SpawnNodeType), NodeTypeString, ParentPath, NodeName, NodeMaster, SpawnPosVal);
         }
 
-        Node NewNode = SpawnNodeType(NodeTypeString, ParentPath, NodeName, NodeMaster, SpawnPosVal);
-        if (NewNode != null)
-        {
-            NetworkedTypes.Add(NewNode, NodeTypeString);
-            OrderedNetworkedNodes.Add(NewNode);
-        }
-
-        return NewNode;
+        return SpawnNodeType(NodeTypeString, ParentPath, NodeName, NodeMaster, SpawnPosVal);
     }
 
     public Node SpawnNetworkedNode(PackedScene Scene, Node Parent, string NodeName, int NetworkMaster = -1, Vector3? SpawnPos = null)
@@ -475,13 +469,7 @@ public class MDGameSession : Node
             Rpc(nameof(SpawnNodeScene), ScenePath, ParentPath, NodeName, NodeMaster, SpawnPosVal);
         }
 
-        Node NewNode = SpawnNodeScene(ScenePath, ParentPath, NodeName, NodeMaster, SpawnPosVal);
-        if (NewNode != null)
-        {
-            NetworkedScenes.Add(NewNode, ScenePath);
-            OrderedNetworkedNodes.Add(NewNode);
-        }
-        return NewNode;
+        return SpawnNodeScene(ScenePath, ParentPath, NodeName, NodeMaster, SpawnPosVal);
     }
 
     [Puppet]
@@ -504,6 +492,8 @@ public class MDGameSession : Node
         Node NewNode = Activator.CreateInstance(NodeType) as Node;
         NewNode.Name = NodeName;
         NewNode.SetNetworkMaster(NetworkMaster);
+        NetworkedTypes.Add(NewNode, NodeTypeString);
+        OrderedNetworkedNodes.Add(NewNode);
         Parent.AddChild(NewNode);
 
         Node2D NewNode2D = NewNode as Node2D;
@@ -537,6 +527,8 @@ public class MDGameSession : Node
             Node NewNode = Scene.Instance();
             NewNode.Name = NodeName;
             NewNode.SetNetworkMaster(NetworkMaster);
+            NetworkedScenes.Add(NewNode, ScenePath);
+            OrderedNetworkedNodes.Add(NewNode);
             Parent.AddChild(NewNode);
 
             Node2D NewNode2D = NewNode as Node2D;
@@ -558,7 +550,7 @@ public class MDGameSession : Node
 
     public void OnNodeRemoved(Node RemovedNode)
     {
-        if (this.IsMaster() == false || MDStatics.IsNetworkActive() == false)
+        if (MDStatics.IsNetworkActive() == false)
         {
             return;
         }
@@ -577,7 +569,7 @@ public class MDGameSession : Node
         OrderedNetworkedNodes.Remove(RemovedNode);
 
         string NodePath = RemovedNode.GetPath();
-        if (MDStatics.IsNetworkActive())
+        if (this.IsMaster() && MDStatics.IsNetworkActive())
         {
             Rpc(nameof(RemoveAndFreeNode), NodePath);
         }
@@ -624,6 +616,18 @@ public class MDGameSession : Node
                 RpcId(PeerId, nameof(SpawnNodeScene), ScenePath, ParentPath, NetworkedNode.Name, NetworkedNode.GetNetworkMaster(), SpawnPos);
             }
         }
+    }
+
+    private void ClearNetworkedNodes()
+    {
+        foreach(Node NetworkedNode in OrderedNetworkedNodes)
+        {
+            NetworkedNode.RemoveAndFree();
+        }
+
+        OrderedNetworkedNodes.Clear();
+        NetworkedScenes.Clear();
+        NetworkedTypes.Clear();
     }
 
     protected UPNP InitUPNP(int Port)

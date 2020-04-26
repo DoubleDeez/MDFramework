@@ -86,7 +86,7 @@ public static class MDLog
             }
 
             string FullMessage = "[" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + "]" +
-                "[" + (Godot.Engine.GetIdleFrames() % 1000) + "]" +
+                "[" + (Godot.Engine.GetIdleFrames() % 1000).ToString("D3") + "]" +
                 "[" + ClientID + "] " +
                 "[" + CategoryName + "::" + LogLevel.ToString() + "] " +
                 string.Format(Message, args);
