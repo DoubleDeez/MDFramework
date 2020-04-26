@@ -245,7 +245,7 @@ It's intended to be used to compare timings that are also captured with MDProfil
 To use MDProfiler in code is simple:
 ```csharp
 #if DEBUG
-using (MDProfiler Profiler = new MDProfiler("IDENTITYING STRING HERE"))
+using (MDProfiler Profiler = new MDProfiler("IDENTITYING_STRING_HERE"))
 #endif
 {
     // Code you want to profile here
@@ -253,10 +253,25 @@ using (MDProfiler Profiler = new MDProfiler("IDENTITYING STRING HERE"))
 ```
 The debug check is recommended to not have it run in your release builds.
 
-To enable the profile logging, add `-logprofile` to your command line args when launching Godot/your game.
+To enable the profile logging for profiles, add `-logprofile` to your command line args when launching Godot/your game.
 Currently, this will enable logging for all MDProfiler instances and can get very log spammy.
+
+To enable profiling for just one category, you can either call the functions in code:
+```cs
+    MDProfiler.EnableProfile("IDENTITYING_STRING_HERE");
+    MDProfiler.DisableProfile("IDENTITYING_STRING_HERE");
+    MDProfiler.ToggleProfile("IDENTITYING_STRING_HERE");
+```
+
+or as a command:
+```
+    EnableProfile IDENTITYING_STRING_HERE
+    DisableProfile IDENTITYING_STRING_HERE
+    ToggleProfile IDENTITYING_STRING_HERE
+```
+
 ```log
-[2018-09-17 00:15:40.932][PEER 0] [LogProfiler::Info] Profiling [IDENTITYING STRING HERE] took 20us
+[2018-09-17 00:15:40.932][PEER 0] [LogProfiler::Info] Profiling [IDENTITYING_STRING_HERE] took 20us
 ```
 
 ## Node Binding
@@ -303,7 +318,6 @@ There are many ways to contribute
 * Submit a pull request that improves documentation or fixes an issue
 
 # TODO
-* Enable only specific instances of profile logging (rather than the entire system on/off)
 * Optimizations
     * MDReplicated should frame-slice over a set amount of frames rather than sending every frame
     * Add interpolation to relevant MDReplicated values (floats, Vectors, etc)

@@ -16,6 +16,7 @@ public class MDGameInstance : Node
         MDStatics.GI = this;
         MDLog.Initialize();
         MDArguments.PopulateArgs();
+        MDProfiler.Initialize();
 
         // Hook up events
         GetTree().Connect("node_added", this, nameof(OnNodeAdded_Internal));
