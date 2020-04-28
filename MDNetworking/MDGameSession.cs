@@ -494,7 +494,6 @@ public class MDGameSession : Node
         NewNode.SetNetworkMaster(NetworkMaster);
         NetworkedTypes.Add(NewNode, NodeTypeString);
         OrderedNetworkedNodes.Add(NewNode);
-        Parent.AddChild(NewNode);
 
         Node2D NewNode2D = NewNode as Node2D;
         Spatial NewNodeSpatial = NewNode as Spatial;
@@ -507,6 +506,7 @@ public class MDGameSession : Node
             NewNodeSpatial.Translation = SpawnPos;
         }
 
+        Parent.AddChild(NewNode);
         return NewNode;
     }
 
@@ -529,7 +529,6 @@ public class MDGameSession : Node
             NewNode.SetNetworkMaster(NetworkMaster);
             NetworkedScenes.Add(NewNode, ScenePath);
             OrderedNetworkedNodes.Add(NewNode);
-            Parent.AddChild(NewNode);
 
             Node2D NewNode2D = NewNode as Node2D;
             Spatial NewNodeSpatial = NewNode as Spatial;
@@ -542,6 +541,7 @@ public class MDGameSession : Node
                 NewNodeSpatial.Translation = SpawnPos;
             }
 
+            Parent.AddChild(NewNode);
             return NewNode;
         }
 
