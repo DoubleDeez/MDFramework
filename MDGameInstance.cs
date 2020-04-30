@@ -120,7 +120,10 @@ public class MDGameInstance : Node
             return;
         }
 
-        RegisterDebug = AutoRegAtr.RegisterType == MDAutoRegisterType.Debug;
+        if (AutoRegAtr != null)
+        {
+            RegisterDebug = AutoRegAtr.RegisterType == MDAutoRegisterType.Debug;
+        }
 
         Instance.PopulateBindNodes();
         Instance.RegisterReplicatedAttributes();
