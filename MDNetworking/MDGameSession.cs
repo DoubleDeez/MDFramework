@@ -22,6 +22,8 @@ public class MDGameSession : Node
     public const int SERVER_ID = 1;
     public const string PlayerNameFormat = "Player{0}";
 
+    public MDGameInstance GameInstance = null;
+
     public bool IsSessionStarted { get; protected set; } = false;
 
     public string ExternalAddress { get; protected set; } = "";
@@ -84,7 +86,7 @@ public class MDGameSession : Node
         if (Success)
         {
             UPNPPort = Port;
-            GetTree().NetworkPeer = peer;
+            SetNetworkPeer(peer);
             ServerOnStarted();
         }
         else
@@ -110,7 +112,7 @@ public class MDGameSession : Node
 
         if (Success)
         {
-            GetTree().NetworkPeer = peer;
+            SetNetworkPeer(peer);
         }
 
         return Success;
@@ -124,7 +126,7 @@ public class MDGameSession : Node
 
     public NetworkedMultiplayerENet GetPeer()
     {
-        NetworkedMultiplayerPeer peer = GetTree().NetworkPeer;
+        NetworkedMultiplayerPeer peer = GameInstance.GetTree().NetworkPeer;
         if (peer is NetworkedMultiplayerENet)
         {
             return (NetworkedMultiplayerENet)peer;
@@ -142,7 +144,7 @@ public class MDGameSession : Node
 
     private void ServerOnStarted()
     {
-        if (this.GetGameInstance().UseUPNP())
+        if (GameInstance.UseUPNP())
         {
             ServerUPNP = InitUPNP(UPNPPort);
         }
@@ -300,7 +302,7 @@ public class MDGameSession : Node
         if (peer != null)
         {
             peer.CloseConnection();
-            GetTree().NetworkPeer = null;
+            SetNetworkPeer(null);
         }
 
         StopUPNP();
@@ -317,7 +319,7 @@ public class MDGameSession : Node
             return Players[PeerId];
         }
 
-        Type PlayerType = this.GetGameInstance().GetPlayerInfoType();
+        Type PlayerType = GameInstance.GetPlayerInfoType();
         if (!MDStatics.IsSameOrSubclass(PlayerType, typeof(MDPlayerInfo)))
         {
             MDLog.Error(LOG_CAT, "Provided player type [{0}] is not a subclass of MDPlayerInfo", PlayerType.Name);
@@ -651,5 +653,10 @@ public class MDGameSession : Node
             ServerUPNP.Free();
             ServerUPNP = null;
         }
+    }
+
+    protected void SetNetworkPeer(NetworkedMultiplayerPeer InPeer)
+    {
+        GameInstance.GetTree().NetworkPeer = InPeer;
     }
 }

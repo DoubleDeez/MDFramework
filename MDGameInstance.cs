@@ -155,6 +155,7 @@ public class MDGameInstance : Node
         {
             GameSession = Activator.CreateInstance(GSType) as MDGameSession;
             GameSession.Name = "GameSession";
+            GameSession.GameInstance = this;
             this.AddNodeToRoot(GameSession, true);
         }
     }
