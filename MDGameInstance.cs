@@ -45,6 +45,11 @@ public class MDGameInstance : Node
         }
     }
 
+    public override void _Input(InputEvent Event)
+    {
+        InputState.OnInputEvent(Event);
+    }
+
     // Override this to provide the your GameSession subclass type
     protected virtual Type GetGameSessionType()
     {
@@ -113,21 +118,15 @@ public class MDGameInstance : Node
     // Registers a new node to MDFramework systems
     private void RegisterNewNode(Node Instance)
     {
-        bool RegisterDebug = false;
         MDAutoRegister AutoRegAtr = MDStatics.FindClassAttribute<MDAutoRegister>(Instance.GetType());
         if ((RequireAutoRegister() && AutoRegAtr == null) || (AutoRegAtr != null && AutoRegAtr.RegisterType == MDAutoRegisterType.None))
         {
             return;
         }
 
-        if (AutoRegAtr != null)
-        {
-            RegisterDebug = AutoRegAtr.RegisterType == MDAutoRegisterType.Debug;
-        }
-
         Instance.PopulateBindNodes();
         Instance.RegisterReplicatedAttributes();
-        if (RegisterDebug)
+        if (AutoRegAtr != null && AutoRegAtr.RegisterType == MDAutoRegisterType.Debug)
         {
             Instance.RegisterCommandAttributes();
         }
@@ -195,4 +194,7 @@ public class MDGameInstance : Node
 
     public MDGameSession GameSession {get; private set;}
     public MDInterfaceManager InterfaceManager {get; private set;}
+
+    // TODO - There should be an InputState for each local player
+    public MDInput InputState { get; protected set; } = new MDInput();
 }
