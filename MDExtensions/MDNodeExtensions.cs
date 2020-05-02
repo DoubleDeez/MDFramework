@@ -22,6 +22,11 @@ public static class MDNodeExtensions
         return GI.GameSession;
     }
 
+    public static MDInput GetInputState(this Node Instance)
+    {
+        return Instance.GetGameInstance().InputState;
+    }
+
     public static T GetPlayerInfo<T>(this Node Instance, int PeerId) where T : MDPlayerInfo
     {
         MDGameSession Session = Instance.GetGameSession();
