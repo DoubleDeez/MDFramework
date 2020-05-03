@@ -26,7 +26,7 @@ public class MDReplicator
 
     public MDReplicator()
     {
-        MDLog.AddLogCategoryProperties(LOG_CAT, new MDLogProperties(MDLogLevel.Debug));
+        MDLog.AddLogCategoryProperties(LOG_CAT, new MDLogProperties(MDLogLevel.Info));
     }
 
     public void OnPlayerJoined(int PeerId)
@@ -121,7 +121,7 @@ public class MDReplicator
                             continue;
                         }
 
-                        if (RepMember.ReplicatedType == MDReplicatedType.OnChange && JIPPeerId == -1)
+                        if (RepMember.ReplicatedType == MDReplicatedType.JoinInProgress && JIPPeerId == -1)
                         {
                             continue;
                         }
