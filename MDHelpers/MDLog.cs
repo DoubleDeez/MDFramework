@@ -144,6 +144,12 @@ public static class MDLog
         Log(CategoryName, MDLogLevel.Debug, Message, args);
     }
 
+    // Calls Log with level == trace
+    public static void Trace(string CategoryName, string Message, params object[] args)
+    {
+        Log(CategoryName, MDLogLevel.Trace, Message, args);
+    }
+
     // Calls Log with level == force
     public static void CForce(bool Condition, string CategoryName, string Message, params object[] args)
     {
@@ -178,6 +184,12 @@ public static class MDLog
     public static void CDebug(bool Condition, string CategoryName, string Message, params object[] args)
     {
         CLog(Condition, CategoryName, MDLogLevel.Debug, Message, args);
+    }
+
+    // Calls Log with level == trace
+    public static void CTrace(bool Condition, string CategoryName, string Message, params object[] args)
+    {
+        CLog(Condition, CategoryName, MDLogLevel.Trace, Message, args);
     }
 
     // Sames as Log() except it only logs if Condition == true

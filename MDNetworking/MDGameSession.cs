@@ -49,7 +49,7 @@ public class MDGameSession : Node
 
     public override void _Ready()
     {
-        MDLog.AddLogCategoryProperties(LOG_CAT, new MDLogProperties(MDLogLevel.Debug));
+        MDLog.AddLogCategoryProperties(LOG_CAT, new MDLogProperties(MDLogLevel.Info));
         this.RegisterCommandAttributes();
 
         CheckArgsForConnectionInfo();

@@ -143,6 +143,8 @@ If you wish to be notified on the client when a replicated value changes, use a 
 
 See the [Automatic Registration](#automatic-registration) section for information on how these are populated and how you can configure that.
 
+**Note:** Changes in Collection types (Array, Dictionary) are currently undetected. You can mark them `[MDReplicated(RepType: MDReplicatedType.JoinInProgress)]` instead and call `Rset` when you make changes.
+
 ## Networked Node Spawning
 The server has the ability to create a node for all clients over the network. It works by calling `this.SpawnNetworkedNode()` which is available on any `Node` object.
 

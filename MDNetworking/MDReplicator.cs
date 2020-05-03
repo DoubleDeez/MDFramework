@@ -26,7 +26,7 @@ public class MDReplicator
 
     public MDReplicator()
     {
-        MDLog.AddLogCategoryProperties(LOG_CAT, new MDLogProperties(MDLogLevel.Info));
+        MDLog.AddLogCategoryProperties(LOG_CAT, new MDLogProperties(MDLogLevel.Debug));
     }
 
     public void OnPlayerJoined(int PeerId)
@@ -47,7 +47,10 @@ public class MDReplicator
                 ReplicatedMember NodeMember = new ReplicatedMember();
                 NodeMember.Member = Member;
                 NodeMember.IsReliable = RepAttribute.Reliability == MDReliability.Reliable;
+                NodeMember.ReplicatedType = RepAttribute.ReplicatedType;
                 NodeMembers.Add(NodeMember);
+
+                MDLog.Trace(LOG_CAT, "Adding Replicated Node {0} Member {1}", Instance.Name, Member.Name);
 
                 if (HasRPCModeSet(Member) == false)
                 {
@@ -117,6 +120,11 @@ public class MDReplicator
                         {
                             continue;
                         }
+
+                        if (RepMember.ReplicatedType == MDReplicatedType.OnChange && JIPPeerId == -1)
+                        {
+                            continue;
+                        }
                         
                         object CurrentValue = null;
                         FieldInfo Field = RepMember.Member as FieldInfo;
@@ -134,7 +142,7 @@ public class MDReplicator
                             }
                         }
 
-                        if (object.Equals(RepMember.LastValue, CurrentValue) == false)
+                        if (RepMember.ReplicatedType == MDReplicatedType.Always || object.Equals(RepMember.LastValue, CurrentValue) == false)
                         {
                             MDLog.Debug(LOG_CAT, "Replicating {0} with value {1} from {2}", RepMember.Member.Name, CurrentValue, RepMember.LastValue);
                             if (RepMember.IsReliable)
@@ -202,4 +210,6 @@ class ReplicatedMember
     public object LastValue;
 
     public bool IsReliable;
+
+    public MDReplicatedType ReplicatedType;
 }

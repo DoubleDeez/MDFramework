@@ -176,6 +176,42 @@ public static class MDNodeExtensions
         return null;
     }
 
+    // Same as Rset except it checks if the network is activate first
+    public static void MDRset(this Node Instance, string Property, object Value)
+    {
+        if (MDStatics.IsNetworkActive())
+        {
+            Instance.Rset(Property, Value);
+        }
+    }
+
+    // Same as RsetId except it checks if the network is activate first
+    public static void MDRsetId(this Node Instance, int PeerId, string Property, object Value)
+    {
+        if (MDStatics.IsNetworkActive())
+        {
+            Instance.RsetId(PeerId, Property, Value);
+        }
+    }
+
+    // Same as RsetUnreliable except it checks if the network is activate first
+    public static void MDRsetUnreliable(this Node Instance, string Property, object Value)
+    {
+        if (MDStatics.IsNetworkActive())
+        {
+            Instance.RsetUnreliable(Property, Value);
+        }
+    }
+
+    // Same as RsetUnreliable except it checks if the network is activate first
+    public static void MDRsetUnreliableId(this Node Instance, int PeerId, string Property, object Value)
+    {
+        if (MDStatics.IsNetworkActive())
+        {
+            Instance.RsetUnreliableId(PeerId, Property, Value);
+        }
+    }
+
     // Sends the RPC to the server only
     public static object MDServerRpc(this Node Instance, string Method, params object[] Args)
     {
