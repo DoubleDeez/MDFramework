@@ -9,7 +9,18 @@ using System;
  [MDAutoRegister]
 public class MDPlayerInfo : Node
 {
+    private String _playerName = "UnkownPlayer";
     private const string LOG_CAT = "LogPlayerInfo";
+
+    [MDReplicated]
+    public string PlayerName
+    {
+        get { return _playerName; }
+        set {
+            _playerName = value;
+            this.GetGameSession().NotifyPlayerNameChanged(PeerId);
+        }
+   }
 
     public void InitPlayerInfo(int PlayerPeerId)
     {

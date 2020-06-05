@@ -84,6 +84,12 @@ public static class MDStatics
         return GetPeerId() == GetServerId();
     }
 
+    ///<summary>Returns true if we are on a networked connection and we are a client</summary>
+    public static bool IsClient()
+    {
+        return IsNetworkActive() && !IsServer();
+    }
+
     // Get the PeerId of the server
     public static int GetServerId()
     {

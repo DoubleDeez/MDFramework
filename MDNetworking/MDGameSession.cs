@@ -32,6 +32,7 @@ public class MDGameSession : Node
     // Triggered whenever a player joined, includes self and existing players when initially joining
     public event PlayerEventHandler OnPlayerJoinedEvent = delegate {};
     public event PlayerEventHandler OnPlayerLeftEvent = delegate {};
+    public event PlayerEventHandler OnPlayerNameChanged = delegate {};
 
     public delegate void SessionEventHandler();
     public event SessionEventHandler OnSessionStartedEvent = delegate {};
@@ -43,6 +44,8 @@ public class MDGameSession : Node
     protected Dictionary<Node, string> NetworkedTypes = new Dictionary<Node, string>();
     protected Dictionary<Node, string> NetworkedScenes = new Dictionary<Node, string>();
     protected List<Node> OrderedNetworkedNodes = new List<Node>();
+    // TODO: Add a way to cleanup scenes that are not used for a while
+    protected Dictionary<String, PackedScene> SceneBuffer = new Dictionary<String, PackedScene>();
     protected UPNP ServerUPNP = null;
     protected int UPNPPort;
 
@@ -326,7 +329,6 @@ public class MDGameSession : Node
             return null;
         }
 
-        string PlayerName = String.Format(PlayerNameFormat, PeerId);
         MDPlayerInfo Player = Activator.CreateInstance(PlayerType) as MDPlayerInfo;
         Player.InitPlayerInfo(PeerId);
         InitializePlayerInfo(Player);
@@ -348,6 +350,17 @@ public class MDGameSession : Node
         }
 
         return null;
+    }
+
+    public List<MDPlayerInfo> GetAllPlayerInfos()
+    {
+        return new List<MDPlayerInfo>(Players.Values);
+    }
+
+    ///<summary>Get the playerinfo for the local player</summary>
+    public MDPlayerInfo GetMyPlayerInfo()
+    {
+        return Players[MDStatics.GetPeerId()];
     }
 
     // Removes the MDPlayerInfo belonging to the PeerId
@@ -410,7 +423,24 @@ public class MDGameSession : Node
         #endif
     }
 
-    public Node SpawnNetworkedNode(Type NodeType, Node Parent, string NodeName, int NetworkMaster = -1, Vector3? SpawnPos = null)
+    /// <summary>Returns adds a random number to the name if the second boolean parameter is true</summary>
+    protected String BuildNodeName(String Name, bool UseRandomName)
+    {
+        if (UseRandomName)
+        {
+            return Name + Guid.NewGuid().ToString();
+        }
+
+        return Name;
+    }
+
+    ///<param name="NodeType">The type of node to spawn</param>
+    ///<param name="Parent">The parent that the new instance will be a child of</param>
+    ///<param name="NodeName">The name of the new node</param>
+    ///<param name="UseRandomName">If set to true a random number will be added at the end of the node name</param>
+    ///<param name="NetworkMaster">The peer that should own this, default is server</param>
+    ///<param name="SpawnPos">Where the spawn this node</param>
+    public Node SpawnNetworkedNode(Type NodeType, Node Parent, string NodeName, bool UseRandomName = true, int NetworkMaster = -1, Vector3? SpawnPos = null)
     {
         if (this.IsMaster() == false)
         {
@@ -430,6 +460,8 @@ public class MDGameSession : Node
             return null;
         }
 
+        NodeName = BuildNodeName(NodeName, UseRandomName);
+
         int NodeMaster = (NetworkMaster != -1) ? NetworkMaster : MDStatics.GetPeerId();
         string NodeTypeString = NodeType.AssemblyQualifiedName;
         string ParentPath = Parent.GetPath();
@@ -443,12 +475,22 @@ public class MDGameSession : Node
         return SpawnNodeType(NodeTypeString, ParentPath, NodeName, NodeMaster, SpawnPosVal);
     }
 
-    public Node SpawnNetworkedNode(PackedScene Scene, Node Parent, string NodeName, int NetworkMaster = -1, Vector3? SpawnPos = null)
+    public Node SpawnNetworkedNode(String ScenePath, Node Parent, string NodeName, int NetworkMaster = -1, Vector3? SpawnPos = null)
     {
-        return SpawnNetworkedNode(Scene.ResourcePath, Parent, NodeName, NetworkMaster, SpawnPos);
+        return SpawnNetworkedNode(ScenePath, Parent, NodeName, true, NetworkMaster, SpawnPos);
     }
 
-    public Node SpawnNetworkedNode(string ScenePath, Node Parent, string NodeName, int NetworkMaster = -1, Vector3? SpawnPos = null)
+    public Node SpawnNetworkedNode(PackedScene Scene, Node Parent, string NodeName, int NetworkMaster = -1, Vector3? SpawnPos = null)
+    {
+        return SpawnNetworkedNode(Scene.ResourcePath, Parent, NodeName, true, NetworkMaster, SpawnPos);
+    }
+
+    public Node SpawnNetworkedNode(PackedScene Scene, Node Parent, string NodeName, bool UseRandomName = true, int NetworkMaster = -1, Vector3? SpawnPos = null)
+    {
+        return SpawnNetworkedNode(Scene.ResourcePath, Parent, NodeName, UseRandomName, NetworkMaster, SpawnPos);
+    }
+
+    public Node SpawnNetworkedNode(string ScenePath, Node Parent, string NodeName, bool UseRandomName = true, int NetworkMaster = -1, Vector3? SpawnPos = null)
     {
         if (this.IsMaster() == false)
         {
@@ -461,6 +503,8 @@ public class MDGameSession : Node
             MDLog.Error(LOG_CAT, "Parent [{0}] is not inside the tree", Parent.Name);
             return null;
         }
+
+        NodeName = BuildNodeName(NodeName, UseRandomName);
 
         int NodeMaster = (NetworkMaster != -1) ? NetworkMaster : MDStatics.GetPeerId();
         string ParentPath = Parent.GetPath();
@@ -477,6 +521,7 @@ public class MDGameSession : Node
     [Puppet]
     private Node SpawnNodeType(string NodeTypeString, string ParentPath, string NodeName, int NetworkMaster, Vector3 SpawnPos)
     {
+        MDLog.Log(LOG_CAT, MDLogLevel.Debug, "Spawning Node. Type: {0} ParentPath: {1} Name: {2} Master: {3}", NodeTypeString, ParentPath, NodeName, NetworkMaster);
         Node Parent = GetNodeOrNull(ParentPath);
         if (Parent == null)
         {
@@ -515,6 +560,7 @@ public class MDGameSession : Node
     [Puppet]
     private Node SpawnNodeScene(string ScenePath, string ParentPath, string NodeName, int NetworkMaster, Vector3 SpawnPos)
     {
+        MDLog.Log(LOG_CAT, MDLogLevel.Debug, "Spawning Node. Scene: {0} ParentPath: {1} Name: {2} Master: {3}", ScenePath, ParentPath, NodeName, NetworkMaster);
         Node Parent = GetNodeOrNull(ParentPath);
         if (Parent == null)
         {
@@ -522,8 +568,7 @@ public class MDGameSession : Node
             return null;
         }
 
-        // TODO - Support async loading
-        PackedScene Scene = ResourceLoader.Load(ScenePath) as PackedScene;
+        PackedScene Scene = LoadScene(ScenePath);
         if (Scene != null)
         {
             Node NewNode = Scene.Instance();
@@ -548,6 +593,28 @@ public class MDGameSession : Node
         }
 
         return null;
+    }
+
+    ///<summary>Allows for buffering of scenes so we don't have to load from disc every time</summary>
+    private PackedScene LoadScene(String path)
+    {
+        if (UseSceneBuffer())
+        {
+            if (!SceneBuffer.ContainsKey(path))
+            {
+                SceneBuffer[path] = ResourceLoader.Load(path) as PackedScene;
+            }
+            return SceneBuffer[path];
+        }
+
+        // TODO - Support async loading
+        return ResourceLoader.Load(path) as PackedScene;
+    }
+
+    ///<summary>If true we will keep a reference to all loaded scenes around so we don't need to load the resource from disc every time</summary>
+    protected virtual bool UseSceneBuffer()
+    {
+        return true;
     }
 
     public void OnNodeRemoved(Node RemovedNode)
@@ -658,5 +725,10 @@ public class MDGameSession : Node
     protected void SetNetworkPeer(NetworkedMultiplayerPeer InPeer)
     {
         GameInstance.GetTree().NetworkPeer = InPeer;
+    }
+
+    public void NotifyPlayerNameChanged(int peerId)
+    {
+        OnPlayerNameChanged(peerId);
     }
 }
