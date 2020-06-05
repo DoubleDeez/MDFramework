@@ -9,20 +9,31 @@ using System;
  [MDAutoRegister]
 public class MDPlayerInfo : Node
 {
-    private const string LOG_CAT = "LogPlayerInfo";
+	private String _playerName = "UnkownPlayer";
+	private const string LOG_CAT = "LogPlayerInfo";
 
-    public void InitPlayerInfo(int PlayerPeerId)
-    {
-        PeerId = PlayerPeerId;
-        Name = PeerId.ToString();
-        SetNetworkMaster(PeerId);
-    }
+	[MDReplicated]
+	public string PlayerName
+	{
+		get { return _playerName; }
+		set {
+			_playerName = value;
+			this.GetGameSession().NotifyPlayerNameChanged(PeerId);
+		}
+   }
 
-    public virtual void PerformFullSync(int PeerId)
-    {
+	public void InitPlayerInfo(int PlayerPeerId)
+	{
+		PeerId = PlayerPeerId;
+		Name = PeerId.ToString();
+		SetNetworkMaster(PeerId);
+	}
 
-    }
+	public virtual void PerformFullSync(int PeerId)
+	{
+
+	}
 
 
-    public int PeerId {get; private set;}
+	public int PeerId {get; private set;}
 }
