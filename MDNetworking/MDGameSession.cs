@@ -438,12 +438,33 @@ public class MDGameSession : Node
 
 	protected String GetNodeName(String name)
 	{
-		if (UseRandomName())
+		if (UseRandomName() && CheckForDuplicateNames(name))
 		{
 			return name + Random.RandiRange(0, Int32.MaxValue);
 		}
 
 		return name;
+	}
+
+	protected bool CheckForDuplicateNames(String name)
+	{
+		foreach (Node n in NetworkedScenes.Keys)
+		{
+			if (n.Name.Equals(name))
+			{
+				return true;
+			}
+		}
+
+		foreach (Node n in NetworkedTypes.Keys)
+		{
+			if (n.Name.Equals(name))
+			{
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	public Node SpawnNetworkedNode(Type NodeType, Node Parent, string NodeName, int NetworkMaster = -1, Vector3? SpawnPos = null)
@@ -499,7 +520,7 @@ public class MDGameSession : Node
 			MDLog.Error(LOG_CAT, "Parent [{0}] is not inside the tree", Parent.Name);
 			return null;
 		}
-		
+
 		NodeName = GetNodeName(NodeName);
 
 		int NodeMaster = (NetworkMaster != -1) ? NetworkMaster : MDStatics.GetPeerId();
