@@ -8,13 +8,13 @@ using File = Godot.File;
 
 public enum MDLogLevel
 {
+    Force, // Always logs
     Trace,
     Debug,
     Info,
     Warn,
     Error,
-    Fatal,
-    Force // Always logs
+    Fatal
 }
 
 public struct MDLogProperties
@@ -230,8 +230,9 @@ public static class MDLog
     // Creates our time-stamped log file and opens it for writing
     private static void InitLogFile()
     {
-        FullLogFilePath = LOG_DIR + DateTime.Now.ToString("yyyy.MM.dd-HH.mm.ss") + EXT_LOG;
-        if (CreateLogDirectoryIfNotExists(LOG_DIR))
+        String logDir = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile) + "\\logs\\";
+        FullLogFilePath = logDir + DateTime.Now.ToString("yyyy.MM.dd-HH.mm.ss") + EXT_LOG;
+        if (CreateLogDirectoryIfNotExists(logDir))
         {
             LogFile = new File();
             LogFile.Open(FullLogFilePath, File.ModeFlags.Write);

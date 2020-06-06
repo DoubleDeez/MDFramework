@@ -8,7 +8,7 @@ using System;
  */
 public class MDInterfaceManager : CanvasLayer
 {
-    private const int ConsoleKey = (int)KeyList.Quoteleft;
+    private const int ConsoleKey = (int)KeyList.Backslash;
     private const string ConsoleName = "Console";
     private const string LOG_CAT = "InterfaceManager";
 
