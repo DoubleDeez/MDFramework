@@ -48,6 +48,8 @@ public class MDGameSession : Node
 	protected UPNP ServerUPNP = null;
 	protected int UPNPPort;
 
+	protected RandomNumberGenerator Random = new RandomNumberGenerator();
+
 
 	public override void _Ready()
 	{
@@ -428,6 +430,22 @@ public class MDGameSession : Node
 		#endif
 	}
 
+	///<summary>If set all network nodes will get a random number appended to them</summary>
+	public virtual bool UseRandomName()
+	{
+		return true;
+	}
+
+	protected String GetNodeName(String name)
+	{
+		if (UseRandomName())
+		{
+			return name + Random.RandiRange(0, Int32.MaxValue);
+		}
+
+		return name;
+	}
+
 	public Node SpawnNetworkedNode(Type NodeType, Node Parent, string NodeName, int NetworkMaster = -1, Vector3? SpawnPos = null)
 	{
 		if (this.IsMaster() == false)
@@ -447,6 +465,8 @@ public class MDGameSession : Node
 			MDLog.Error(LOG_CAT, "Parent [{0}] is not inside the tree", Parent.Name);
 			return null;
 		}
+
+		NodeName = GetNodeName(NodeName);
 
 		int NodeMaster = (NetworkMaster != -1) ? NetworkMaster : MDStatics.GetPeerId();
 		string NodeTypeString = NodeType.AssemblyQualifiedName;
@@ -479,6 +499,8 @@ public class MDGameSession : Node
 			MDLog.Error(LOG_CAT, "Parent [{0}] is not inside the tree", Parent.Name);
 			return null;
 		}
+		
+		NodeName = GetNodeName(NodeName);
 
 		int NodeMaster = (NetworkMaster != -1) ? NetworkMaster : MDStatics.GetPeerId();
 		string ParentPath = Parent.GetPath();
