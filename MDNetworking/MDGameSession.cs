@@ -438,34 +438,13 @@ public class MDGameSession : Node
 
 	protected String GetNodeName(String name)
 	{
-		if (UseRandomName() && CheckForDuplicateNames(name))
+		if (UseRandomName())
 		{
 			// Call ourselves again to guarantee that the new name is unique
-			return GetNodeName(name + Random.RandiRange(0, Int32.MaxValue));
+			return name + Random.RandiRange(0, Int32.MaxValue);
 		}
 
 		return name;
-	}
-
-	protected bool CheckForDuplicateNames(String name)
-	{
-		foreach (Node n in NetworkedScenes.Keys)
-		{
-			if (n.Name.Equals(name))
-			{
-				return true;
-			}
-		}
-
-		foreach (Node n in NetworkedTypes.Keys)
-		{
-			if (n.Name.Equals(name))
-			{
-				return true;
-			}
-		}
-
-		return false;
 	}
 
 	public Node SpawnNetworkedNode(Type NodeType, Node Parent, string NodeName, int NetworkMaster = -1, Vector3? SpawnPos = null)
