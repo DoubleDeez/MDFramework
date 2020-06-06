@@ -440,7 +440,8 @@ public class MDGameSession : Node
 	{
 		if (UseRandomName() && CheckForDuplicateNames(name))
 		{
-			return name + Random.RandiRange(0, Int32.MaxValue);
+			// Call ourselves again to guarantee that the new name is unique
+			return GetNodeName(name + Random.RandiRange(0, Int32.MaxValue));
 		}
 
 		return name;
