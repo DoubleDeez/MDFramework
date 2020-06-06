@@ -44,6 +44,7 @@ public class MDGameSession : Node
 	protected Dictionary<Node, string> NetworkedTypes = new Dictionary<Node, string>();
 	protected Dictionary<Node, string> NetworkedScenes = new Dictionary<Node, string>();
 	protected List<Node> OrderedNetworkedNodes = new List<Node>();
+	protected Dictionary<String, PackedScene> SceneBuffer = new Dictionary<String, PackedScene>();
 	protected UPNP ServerUPNP = null;
 	protected int UPNPPort;
 
@@ -494,6 +495,7 @@ public class MDGameSession : Node
 	[Puppet]
 	private Node SpawnNodeType(string NodeTypeString, string ParentPath, string NodeName, int NetworkMaster, Vector3 SpawnPos)
 	{
+		MDLog.Log(LOG_CAT, MDLogLevel.Debug, "Spawning Node. Type: {0} ParentPath: {1} Name: {2} Master: {3}", NodeTypeString, ParentPath, NodeName, NetworkMaster);
 		Node Parent = GetNodeOrNull(ParentPath);
 		if (Parent == null)
 		{
@@ -532,6 +534,7 @@ public class MDGameSession : Node
 	[Puppet]
 	private Node SpawnNodeScene(string ScenePath, string ParentPath, string NodeName, int NetworkMaster, Vector3 SpawnPos)
 	{
+		MDLog.Log(LOG_CAT, MDLogLevel.Debug, "Spawning Node. Scene: {0} ParentPath: {1} Name: {2} Master: {3}", ScenePath, ParentPath, NodeName, NetworkMaster);
 		Node Parent = GetNodeOrNull(ParentPath);
 		if (Parent == null)
 		{
@@ -540,7 +543,7 @@ public class MDGameSession : Node
 		}
 
 		// TODO - Support async loading
-		PackedScene Scene = ResourceLoader.Load(ScenePath) as PackedScene;
+		PackedScene Scene = LoadScene(ScenePath);
 		if (Scene != null)
 		{
 			Node NewNode = Scene.Instance();
@@ -565,6 +568,27 @@ public class MDGameSession : Node
 		}
 
 		return null;
+	}
+
+	///<summary>Allows for buffering of scenes so we don't have to load from disc every time</summary>
+	private PackedScene LoadScene(String path)
+	{
+		if (UseSceneBuffer())
+		{
+			if (!SceneBuffer.ContainsKey(path))
+			{
+				SceneBuffer[path] = ResourceLoader.Load(path) as PackedScene;
+			}
+			return SceneBuffer[path];
+		}
+
+		return ResourceLoader.Load(path) as PackedScene;
+	}
+
+	///<summary>If true we will keep a reference to all loaded scenes around so we don't need to load the resource from disc every time</summary>
+	protected virtual bool UseSceneBuffer()
+	{
+		return true;
 	}
 
 	public void OnNodeRemoved(Node RemovedNode)
