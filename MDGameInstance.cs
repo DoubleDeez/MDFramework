@@ -14,7 +14,7 @@ public class MDGameInstance : Node
     {
         // Init static classes first
         MDStatics.GI = this;
-        MDLog.Initialize();
+        MDLog.Initialize(GetLogDirectory());
         MDArguments.PopulateArgs();
         MDProfiler.Initialize();
 
@@ -190,6 +190,19 @@ public class MDGameInstance : Node
     public virtual bool RequireAutoRegister()
     {
         return false;
+    }
+
+    ///<summary>Get the key used to open the console. (Default: Quoteleft)</summary>
+    public virtual int GetConsoleKey()
+    {
+        return (int)KeyList.Quoteleft;
+    }
+
+    ///<summary>Get the directory for MDLog logfiles
+    ///<para>Official documentation for the user path: https://docs.godotengine.org/en/stable/tutorials/io/data_paths.html</para></summary>
+    public virtual String GetLogDirectory()
+    {
+        return "user://logs/";
     }
 
     public MDGameSession GameSession {get; private set;}
