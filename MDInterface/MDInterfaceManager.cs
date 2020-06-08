@@ -8,7 +8,6 @@ using System;
  */
 public class MDInterfaceManager : CanvasLayer
 {
-    private const int ConsoleKey = (int)KeyList.Backslash;
     private const string ConsoleName = "Console";
     private const string LOG_CAT = "InterfaceManager";
 
@@ -23,7 +22,7 @@ public class MDInterfaceManager : CanvasLayer
         {
             if (InEvent is InputEventKey EventKey)
             {
-                if (EventKey.Pressed && !EventKey.Echo && EventKey.Scancode == ConsoleKey)
+                if (EventKey.Pressed && !EventKey.Echo && EventKey.Scancode == this.GetGameInstance().GetConsoleKey())
                 {
                     ToggleConsole();
                     this.SetInputHandled();

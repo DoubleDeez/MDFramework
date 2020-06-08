@@ -44,11 +44,10 @@ public class MDGameSession : Node
     protected Dictionary<Node, string> NetworkedTypes = new Dictionary<Node, string>();
     protected Dictionary<Node, string> NetworkedScenes = new Dictionary<Node, string>();
     protected List<Node> OrderedNetworkedNodes = new List<Node>();
+    // TODO: Add a way to cleanup scenes that are not used for a while
     protected Dictionary<String, PackedScene> SceneBuffer = new Dictionary<String, PackedScene>();
     protected UPNP ServerUPNP = null;
     protected int UPNPPort;
-
-    protected RandomNumberGenerator Random = new RandomNumberGenerator();
 
 
     public override void _Ready()
@@ -358,16 +357,10 @@ public class MDGameSession : Node
         return new List<MDPlayerInfo>(Players.Values);
     }
 
+    ///<summary>Get the playerinfo for the local player</summary>
     public MDPlayerInfo GetMyPlayerInfo()
     {
-        foreach (MDPlayerInfo info in Players.Values)
-        {
-            if (info.IsNetworkMaster())
-            {
-                return info;
-            }
-        }
-        return null;
+        return Players[MDStatics.GetPeerId()];
     }
 
     // Removes the MDPlayerInfo belonging to the PeerId
@@ -431,12 +424,11 @@ public class MDGameSession : Node
     }
 
     /// <summary>Returns adds a random number to the name if the second boolean parameter is true</summary>
-    protected String GetNodeName(String Name, bool UseRandomName)
+    protected String BuildNodeName(String Name, bool UseRandomName)
     {
         if (UseRandomName)
         {
-            // Call ourselves again to guarantee that the new name is unique
-            return Name + Random.RandiRange(0, Int32.MaxValue);
+            return Name + Guid.NewGuid().ToString();
         }
 
         return Name;
@@ -469,7 +461,7 @@ public class MDGameSession : Node
             return null;
         }
 
-        NodeName = GetNodeName(NodeName, UseRandomName);
+        NodeName = BuildNodeName(NodeName, UseRandomName);
 
         int NodeMaster = (NetworkMaster != -1) ? NetworkMaster : MDStatics.GetPeerId();
         string NodeTypeString = NodeType.AssemblyQualifiedName;
@@ -513,7 +505,7 @@ public class MDGameSession : Node
             return null;
         }
 
-        NodeName = GetNodeName(NodeName, UseRandomName);
+        NodeName = BuildNodeName(NodeName, UseRandomName);
 
         int NodeMaster = (NetworkMaster != -1) ? NetworkMaster : MDStatics.GetPeerId();
         string ParentPath = Parent.GetPath();
@@ -577,7 +569,6 @@ public class MDGameSession : Node
             return null;
         }
 
-        // TODO - Support async loading
         PackedScene Scene = LoadScene(ScenePath);
         if (Scene != null)
         {
@@ -623,6 +614,7 @@ public class MDGameSession : Node
     ///<summary>If true we will keep a reference to all loaded scenes around so we don't need to load the resource from disc every time</summary>
     protected virtual bool UseSceneBuffer()
     {
+        // TODO - Support async loading
         return true;
     }
 

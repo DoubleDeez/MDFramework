@@ -22,8 +22,6 @@ public class MDPlayerInfo : Node
 		}
    }
 
-   public PlayerElf PlayerObject { get; set; }
-
 	public void InitPlayerInfo(int PlayerPeerId)
 	{
 		PeerId = PlayerPeerId;

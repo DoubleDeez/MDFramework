@@ -46,15 +46,14 @@ public struct MDLogProperties
  */
 public static class MDLog
 {
-    private const string LOG_DIR = "user://logs/";
     private const string EXT_LOG = ".log";
     private const string LOG_CAT = "Log";
 
     // Initialize internal data and set the directory to store log files
-    public static void Initialize()
+    public static void Initialize(String LogDir)
     {
         LogProperties = new Dictionary<string, MDLogProperties>();
-        InitLogFile();
+        InitLogFile(LogDir);
         MDCommands.RegisterCommandAttributes(typeof(MDLog));
     }
 
@@ -228,11 +227,10 @@ public static class MDLog
     }
 
     // Creates our time-stamped log file and opens it for writing
-    private static void InitLogFile()
+    private static void InitLogFile(String LogDir)
     {
-        String logDir = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile) + "\\logs\\";
-        FullLogFilePath = logDir + DateTime.Now.ToString("yyyy.MM.dd-HH.mm.ss") + EXT_LOG;
-        if (CreateLogDirectoryIfNotExists(logDir))
+        FullLogFilePath = LogDir + DateTime.Now.ToString("yyyy.MM.dd-HH.mm.ss") + EXT_LOG;
+        if (CreateLogDirectoryIfNotExists(LogDir))
         {
             LogFile = new File();
             LogFile.Open(FullLogFilePath, File.ModeFlags.Write);
