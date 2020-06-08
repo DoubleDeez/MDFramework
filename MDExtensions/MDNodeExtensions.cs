@@ -33,17 +33,48 @@ public static class MDNodeExtensions
         MDPlayerInfo PlayerInfo = Session.GetPlayerInfo(PeerId);
         return PlayerInfo as T;
     }
-    
+    ///<param name="NodeType">The type of node to spawn</param>
+    ///<param name="NodeName">The name of the new node</param>
+    ///<param name="NetworkMaster">The peer that should own this, default is server</param>
+    ///<param name="SpawnPos">Where the spawn this node</param>
     public static Node SpawnNetworkedNode(this Node Instance, Type NodeType, string NodeName, int NetworkMaster = -1, Vector3? SpawnPos = null)
     {
         MDGameSession GameSession = Instance.GetGameSession();
-        return GameSession.SpawnNetworkedNode(NodeType, Instance, NodeName, NetworkMaster, SpawnPos);
+        return GameSession.SpawnNetworkedNode(NodeType, Instance, NodeName, true, NetworkMaster, SpawnPos);
     }
+    ///<param name="NodeType">The type of node to spawn</param>
+    ///<param name="NodeName">The name of the new node</param>
+    ///<param name="UseRandomName">If set to true a random number will be added at the end of the node name</param>
+    ///<param name="NetworkMaster">The peer that should own this, default is server</param>
+    ///<param name="SpawnPos">Where the spawn this node</param>
+    public static Node SpawnNetworkedNode(this Node Instance, Type NodeType, string NodeName, bool UseRandomName, int NetworkMaster = -1, Vector3? SpawnPos = null)
+    {
+        MDGameSession GameSession = Instance.GetGameSession();
+        return GameSession.SpawnNetworkedNode(NodeType, Instance, NodeName, UseRandomName, NetworkMaster, SpawnPos);
+    }
+    ///<param name="Scene">The packed scene to spawn</param>
+    ///<param name="NodeName">The name of the new node</param>
+    ///<param name="NetworkMaster">The peer that should own this, default is server</param>
+    ///<param name="SpawnPos">Where the spawn this node</param>
     public static Node SpawnNetworkedNode(this Node Instance, PackedScene Scene, string NodeName, int NetworkMaster = -1, Vector3? SpawnPos = null)
     {
         MDGameSession GameSession = Instance.GetGameSession();
         return GameSession.SpawnNetworkedNode(Scene, Instance, NodeName, NetworkMaster, SpawnPos);
     }
+    ///<param name="Scene">The packed scene to spawn</param>
+    ///<param name="NodeName">The name of the new node</param>
+    ///<param name="UseRandomName">If set to true a random number will be added at the end of the node name</param>
+    ///<param name="NetworkMaster">The peer that should own this, default is server</param>
+    ///<param name="SpawnPos">Where the spawn this node</param>
+    public static Node SpawnNetworkedNode(this Node Instance, PackedScene Scene, string NodeName, bool UseRandomName, int NetworkMaster = -1, Vector3? SpawnPos = null)
+    {
+        MDGameSession GameSession = Instance.GetGameSession();
+        return GameSession.SpawnNetworkedNode(Scene, Instance, NodeName, UseRandomName, NetworkMaster, SpawnPos);
+    }
+    ///<param name="ScenePath">The path to the scene</param>
+    ///<param name="NodeName">The name of the new node</param>
+    ///<param name="NetworkMaster">The peer that should own this, default is server</param>
+    ///<param name="SpawnPos">Where the spawn this node</param>
     public static Node SpawnNetworkedNode(this Node Instance, string ScenePath, string NodeName, int NetworkMaster = -1, Vector3? SpawnPos = null)
     {
         MDGameSession GameSession = Instance.GetGameSession();

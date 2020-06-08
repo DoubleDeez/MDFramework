@@ -438,10 +438,9 @@ public class MDGameSession : Node
     ///<param name="Parent">The parent that the new instance will be a child of</param>
     ///<param name="NodeName">The name of the new node</param>
     ///<param name="UseRandomName">If set to true a random number will be added at the end of the node name</param>
-    ///<param name="AddToNetworkSynchronizer">If set to true this node will be counted for the synchronizer used when a new player joins</param>
     ///<param name="NetworkMaster">The peer that should own this, default is server</param>
     ///<param name="SpawnPos">Where the spawn this node</param>
-    public Node SpawnNetworkedNode(Type NodeType, Node Parent, string NodeName, bool UseRandomName = true, bool AddToNetworkSynchronizer = true, int NetworkMaster = -1, Vector3? SpawnPos = null)
+    public Node SpawnNetworkedNode(Type NodeType, Node Parent, string NodeName, bool UseRandomName = true, int NetworkMaster = -1, Vector3? SpawnPos = null)
     {
         if (this.IsMaster() == false)
         {
@@ -478,20 +477,20 @@ public class MDGameSession : Node
 
     public Node SpawnNetworkedNode(String ScenePath, Node Parent, string NodeName, int NetworkMaster = -1, Vector3? SpawnPos = null)
     {
-        return SpawnNetworkedNode(ScenePath, Parent, NodeName, true, true, NetworkMaster, SpawnPos);
+        return SpawnNetworkedNode(ScenePath, Parent, NodeName, true, NetworkMaster, SpawnPos);
     }
 
     public Node SpawnNetworkedNode(PackedScene Scene, Node Parent, string NodeName, int NetworkMaster = -1, Vector3? SpawnPos = null)
     {
-        return SpawnNetworkedNode(Scene.ResourcePath, Parent, NodeName, true, true, NetworkMaster, SpawnPos);
+        return SpawnNetworkedNode(Scene.ResourcePath, Parent, NodeName, true, NetworkMaster, SpawnPos);
     }
 
-    public Node SpawnNetworkedNode(PackedScene Scene, Node Parent, string NodeName, bool UseRandomName = true, bool AddToNetworkSynchronizer = true, int NetworkMaster = -1, Vector3? SpawnPos = null)
+    public Node SpawnNetworkedNode(PackedScene Scene, Node Parent, string NodeName, bool UseRandomName = true, int NetworkMaster = -1, Vector3? SpawnPos = null)
     {
-        return SpawnNetworkedNode(Scene.ResourcePath, Parent, NodeName, UseRandomName, AddToNetworkSynchronizer, NetworkMaster, SpawnPos);
+        return SpawnNetworkedNode(Scene.ResourcePath, Parent, NodeName, UseRandomName, NetworkMaster, SpawnPos);
     }
 
-    public Node SpawnNetworkedNode(string ScenePath, Node Parent, string NodeName, bool UseRandomName = true, bool AddToNetworkSynchronizer = true, int NetworkMaster = -1, Vector3? SpawnPos = null)
+    public Node SpawnNetworkedNode(string ScenePath, Node Parent, string NodeName, bool UseRandomName = true, int NetworkMaster = -1, Vector3? SpawnPos = null)
     {
         if (this.IsMaster() == false)
         {
@@ -608,13 +607,13 @@ public class MDGameSession : Node
             return SceneBuffer[path];
         }
 
+        // TODO - Support async loading
         return ResourceLoader.Load(path) as PackedScene;
     }
 
     ///<summary>If true we will keep a reference to all loaded scenes around so we don't need to load the resource from disc every time</summary>
     protected virtual bool UseSceneBuffer()
     {
-        // TODO - Support async loading
         return true;
     }
 
