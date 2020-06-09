@@ -161,7 +161,7 @@ public class MDGameInstance : Node
 
     private void CreateGameSynchronizer()
     {
-        if (GameSynchronizer == null)
+        if (GameSynchronizer == null && UseGameSynchronizer())
         {
             GameSynchronizer = CreateTypeInstance<MDGameSynchronizer>(GetGameSynchronizerType());
             GameSynchronizer.Name = "GameSynchronizer";
@@ -219,6 +219,12 @@ public class MDGameInstance : Node
     public virtual int GetConsoleKey()
     {
         return (int)KeyList.Quoteleft;
+    }
+
+    ///<summary>Decides if the network synchronizer is used or not</summary>
+    public virtual bool UseGameSynchronizer()
+    {
+        return true;
     }
 
     ///<summary>Get the directory for MDLog logfiles

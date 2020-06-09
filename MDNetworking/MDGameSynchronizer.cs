@@ -2,6 +2,11 @@ using Godot;
 using System;
 using System.Collections.Generic;
 
+public interface IMDSynchronizedNode
+{
+    bool IsSynchronizationComplete();
+}
+
 ///<summary>A synchronization class with three primary features
 ///<para>It tracks the ping to each client</para><para></para>
 ///<para>It tracks what the local OS.GetTicksMsec() is on each connected client relative to the server (server only)</para><para></para>
@@ -11,6 +16,8 @@ using System.Collections.Generic;
 public class MDGameSynchronizer : Node
 {
     private const string LOG_CAT = "LogGameSynchronizer";
+
+    private const float SYNCH_TIMER_CHECK_INTERVAL = 0.5f;
 
     public MDGameInstance GameInstance = null;
 
@@ -28,6 +35,12 @@ public class MDGameSynchronizer : Node
     ///<Summary>This contains what we think is the ping for each player</summary>
     protected Dictionary<int, int> PlayerPing = new Dictionary<int, int>();
 
+    protected List<Node> NodeList = new List<Node>();
+
+    protected List<int> ClientSynchList = new List<int>();
+
+    protected int NodeCount = -1;
+
 
 
     // Called when the node enters the scene tree for the first time.
@@ -36,6 +49,9 @@ public class MDGameSynchronizer : Node
         GameSession = GameInstance.GetGameSession();
         GameSession.OnPlayerJoinedEvent += OnPlayerJoinedEvent;
         GameSession.OnPlayerLeftEvent += OnPlayerLeftEvent;
+        GameSession.OnNetworkNodeAdded += OnNetworkNodeAdded;
+        GameSession.OnNetworkNodeRemoved += OnNetworkNodeRemoved;
+        GameSession.OnSessionStartedEvent += OnSessionStartedEvent;
     }
 
 #region PUBLIC METHODS
@@ -65,6 +81,43 @@ public class MDGameSynchronizer : Node
 #endregion
 
 #region RPC METHODS
+
+    [Puppet]
+    protected void RpcRecieveNodeCount(int NodeCount)
+    {
+        MDLog.Info(LOG_CAT, "Total nodes that need synch are {0}", NodeCount);
+        this.NodeCount = NodeCount;
+        // Start synch timer
+        Timer t = new Timer();
+        t.Name = "SynchTimer";
+        t.OneShot = false;
+        t.WaitTime = SYNCH_TIMER_CHECK_INTERVAL;
+        List<object> parameters = new List<object>();
+        parameters.Add(t);
+        t.Connect("timeout", this, nameof(CheckSynchStatus), new Godot.Collections.Array(parameters));
+        t.PauseMode = PauseModeEnum.Process;
+        AddChild(t);
+        t.Start();
+    }
+
+    [Master]
+    protected void ClientSynchDone(int PeerId)
+    {
+        // Great this client is done
+        MDLog.Info(LOG_CAT, "Peer [{0}] completed synch", PeerId);
+        if (!ClientSynchList.Contains(PeerId))
+        {
+            ClientSynchList.Add(PeerId);
+        }
+        CheckAllClientsSynched();
+    }
+
+    [Master]
+    protected void ClientSynchStatus(int PeerId, int SynchedNodes)
+    {
+        // Synch in progress
+        MDLog.Info(LOG_CAT, "Peer [{0}] has synched {1} out of {2} nodes", PeerId, SynchedNodes, NodeList.Count);
+    }
 
     [Puppet]
     protected void RequestPing(uint ServerTimeOfRequest)
@@ -128,6 +181,33 @@ public class MDGameSynchronizer : Node
         {
             StartClientPingCycle(PeerId);
         }
+    }
+
+    [Puppet]
+    private void PauseGame()
+    {
+        if (IsPauseOnJoin())
+        {
+            ClientSynchList.Clear();
+            GetTree().Paused = true;
+        }
+    }
+
+    [PuppetSync]
+    private void UnpauseAtTickMsec(uint UnpauseTime)
+    {
+        float waitTime = ((float)(UnpauseTime - OS.GetTicksMsec())) / 1000f;
+        MDLog.Trace(LOG_CAT, "Unpausing game in {0}", waitTime);
+        Timer t = new Timer();
+        t.Name = "UnpauseTimer";
+        t.OneShot = true;
+        t.WaitTime = waitTime;
+        List<object> parameters = new List<object>();
+        parameters.Add(t);
+        t.Connect("timeout", this, nameof(OnUnpauseTimerTimeout), new Godot.Collections.Array(parameters));
+        t.PauseMode = PauseModeEnum.Process;
+        AddChild(t);
+        t.Start();
     }
 
 #endregion
@@ -233,6 +313,21 @@ public class MDGameSynchronizer : Node
         {
             SendRequestToPlayer(PeerId, 1);
         }
+
+        if (IsPauseOnJoin() && PeerId != MDStatics.GetServerId())
+        {
+            PauseGame();
+            foreach (MDPlayerInfo info in GameSession.GetAllPlayerInfos())
+            {
+                // Don't do this for the connecting peer or the server
+                if (PeerId != info.PeerId && info.PeerId != MDStatics.GetServerId())
+                {
+                    RpcId(info.PeerId, nameof(PauseGame));
+                    RpcId(info.PeerId, nameof(RpcRecieveNodeCount), NodeList.Count);
+                }
+            }
+        }
+        RpcId(PeerId, nameof(RpcRecieveNodeCount), NodeList.Count);
     }
 
     private void OnPlayerLeftEvent(int PeerId)
@@ -241,6 +336,14 @@ public class MDGameSynchronizer : Node
         InternalTicksList.Remove(PeerId);
         PlayerTicksMsecOffset.Remove(PeerId);
         PlayerPing.Remove(PeerId);
+    }
+
+    private void OnSessionStartedEvent()
+    {
+        if (this.IsClient())
+        {
+            PauseGame();
+        }
     }
 
     ///<summary>Starts the player ping request cycle</summary>
@@ -276,9 +379,134 @@ public class MDGameSynchronizer : Node
         RpcId(PeerId, nameof(RequestPing), OS.GetTicksMsec());
     }
 
+    private void CheckAllClientsSynched()
+    {
+        if (ClientSynchList.Count < GameSession.GetAllPlayerInfos().Count-1)
+        {
+            MDLog.Trace(LOG_CAT, "All clients are not synched yet");
+            return;
+        }
+
+        // Double check each client, if another client left while we were synching
+        // We could believe we are synched while we really are not
+        bool allClientsSynched = true;
+        foreach (MDPlayerInfo info in GameSession.GetAllPlayerInfos())
+        {
+            if (info.PeerId == MDStatics.GetServerId())
+            {
+                continue;
+            }
+            if (!ClientSynchList.Contains(info.PeerId) || !PlayerTicksMsecOffset.ContainsKey(info.PeerId))
+            {
+                MDLog.Trace(LOG_CAT, "Peer [{0}] is not yet fully synched", info.PeerId);
+                allClientsSynched = false;
+            }
+        }
+
+        if (!allClientsSynched)
+        {
+            return;
+        }
+
+        MDLog.Trace(LOG_CAT, "All clients synched, sending unpause signal");
+        // Alright tell all clients to unpause in a bit
+        foreach (MDPlayerInfo info in GameSession.GetAllPlayerInfos())
+        {
+            if (info.PeerId != MDStatics.GetServerId())
+            {
+                RpcId(info.PeerId, nameof(UnpauseAtTickMsec), GetPlayerTicksMsec(info.PeerId) + GetUnpauseCountdownDurationMSec());
+            }
+        }
+
+        UnpauseAtTickMsec(OS.GetTicksMsec() + GetUnpauseCountdownDurationMSec());
+    }
+
+    private void OnNetworkNodeAdded(Node node)
+    {
+        MDLog.Trace(LOG_CAT, "Node added: {0}", node.GetPath());
+        NodeList.Add(node);
+    }
+
+    private void OnNetworkNodeRemoved(Node node)
+    {
+        MDLog.Trace(LOG_CAT, "Node removed: {0}", node.GetPath());
+        NodeList.Remove(node);
+    }
+
+    private void CheckSynchStatus(Timer timer)
+    {
+        // Only do this on clients
+        if (!this.IsClient())
+        {
+            timer.QueueFree();
+            return;
+        }
+
+        if (NodeCount <= 0)
+        {
+            MDLog.Trace(LOG_CAT, "We got no node count");
+            // We don't know how many nodes we got yet
+            return;
+        }
+
+        int SynchedNodes = NodeCount;
+        if (NodeList.Count < NodeCount)
+        {
+            MDLog.Trace(LOG_CAT, "We still don't have all nodes");
+            // We still don't have all nodes
+            SynchedNodes = NodeList.Count;
+        }
+
+        // Check node custom logic to see if synch is done
+        foreach (Node node in NodeList)
+        {
+            if (node is IMDSynchronizedNode)
+            {
+                if (!((IMDSynchronizedNode)node).IsSynchronizationComplete())
+                {
+                    // We are not synched
+                    MDLog.Trace(LOG_CAT, "A node is still synching: {0}", node.GetPath());
+                    SynchedNodes--;
+                }
+            }
+        }
+
+        if (SynchedNodes == NodeCount)
+        {
+            // We are done synching
+            RpcId(MDStatics.GetServerId(), nameof(ClientSynchDone), MDStatics.GetPeerId());
+            timer.QueueFree();
+            return;
+        } 
+        else
+        {
+            // Notify the server of how many nodes we got synched
+            RpcId(MDStatics.GetServerId(), nameof(ClientSynchStatus), MDStatics.GetPeerId(), SynchedNodes);
+        }
+    }
+
+    private void OnUnpauseTimerTimeout(Timer timer)
+    {
+        MDLog.Trace(LOG_CAT, "Unpausing game");
+        timer.QueueFree();
+        GetTree().Paused = false;
+    }
+
 #endregion
 
 #region VIRTUAL METHODS
+
+    /// <summary>Pauses the game for synching on player join (Default: True)</summary>
+    protected virtual bool IsPauseOnJoin()
+    {
+        return true;
+    }
+
+    /// <summary>Unpause countdown duration (Default: 2 seconds)</summary>
+    protected virtual uint GetUnpauseCountdownDurationMSec()
+    {
+        return 2000;
+    }
 
     /// <summary>How often do we ping each client (Default: Every second)</summary>
     protected virtual float GetPingInterval()

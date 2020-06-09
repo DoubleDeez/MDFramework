@@ -39,6 +39,10 @@ public class MDGameSession : Node
     public event SessionEventHandler OnSessionFailedEvent = delegate {};
     public event SessionEventHandler OnSessionEndedEvent = delegate {};
 
+    public delegate void NetworkNodeEventHandler(Node node);
+    public event NetworkNodeEventHandler OnNetworkNodeAdded = delegate {};
+    public event NetworkNodeEventHandler OnNetworkNodeRemoved = delegate {};
+
     public MDReplicator Replicator {get; private set;} = new MDReplicator();
     protected Dictionary<int, MDPlayerInfo> Players = new Dictionary<int, MDPlayerInfo>();
     protected Dictionary<Node, string> NetworkedTypes = new Dictionary<Node, string>();
@@ -554,6 +558,7 @@ public class MDGameSession : Node
         }
 
         Parent.AddChild(NewNode);
+        OnNetworkNodeAdded(NewNode);
         return NewNode;
     }
 
@@ -589,6 +594,7 @@ public class MDGameSession : Node
             }
 
             Parent.AddChild(NewNode);
+            OnNetworkNodeAdded(NewNode);
             return NewNode;
         }
 
@@ -638,6 +644,7 @@ public class MDGameSession : Node
         OrderedNetworkedNodes.Remove(RemovedNode);
 
         string NodePath = RemovedNode.GetPath();
+        OnNetworkNodeRemoved(RemovedNode);
         if (this.IsMaster() && MDStatics.IsNetworkActive())
         {
             Rpc(nameof(RemoveAndFreeNode), NodePath);
