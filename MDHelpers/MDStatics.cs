@@ -11,10 +11,16 @@ public static class MDStatics
     // Useful to return instead of null
     public static byte[] EmptyByteArray {get;} = new byte[0];
 
-    // Get the global game session from the game instance
+    ///<summary>Get the global game session from the game instance</summary>
     public static MDGameSession GetGameSession()
     {
         return GI.GameSession;
+    }
+
+    ///<summary>Get the global game synchronizer from the game instance</summary>
+    public static MDGameSynchronizer GetGameSynchronizer()
+    {
+        return GI.GameSynchronizer;
     }
 
     // Helper to construct a subarray

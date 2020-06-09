@@ -24,6 +24,7 @@ public class MDGameInstance : Node
 
         // Init instances
         CreateGameSession();
+        CreateGameSynchronizer();
         CreateInterfaceManager();
 
         RegisterNodeAndChildren(GetTree().Root);
@@ -50,10 +51,16 @@ public class MDGameInstance : Node
         InputState.OnInputEvent(Event);
     }
 
-    // Override this to provide the your GameSession subclass type
+    /// <summary>Override this to provide the your GameSession subclass type</summary>
     protected virtual Type GetGameSessionType()
     {
         return typeof(MDGameSession);
+    }
+
+    /// <summary>Override this to provide the your GameSynchronizer subclass type</summary>
+    protected virtual Type GetGameSynchronizerType()
+    {
+        return typeof(MDGameSynchronizer);
     }
 
     // Override this to provide your own Player class type
@@ -140,23 +147,39 @@ public class MDGameInstance : Node
         Instance.UnregisterReplicatedAttributes();
     }
 
-    // Ensure GameSession is created
+    ///<summary>Ensure GameSession is created</summary>
     private void CreateGameSession()
     {
-        Type GSType = GetGameSessionType();
-        if (!MDStatics.IsSameOrSubclass(GSType, typeof(MDGameSession)))
-        {
-            MDLog.Error(LOG_CAT, "Provided game session type [{0}] is not a subclass of MDGameSession", GSType.Name);
-            return;
-        }
-
         if (GameSession == null)
         {
-            GameSession = Activator.CreateInstance(GSType) as MDGameSession;
+            GameSession = CreateTypeInstance<MDGameSession>(GetGameSessionType());
             GameSession.Name = "GameSession";
             GameSession.GameInstance = this;
             this.AddNodeToRoot(GameSession, true);
         }
+    }
+
+    private void CreateGameSynchronizer()
+    {
+        if (GameSynchronizer == null)
+        {
+            GameSynchronizer = CreateTypeInstance<MDGameSynchronizer>(GetGameSynchronizerType());
+            GameSynchronizer.Name = "GameSynchronizer";
+            GameSynchronizer.GameInstance = this;
+            this.AddNodeToRoot(GameSynchronizer, true);
+        }
+    }
+
+    /// <summary>Creates an instance of the type based on the base class T</summary>
+    private T CreateTypeInstance<T>(Type Type) where T: class
+    {
+        if (!MDStatics.IsSameOrSubclass(Type, typeof(T)))
+        {
+            MDLog.Error(LOG_CAT, "Type [{0}] is not a subclass of [{1}]", Type.Name, typeof(T).Name);
+            return null;
+        }
+        
+        return Activator.CreateInstance(Type) as T;
     }
 
     // Ensure InterfaceManager is created
@@ -206,6 +229,8 @@ public class MDGameInstance : Node
     }
 
     public MDGameSession GameSession {get; private set;}
+
+    public MDGameSynchronizer GameSynchronizer {get; private set;}
     public MDInterfaceManager InterfaceManager {get; private set;}
 
     // TODO - There should be an InputState for each local player
