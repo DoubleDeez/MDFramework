@@ -613,7 +613,7 @@ public class MDGameSession : Node
     ///<summary>Allows for buffering of scenes so we don't have to load from disc every time</summary>
     private PackedScene LoadScene(String path)
     {
-        if (UseSceneBuffer())
+        if (GameInstance.UseSceneBuffer(path))
         {
             if (!SceneBuffer.ContainsKey(path))
             {
@@ -624,12 +624,6 @@ public class MDGameSession : Node
 
         // TODO - Support async loading
         return ResourceLoader.Load(path) as PackedScene;
-    }
-
-    ///<summary>If true we will keep a reference to all loaded scenes around so we don't need to load the resource from disc every time</summary>
-    protected virtual bool UseSceneBuffer()
-    {
-        return true;
     }
 
     public void OnNodeRemoved(Node RemovedNode)

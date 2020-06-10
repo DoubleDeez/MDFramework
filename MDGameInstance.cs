@@ -234,6 +234,12 @@ public class MDGameInstance : Node
         return "user://logs/";
     }
 
+    ///<summary>If true we will keep a reference to all loaded scenes around so we don't need to load the resource from disc every time</summary>
+    public virtual bool UseSceneBuffer(String NodePath)
+    {
+        return true;
+    }
+
     public MDGameSession GameSession {get; private set;}
 
     public MDGameSynchronizer GameSynchronizer {get; private set;}
