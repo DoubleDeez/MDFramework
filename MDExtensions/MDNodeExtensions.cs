@@ -15,11 +15,32 @@ public static class MDNodeExtensions
         return Instance.GetNode("/root/GameInstance") as MDGameInstance;
     }
 
-    // Grabs the GameSession from the GameInstance
+    /// <summary>Grabs the GameSession from the GameInstance</summary>
     public static MDGameSession GetGameSession(this Node Instance)
     {
         MDGameInstance GI = Instance.GetGameInstance();
         return GI.GameSession;
+    }
+
+    /// <summary>Grabs the GameSynchronizer from the GameInstance</summary>
+    public static MDGameSynchronizer GetGameSynchronizer(this Node Instance)
+    {
+        MDGameInstance GI = Instance.GetGameInstance();
+        return GI.GameSynchronizer;
+    }
+
+    /// <summary>Gets the ping of the given peer</summary>
+    public static int GetPlayerPing(this Node Instance, int PeerId)
+    {
+        MDGameInstance GI = Instance.GetGameInstance();
+        return GI.GameSynchronizer.GetPlayerPing(PeerId);
+    }
+
+    /// <summary>Gets the estimated OS.GetTicksMsec of the given peer</summary>
+    public static uint GetPlayerTicksMsec(this Node Instance, int PeerId)
+    {
+        MDGameInstance GI = Instance.GetGameInstance();
+        return GI.GameSynchronizer.GetPlayerTicksMsec(PeerId);
     }
 
     public static MDInput GetInputState(this Node Instance)
@@ -140,6 +161,12 @@ public static class MDNodeExtensions
     public static bool IsMaster(this Node Instance)
     {
         return MDStatics.IsNetworkActive() == false || Instance.GetNetworkMaster() == MDStatics.GetPeerId();
+    }
+
+    ///<summary>Returns true if we are the client on a network</summary>
+    public static bool IsClient(this Node Instance)
+    {
+        return MDStatics.IsClient();
     }
 
     // Returns the net mode of the game session

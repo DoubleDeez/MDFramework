@@ -3,11 +3,11 @@ using System;
 using System.Collections.Generic;
 
 /*
- * MDGameSession
- *
- * Class that manages the current multiplayer state of the game.
- */
- [MDAutoRegister]
+* MDGameSession
+*
+* Class that manages the current multiplayer state of the game.
+*/
+[MDAutoRegister]
 public class MDGameSession : Node
 {
     private const string DEFAULT_IP = "127.0.0.1";
@@ -38,6 +38,10 @@ public class MDGameSession : Node
     public event SessionEventHandler OnSessionStartedEvent = delegate {};
     public event SessionEventHandler OnSessionFailedEvent = delegate {};
     public event SessionEventHandler OnSessionEndedEvent = delegate {};
+
+    public delegate void NetworkNodeEventHandler(Node node);
+    public event NetworkNodeEventHandler OnNetworkNodeAdded = delegate {};
+    public event NetworkNodeEventHandler OnNetworkNodeRemoved = delegate {};
 
     public MDReplicator Replicator {get; private set;} = new MDReplicator();
     protected Dictionary<int, MDPlayerInfo> Players = new Dictionary<int, MDPlayerInfo>();
@@ -330,11 +334,13 @@ public class MDGameSession : Node
         }
 
         MDPlayerInfo Player = Activator.CreateInstance(PlayerType) as MDPlayerInfo;
+        
+        // Needs to be in list and in tree before init
+        Players.Add(PeerId, Player);
+        AddChild(Player);
         Player.InitPlayerInfo(PeerId);
         InitializePlayerInfo(Player);
-        AddChild(Player);
 
-        Players.Add(PeerId, Player);
         return Player;
     }
 
@@ -352,9 +358,16 @@ public class MDGameSession : Node
         return null;
     }
 
+    ///<summary>Get player infos for all players</summary>
     public List<MDPlayerInfo> GetAllPlayerInfos()
     {
         return new List<MDPlayerInfo>(Players.Values);
+    }
+
+    ///<summary>Returns a list of all active PeerIDs.false This includes the host.</summary>
+    public List<int> GetAllPeerIds()
+    {
+        return new List<int>(Players.Keys);
     }
 
     ///<summary>Get the playerinfo for the local player</summary>
@@ -554,6 +567,7 @@ public class MDGameSession : Node
         }
 
         Parent.AddChild(NewNode);
+        OnNetworkNodeAdded(NewNode);
         return NewNode;
     }
 
@@ -589,6 +603,7 @@ public class MDGameSession : Node
             }
 
             Parent.AddChild(NewNode);
+            OnNetworkNodeAdded(NewNode);
             return NewNode;
         }
 
@@ -598,7 +613,7 @@ public class MDGameSession : Node
     ///<summary>Allows for buffering of scenes so we don't have to load from disc every time</summary>
     private PackedScene LoadScene(String path)
     {
-        if (UseSceneBuffer())
+        if (GameInstance.UseSceneBuffer(path))
         {
             if (!SceneBuffer.ContainsKey(path))
             {
@@ -609,12 +624,6 @@ public class MDGameSession : Node
 
         // TODO - Support async loading
         return ResourceLoader.Load(path) as PackedScene;
-    }
-
-    ///<summary>If true we will keep a reference to all loaded scenes around so we don't need to load the resource from disc every time</summary>
-    protected virtual bool UseSceneBuffer()
-    {
-        return true;
     }
 
     public void OnNodeRemoved(Node RemovedNode)
@@ -638,6 +647,7 @@ public class MDGameSession : Node
         OrderedNetworkedNodes.Remove(RemovedNode);
 
         string NodePath = RemovedNode.GetPath();
+        OnNetworkNodeRemoved(RemovedNode);
         if (this.IsMaster() && MDStatics.IsNetworkActive())
         {
             Rpc(nameof(RemoveAndFreeNode), NodePath);

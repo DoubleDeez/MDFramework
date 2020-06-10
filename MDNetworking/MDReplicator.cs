@@ -8,6 +8,26 @@ struct NewPlayer
     public int PeerId;
     public float JoinTime;
 
+    public bool IsReadyForReplication()
+    {
+        MDGameInstance GameInstance = MDStatics.GetGameSession().GetGameInstance();
+        if (GameInstance.UseGameSynchronizer() && 
+            GameInstance.GetGameSynchronizer().IsDelayReplicatorUntilAllNodesAreSynched())
+        {
+            // If synch is active check if peer has completed node synch
+            if (GameInstance.GetGameSynchronizer().HasPeerCompletedNodeSynch(PeerId))
+            {
+                return true;
+            }
+        }
+        // If synch is not active then we use a delay
+        else if ((JoinTime + MDReplicator.JIPWaitTime) < OS.GetTicksMsec())
+        {
+            return true;
+        }
+        return false;
+    }
+
     public NewPlayer(int PeerId, float JoinTime)
     {
         this.PeerId = PeerId;
@@ -22,7 +42,7 @@ public class MDReplicator
     private Queue<NewPlayer> JIPPlayers = new Queue<NewPlayer>();
 
     private const string LOG_CAT = "LogReplicator";
-    private const float JIPWaitTime = 1000f;
+    public const float JIPWaitTime = 1000f;
 
     public MDReplicator()
     {
@@ -80,7 +100,7 @@ public class MDReplicator
         if (JIPPlayers.Count > 0)
         {
             NewPlayer JIPPlayer = JIPPlayers.Peek();
-            if ((JIPPlayer.JoinTime + JIPWaitTime) < OS.GetTicksMsec())
+            if (JIPPlayer.IsReadyForReplication())
             {
                 MDLog.Debug(LOG_CAT, "JIP Peer Id {0} ready for MDReplicated", JIPPlayer.PeerId);
                 return JIPPlayers.Dequeue().PeerId;
