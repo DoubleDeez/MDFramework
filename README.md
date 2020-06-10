@@ -326,7 +326,7 @@ public class NodeThatAutoRegistersEverything : Node
 This will autoregister all features, including debug ones like commands.
 
 ## Game Synchronizer
-The `MDGameSynchronizer` has three main features.
+The `MDGameSynchronizer` has three main features. 
 * Attempts to detect the offset of `OS.GetTicksMSec()` between clients so commands can be executed at the same time on all clients.
 * Track ping to other clients
 * Synchronize joining so we can ensure new clients are completely synched
