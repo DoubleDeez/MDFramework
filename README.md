@@ -326,12 +326,12 @@ public class NodeThatAutoRegistersEverything : Node
 This will autoregister all features, including debug ones like commands.
 
 ## Game Synchronizer
-The [MDGameSynchronizer] has three main features.
-* Attempts to detect the offset of [OS.GetTicksMSec()] between clients so commands can be executed at the same time on all clients.
+The `MDGameSynchronizer` has three main features.
+* Attempts to detect the offset of `OS.GetTicksMSec()` between clients so commands can be executed at the same time on all clients.
 * Track ping to other clients
 * Synchronize joining so we can ensure new clients are completely synched
 
-By using the command [this.GetPlayerTicksMsec(PeerId)] from any node you can get the estimated OS.GetTicksMSec() value for the peer. This allows for all clients to execute commands at the same time. Take this code from the [PredictiveSynchronizationExample].
+By using the command `this.GetPlayerTicksMsec(PeerId)` from any node you can get the estimated `OS.GetTicksMSec()` value for the peer. This allows for all clients to execute commands at the same time. Take this code from the `PredictiveSynchronizationExample`.
 
 ```cs
 foreach (int peerid in this.GetGameSession().GetAllPeerIds())
