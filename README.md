@@ -351,9 +351,9 @@ foreach (int peerid in this.GetGameSession().GetAllPeerIds())
 
 This code sets a start time to some time in the future to be executed at almost the same time on all clients, under normal network conditions the estimations are usually within 20 ms of each other. So even if the rpc call arrives a few second apart on all clients as long as it arrives before the execution time all clients can perform the action at the same time. The ping that the synchronizer provides can be used to estimate how far in the future a command execution needs to be set to ensure all clients have recieved the signal.
 
-The [MDGameSynchronizer] will by default automatically pause the game when a new player joins, then wait for the new player to synchronize all networked nodes before resuming. Network nodes that need special handling can implement the [IMDSynchronizedNode] interface to tell the [MDGameSynchronizer] when they have completed synchronization.
+The `MDGameSynchronizer` will by default automatically pause the game when a new player joins, then wait for the new player to synchronize all networked nodes before resuming. Network nodes that need special handling can implement the `IMDSynchronizedNode` interface to tell the `MDGameSynchronizer` when they have completed synchronization.
 
-Once the all players have been synchronized a resume command will be sent to all clients using the estimated [OS.GetTicksMsec()] for each client. This ensures all the clients unpauses the game at almost the same time.
+Once the all players have been synchronized a resume command will be sent to all clients using the estimated `OS.GetTicksMsec()` for each client. This ensures all the clients unpauses the game at almost the same time.
 
 # Contributing
 There are many ways to contribute
