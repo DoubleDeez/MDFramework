@@ -2,7 +2,7 @@
 
 [ext_resource path="res://MDFramework/Examples/BasicNetworkLobby/BasicNetworkLobby.tscn" type="PackedScene" id=1]
 [ext_resource path="res://MDFramework/Examples/PredictiveSynchronizationExample/ActorSpawner.cs" type="Script" id=2]
-[ext_resource path="res://MDFramework/Examples/PredictiveSynchronizationExample/PredictiveActor.tscn" type="PackedScene" id=3]
+[ext_resource path="res://MDFramework/Examples/BasicNetworkLobby/SyncInterface.tscn" type="PackedScene" id=4]
 
 [node name="PredictiveExample" instance=ExtResource( 1 )]
 
@@ -17,7 +17,7 @@ __meta__ = {
 margin_top = 30.0
 margin_right = 182.0
 margin_bottom = 50.0
-text = "Increase Max Nodes By 10"
+text = "Increase Max Nodes By 100"
 __meta__ = {
 "_edit_use_anchors_": false
 }
@@ -26,10 +26,12 @@ __meta__ = {
 margin_top = 60.0
 margin_right = 187.0
 margin_bottom = 80.0
-text = "Decrease Max Nodes By 10"
+text = "Decrease Max Nodes By 100"
 __meta__ = {
 "_edit_use_anchors_": false
 }
+
+[node name="SyncInterface" parent="CanvasLayer" index="2" instance=ExtResource( 4 )]
 
 [node name="StaticBody2D" type="StaticBody2D" parent="." index="1"]
 
@@ -42,6 +44,6 @@ zoom = Vector2( 5, 5 )
 
 [node name="ActorSpawner" type="Node2D" parent="." index="3"]
 script = ExtResource( 2 )
-ActorScene = ExtResource( 3 )
+TotalNodes = 200
 [connection signal="pressed" from="CanvasLayer/BtnDisconnect/ButtonRoot/BtnIncrease" to="ActorSpawner" method="OnIncreasePressed"]
 [connection signal="pressed" from="CanvasLayer/BtnDisconnect/ButtonRoot/BtnDecrease" to="ActorSpawner" method="OnDecreasePressed"]

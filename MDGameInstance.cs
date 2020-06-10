@@ -193,7 +193,7 @@ public class MDGameInstance : Node
         }
     }
 
-    // Override to change when the console is available
+    /// <summary>Override to change when the console is available (Default: Only in debug mode)</summary>
     public virtual bool IsConsoleAvailable()
     {
         #if DEBUG
@@ -203,25 +203,25 @@ public class MDGameInstance : Node
         #endif
     }
 
-    // Override to change when UPNP is used for the server
+    /// <summary>Override to change when UPNP is used for the server (Default: True)</summary>
     public virtual bool UseUPNP()
     {
         return true;
     }
 
-    // Override to change is MDAutoRegister is required
+    /// <summary>Override to change is MDAutoRegister is required (Default: False)</summary>
     public virtual bool RequireAutoRegister()
     {
         return false;
     }
 
-    ///<summary>Get the key used to open the console. (Default: Quoteleft)</summary>
+    ///<summary>Get the key used to open the console. (Default: KeyList.QuoteLeft)</summary>
     public virtual int GetConsoleKey()
     {
         return (int)KeyList.Quoteleft;
     }
 
-    ///<summary>Decides if the network synchronizer is used or not</summary>
+    ///<summary>Decides if the network synchronizer is used or not (Default: True)</summary>
     public virtual bool UseGameSynchronizer()
     {
         return true;

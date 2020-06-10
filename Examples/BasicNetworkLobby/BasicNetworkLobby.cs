@@ -59,7 +59,9 @@ public class BasicNetworkLobby : Node2D
 		GameSession.OnSessionFailedEvent -= OnSessionFailedOrEndedEvent;
 		GameSession.OnSessionEndedEvent += OnSessionFailedOrEndedEvent;
 	}
-		
+
+#region USER INPTU
+
 	protected virtual void OnHostPressed()
 	{
 		GameSession.StartServer(GetPort());
@@ -71,25 +73,6 @@ public class BasicNetworkLobby : Node2D
 		{
 			GameSession.Disconnect();
 		}
-	}
-
-	protected virtual void OnSessionStartedEvent()
-	{
-		ToggleInterface(false);
-		ToggleDisconnectVisible(true);
-	}
-
-	protected virtual void OnSessionFailedOrEndedEvent()
-	{
-		ToggleButtons(true);
-		ToggleInterface(true);
-		SetJoinButtonText(TEXT_JOIN_SERVER);
-		ToggleDisconnectVisible(false);
-	}
-
-	protected virtual void OnPlayerNameChanged(int PeerId)
-	{
-		MDLog.Info(LOG_CAT, "Player changed name to {0}", GameSession.GetPlayerInfo(PeerId).PlayerName);
 	}
 
 	protected virtual void OnJoinPressed()
@@ -109,6 +92,29 @@ public class BasicNetworkLobby : Node2D
 		GameSession.StartStandalone();
 	}
 
+#endregion
+
+#region EVENTS
+
+	protected virtual void OnSessionStartedEvent()
+	{
+		ToggleInterface(false);
+		ToggleDisconnectVisible(true);
+	}
+
+	protected virtual void OnSessionFailedOrEndedEvent()
+	{
+		ToggleButtons(true);
+		ToggleInterface(true);
+		SetJoinButtonText(TEXT_JOIN_SERVER);
+		ToggleDisconnectVisible(false);
+	}
+
+	protected virtual void OnPlayerNameChanged(int PeerId)
+	{
+		MDLog.Info(LOG_CAT, "Player changed name to {0}", GameSession.GetPlayerInfo(PeerId).GetPlayerName());
+	}
+
 	protected virtual void OnPlayerLeft(int PeerId)
 	{
 		// TODO: Do cleanup code here
@@ -119,10 +125,12 @@ public class BasicNetworkLobby : Node2D
 	protected virtual void OnPlayerJoined(int PeerId)
 	{
 		// TODO: Spawn player here, should be done with CallDeferred
-		MDLog.Info(LOG_CAT, "Player joined {0} with PeerID {1}", GameSession.GetPlayerInfo(PeerId).PlayerName, PeerId);
+		MDLog.Info(LOG_CAT, "Player joined {0} with PeerID {1}", GameSession.GetPlayerInfo(PeerId).GetPlayerName(), PeerId);
 	}
 
-#region SUPPORT FUNCTIONS
+#endregion
+
+#region SUPPORT METHODS
 
 	protected void SetJoinButtonText(String text)
 	{

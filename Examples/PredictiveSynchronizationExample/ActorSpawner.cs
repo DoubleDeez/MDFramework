@@ -7,9 +7,6 @@ public class ActorSpawner : Node2D
 	private const string LOG_CAT = "LogActorSpawner";
 
 	[Export]
-	public PackedScene ActorScene;
-
-	[Export]
 	public int TotalNodes = 10;
 
 	[MDBindNode("/root/PredictiveExample/CanvasLayer/BtnDisconnect/ButtonRoot")]
@@ -53,7 +50,7 @@ public class ActorSpawner : Node2D
 		{
 			return;
 		}
-		TotalNodes += 10;
+		TotalNodes += 100;
 		SpawnNodes();
 	}
 
@@ -64,10 +61,10 @@ public class ActorSpawner : Node2D
 		{
 			return;
 		}
-		TotalNodes -= 10;
-		if (TotalNodes <= 10)
+		TotalNodes -= 100;
+		if (TotalNodes <= 100)
 		{
-			TotalNodes = 10;
+			TotalNodes = 100;
 		}
 		SpawnNodes();
 	}
@@ -83,7 +80,7 @@ public class ActorSpawner : Node2D
 		if (CurrentNodes < TotalNodes)
 		{
 			// Add more if needed
-			this.SpawnNetworkedNode(ActorScene, "Actor");
+			this.SpawnNetworkedNode(GetActorScene(), "Actor");
 		}
 		else if (CurrentNodes > TotalNodes)
 		{
@@ -96,6 +93,12 @@ public class ActorSpawner : Node2D
 		}
 
 		CallDeferred(nameof(SpawnNodes));
+	}
+
+	private String GetActorScene()
+	{
+		// This is to avoid needing references
+		return GetParent().Filename.GetBaseDir() + "/PredictiveActor.tscn";
 	}
 
 	private void ToggleButtonRoot(bool visible)

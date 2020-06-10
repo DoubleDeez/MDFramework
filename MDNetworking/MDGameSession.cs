@@ -3,11 +3,11 @@ using System;
 using System.Collections.Generic;
 
 /*
- * MDGameSession
- *
- * Class that manages the current multiplayer state of the game.
- */
- [MDAutoRegister]
+* MDGameSession
+*
+* Class that manages the current multiplayer state of the game.
+*/
+[MDAutoRegister]
 public class MDGameSession : Node
 {
     private const string DEFAULT_IP = "127.0.0.1";
@@ -334,11 +334,13 @@ public class MDGameSession : Node
         }
 
         MDPlayerInfo Player = Activator.CreateInstance(PlayerType) as MDPlayerInfo;
+        
+        // Needs to be in list and in tree before init
+        Players.Add(PeerId, Player);
+        AddChild(Player);
         Player.InitPlayerInfo(PeerId);
         InitializePlayerInfo(Player);
-        AddChild(Player);
 
-        Players.Add(PeerId, Player);
         return Player;
     }
 
@@ -356,9 +358,16 @@ public class MDGameSession : Node
         return null;
     }
 
+    ///<summary>Get player infos for all players</summary>
     public List<MDPlayerInfo> GetAllPlayerInfos()
     {
         return new List<MDPlayerInfo>(Players.Values);
+    }
+
+    ///<summary>Returns a list of all active PeerIDs.false This includes the host.</summary>
+    public List<int> GetAllPeerIds()
+    {
+        return new List<int>(Players.Keys);
     }
 
     ///<summary>Get the playerinfo for the local player</summary>

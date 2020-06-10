@@ -15,6 +15,7 @@ There are a lot of features from other game engines that I'm used to, so I wante
 * A simple [profiler](#profiler) class to determine execution time of a code block
 * Bind editor-created nodes to member variables automatically with [node binding](#node-binding)
 * A [Game Session and Player Info](#game-Session-and-player-info) system for managing networked multiplayer
+* A [Game Synchronizer] to automatically synchronize the game when a new player joins
 
 # Installation
 0. (Optional) I recommend forking the repo so you can track your changes to it, easily merge updates, and reuse it in other projects you have.
@@ -27,12 +28,22 @@ git submodule add https://github.com/DoubleDeez/MDFramework.git src/MDFramework
 2. Add the MDFramework files to your `Project.csproj`, inside of `<ItemGroup>`, making sure the path matches where you cloned the repo. 
 
 ```xml
+    <Compile Include="src\MDFramework\Examples\BasicNetworkLobby\BasicNetworkLobby.cs" />
+    <Compile Include="src\MDFramework\Examples\BasicNetworkLobby\CustomGameInstance.cs" />
+    <Compile Include="src\MDFramework\Examples\BasicNetworkLobby\PeerSynchStatusRow.cs" />
+    <Compile Include="src\MDFramework\Examples\BasicNetworkLobby\SyncInterface.cs" />
+    <Compile Include="src\MDFramework\Examples\PredictiveSynchronizationExample\ActorSpawner.cs" />
+    <Compile Include="src\MDFramework\Examples\PredictiveSynchronizationExample\PredictiveActor.cs" />
+    <Compile Include="src\MDFramework\MDAttributes\MDAutoRegister.cs" />
     <Compile Include="src\MDFramework\MDAttributes\MDBindNode.cs" />
     <Compile Include="src\MDFramework\MDAttributes\MDCommand.cs" />
     <Compile Include="src\MDFramework\MDAttributes\MDReplicated.cs" />
     <Compile Include="src\MDFramework\MDExtensions\MDControlExtensions.cs" />
     <Compile Include="src\MDFramework\MDExtensions\MDNodeExtensions.cs" />
+    <Compile Include="src\MDFramework\MDExtensions\MDVector2Extensions.cs" />
+    <Compile Include="src\MDFramework\MDExtensions\MDVector3Extensions.cs" />
     <Compile Include="src\MDFramework\MDHelpers\MDArguments.cs" />
+    <Compile Include="src\MDFramework\MDHelpers\MDInput.cs" />
     <Compile Include="src\MDFramework\MDHelpers\MDCommands.cs" />
     <Compile Include="src\MDFramework\MDHelpers\MDLog.cs" />
     <Compile Include="src\MDFramework\MDHelpers\MDProfiler.cs" />
@@ -42,7 +53,9 @@ git submodule add https://github.com/DoubleDeez/MDFramework.git src/MDFramework
     <Compile Include="src\MDFramework\MDNetworking\MDGameSession.cs" />
     <Compile Include="src\MDFramework\MDNetworking\MDPlayerInfo.cs" />
     <Compile Include="src\MDFramework\MDNetworking\MDReplicator.cs" />
+    <Compile Include="src\MDFramework\MDNetworking\MDGameSynchronizer.cs" />
     <Compile Include="src\MDFramework\MDGameInstance.cs" />
+    <Compile Include="src\MDFramework\MDTypes.cs" />
 ```
 or to include all C# files:
 ```xml
@@ -310,8 +323,37 @@ By default you have to manually register `MDCommand` using `this.RegisterCommand
 public class NodeThatAutoRegistersEverything : Node
 {}
 ```
-
 This will autoregister all features, including debug ones like commands.
+
+## Game Synchronizer
+The [MDGameSynchronizer] has three main features.
+* Attempts to detect the offset of [OS.GetTicksMSec()] between clients so commands can be executed at the same time on all clients.
+* Track ping to other clients
+* Synchronize joining so we can ensure new clients are completely synched
+
+By using the command [this.GetPlayerTicksMsec(PeerId)] from any node you can get the estimated OS.GetTicksMSec() value for the peer. This allows for all clients to execute commands at the same time. Take this code from the [PredictiveSynchronizationExample].
+
+```cs
+foreach (int peerid in this.GetGameSession().GetAllPeerIds())
+{
+    if (peerid == MDStatics.GetPeerId())
+    {
+        // Set our start time
+        StartAt = OS.GetTicksMsec() + delay;
+    }
+    else
+    {
+        // Set start time for other clients
+        RpcId(peerid, nameof(RpcSetStartTime), this.GetPlayerTicksMsec(peerid) + delay);
+    }
+}
+```
+
+This code sets a start time to some time in the future to be executed at almost the same time on all clients, under normal network conditions the estimations are usually within 20 ms of each other. So even if the rpc call arrives a few second apart on all clients as long as it arrives before the execution time all clients can perform the action at the same time. The ping that the synchronizer provides can be used to estimate how far in the future a command execution needs to be set to ensure all clients have recieved the signal.
+
+The [MDGameSynchronizer] will by default automatically pause the game when a new player joins, then wait for the new player to synchronize all networked nodes before resuming. Network nodes that need special handling can implement the [IMDSynchronizedNode] interface to tell the [MDGameSynchronizer] when they have completed synchronization.
+
+Once the all players have been synchronized a resume command will be sent to all clients using the estimated [OS.GetTicksMsec()] for each client. This ensures all the clients unpauses the game at almost the same time.
 
 # Contributing
 There are many ways to contribute

@@ -19,18 +19,20 @@ public class PredictiveActor : KinematicBody2D, IMDSynchronizedNode
 
 	protected uint StartAt = 1;
 
+	protected uint FinishSynchAt = 0;
+
+	protected RandomNumberGenerator Random = new RandomNumberGenerator();
+
 	// Called when the node enters the scene tree for the first time.
 	public override void _Ready()
 	{
-		// TODO: Implement request for position
-		// TODO: Implement synchronizer interface ISynchronizedNode
+		Random.Randomize();
+
 		AddToGroup(GROUP_ACTORS);
 		if (MDStatics.IsClient())
 		{
 			return;
 		}
-		RandomNumberGenerator Random = new RandomNumberGenerator();
-		Random.Randomize();
 		Direction = new Vector2(Random.RandfRange(-1f, 1f), Random.RandfRange(-1f, 1f));
 		Speed = Random.RandfRange(1f, 4f);
 		Direction = Direction.Normalized() * Speed;
@@ -59,9 +61,9 @@ public class PredictiveActor : KinematicBody2D, IMDSynchronizedNode
 			return;
 		}
 
-		foreach (MDPlayerInfo info in this.GetGameSession().GetAllPlayerInfos())
+		foreach (int peerid in this.GetGameSession().GetAllPeerIds())
 		{
-			if (info.PeerId == MDStatics.GetPeerId())
+			if (peerid == MDStatics.GetPeerId())
 			{
 				// Set our start time
 				StartAt = OS.GetTicksMsec() + delay;
@@ -69,7 +71,7 @@ public class PredictiveActor : KinematicBody2D, IMDSynchronizedNode
 			else
 			{
 				// Set start time for other clients
-				RpcId(info.PeerId, nameof(RpcSetStartTime), this.GetPlayerTicksMsec(info.PeerId) + delay);
+				RpcId(peerid, nameof(RpcSetStartTime), this.GetPlayerTicksMsec(peerid) + delay);
 			}
 		}
 	}
@@ -101,6 +103,13 @@ public class PredictiveActor : KinematicBody2D, IMDSynchronizedNode
 	public bool IsSynchronizationComplete()
 	{
 		if (Speed == 0f || Direction == Vector2.Zero)
+		{
+			// Fake that we are taking variable time to synch
+			FinishSynchAt = OS.GetTicksMsec() + (uint)Random.RandiRange(500, 8000);
+			return false;
+		}
+
+		if (OS.GetTicksMsec() < FinishSynchAt)
 		{
 			return false;
 		}
