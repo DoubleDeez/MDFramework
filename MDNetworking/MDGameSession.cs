@@ -701,7 +701,10 @@ public class MDGameSession : Node
     {
         foreach(Node NetworkedNode in OrderedNetworkedNodes)
         {
-            NetworkedNode.RemoveAndFree();
+            if (Godot.Object.IsInstanceValid(NetworkedNode))
+            {
+                NetworkedNode.RemoveAndFree();
+            }
         }
 
         OrderedNetworkedNodes.Clear();
