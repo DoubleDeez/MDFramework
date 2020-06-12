@@ -1,8 +1,7 @@
-[gd_scene load_steps=4 format=2]
+[gd_scene load_steps=3 format=2]
 
 [ext_resource path="res://MDFramework/Examples/BasicNetworkLobby/BasicNetworkLobby.tscn" type="PackedScene" id=1]
 [ext_resource path="res://MDFramework/Examples/PredictiveSynchronizationExample/ActorSpawner.cs" type="Script" id=2]
-[ext_resource path="res://MDFramework/Examples/BasicNetworkLobby/SyncInterface.tscn" type="PackedScene" id=4]
 
 [node name="PredictiveExample" instance=ExtResource( 1 )]
 
@@ -30,8 +29,6 @@ text = "Decrease Max Nodes By 100"
 __meta__ = {
 "_edit_use_anchors_": false
 }
-
-[node name="SyncInterface" parent="CanvasLayer" index="2" instance=ExtResource( 4 )]
 
 [node name="StaticBody2D" type="StaticBody2D" parent="." index="1"]
 
