@@ -1,6 +1,7 @@
 using Godot;
 using System;
 
+[MDAutoRegister]
 public class SyncInterface : CenterContainer
 {
     protected PackedScene SynchRow = null;

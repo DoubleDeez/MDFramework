@@ -557,7 +557,7 @@ public class MDGameSynchronizer : Node
             return;
         }
 
-        if (NodeCount <= 0)
+        if (NodeCount < 0)
         {
             MDLog.Debug(LOG_CAT, "We got no node count");
             // We don't know how many nodes we got yet
@@ -659,7 +659,7 @@ public class MDGameSynchronizer : Node
     /// <summary>Delay MDReplicator until all nodes are synched (Default: True)</summary>
     public virtual bool IsDelayReplicatorUntilAllNodesAreSynched()
     {
-        return true;
+        return false;
     }
 
     /// <summary>Unpause countdown duration (Default: 2 seconds)</summary>
