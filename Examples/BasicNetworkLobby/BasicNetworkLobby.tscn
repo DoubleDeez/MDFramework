@@ -92,7 +92,6 @@ You can autoload the CustomGameInstance to furn UPNP off."
 align = 1
 
 [node name="SyncInterface" parent="CanvasLayer" instance=ExtResource( 2 )]
-
 [node name="BtnDisconnect" type="Button" parent="CanvasLayer"]
 margin_right = 12.0
 margin_bottom = 20.0
