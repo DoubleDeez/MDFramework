@@ -185,6 +185,7 @@ public class MDGameInstance : Node
         {
             GameClock = CreateTypeInstance<MDGameClock>(GetGameClockType());
             GameClock.Name = "GameClock";
+            GameSynchronizer.GameClock = GameClock;
             this.AddNodeToRoot(GameClock, true);
         }
     }
@@ -222,6 +223,26 @@ public class MDGameInstance : Node
         #endif
     }
 
+    /// <summary>Override to change when the on screen debug is available (Default: Only in debug mode)</summary>
+    public virtual bool IsOnScreenDebugAvailable()
+    {
+        #if DEBUG
+        return true;
+        #else
+        return false;
+        #endif
+    }
+
+    /// <summary>Should basic information like fps and such be added by default (Default: Only in debug mode)</summary>
+    public virtual bool IsOnScreenDebugAddBasicInformation()
+    {
+        #if DEBUG
+        return true;
+        #else
+        return false;
+        #endif
+    }
+
     /// <summary>Override to change when UPNP is used for the server (Default: True)</summary>
     public virtual bool UseUPNP()
     {
@@ -238,6 +259,12 @@ public class MDGameInstance : Node
     public virtual int GetConsoleKey()
     {
         return (int)KeyList.Quoteleft;
+    }
+
+    ///<summary>Get the key used to open the on screen debug. (Default: KeyList.F12)</summary>
+    public virtual int GetOnScreenDebugKey()
+    {
+        return (int)KeyList.F12;
     }
 
     ///<summary>Decides if the network synchronizer is used or not (Default: True)</summary>

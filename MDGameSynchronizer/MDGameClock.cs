@@ -1,5 +1,6 @@
 using Godot;
 using System;
+using System.Collections.Generic;
 
 ///<summary>
 /// The MDGameClock ticks once per _PhysicsProcess(), it will pause when the game is paused.
@@ -11,7 +12,10 @@ public class MDGameClock : Node
     public static readonly String LOG_CAT = "LogGameClock";
 
     ///<summary>If we are calculating offset from ping this is the minimum offset we can have</summary>
-    public static readonly int MINIMUM_OFFSET = 5;
+    public static readonly int MINIMUM_OFFSET = 1;
+
+    ///<summary>Used to control how much we are allowing to be off by for the tick offset</summary>
+    public static readonly int MAX_TICK_DESYNCH = 5;
 
     protected static readonly float TICK_INTERVAL_MILLISECONDS = 1000 / Engine.IterationsPerSecond;
 
@@ -33,6 +37,9 @@ public class MDGameClock : Node
 
     // The current tick
     protected uint CurrentTick = 0;
+
+    // Used to adjust local tick
+    protected int TickSynchAdjustment = 0;
 
     // The current remote tick
     protected int LastRemoteTickOffset = 0;
@@ -68,6 +75,12 @@ public class MDGameClock : Node
         CurrentRemoteTickOffsetTarget = MINIMUM_OFFSET;
         LastRemoteTickOffset = MINIMUM_OFFSET;
         GameSynchronizer.OnPlayerPingUpdatedEvent += OnPlayerPingUpdatedEvent;
+
+        // TODO: Remove this, only here for debug
+        MDOnScreenDebug.AddOnScreenDebugInfo("GameClock Current Tick", () => CurrentTick.ToString());
+        MDOnScreenDebug.AddOnScreenDebugInfo("OS GetTickMsec", () => OS.GetTicksMsec().ToString());
+        MDOnScreenDebug.AddOnScreenDebugInfo("GameClock Remote Offset", () => CurrentRemoteTickOffset.ToString());
+        MDOnScreenDebug.AddOnScreenDebugInfo("GameClock Remote Target Offset", () => CurrentRemoteTickOffsetTarget.ToString());
     }
 
     public override void _ExitTree()
@@ -79,6 +92,22 @@ public class MDGameClock : Node
     {
         if (!GetTree().Paused)
         {
+            // Adjust ourselves in synch with server at most once per tick
+            if (TickSynchAdjustment > 0)
+            {
+                MDLog.Trace(LOG_CAT, "Tick {0}, was skipped because adjustment was {1}", CurrentTick, TickSynchAdjustment);
+                OnLocalSkippedTick(CurrentTick);
+                CurrentTick++;
+                TickSynchAdjustment--;
+            }
+            else if (TickSynchAdjustment < 0)
+            {
+                MDLog.Trace(LOG_CAT, "Tick {0}, was repeated because adjustment was {1}", CurrentTick, TickSynchAdjustment);
+                LastTickDuplicated = true;
+                CurrentTick--;
+                TickSynchAdjustment++;
+            }
+
             DeltaTickCounter += delta;
             if (DeltaTickCounter >= TICK_INTERVAL_DELTA)
             {
@@ -87,7 +116,6 @@ public class MDGameClock : Node
                 CurrentTick++;
                 
                 // Allow skipping a single tick per update to catch up
-                // TODO: Set a limit so ticks are not skipped so often
                 if (DeltaTickCounter >= TICK_INTERVAL_DELTA)
                 {
                     MDLog.Trace(LOG_CAT, "Tick {0}, was skipped because delta was {1}", CurrentTick, delta);
@@ -134,6 +162,13 @@ public class MDGameClock : Node
         return timeInMilliseconds;
     }
 
+    ///<summary>Returns the tick that we will be in at the given offset (msec)</summary>
+    public uint GetTickAtTimeOffset(long offset)
+    {
+        int tickOffset = (int)Mathf.Round(offset / TICK_INTERVAL_MILLISECONDS);
+        return (uint)(GetTick() + tickOffset);
+    }
+
     ///<summary>Adjust the remote tick offset if necessary</summary>
     protected void AdjustRemoteTickOffset()
     {
@@ -141,7 +176,6 @@ public class MDGameClock : Node
         if (CurrentRemoteTickOffsetTarget != CurrentRemoteTickOffset)
         {
             // Ensure that we don't modify the offset two consecutive frames in a row
-            // TODO: Set a limit so ticks are not skipped so often
             if (LastRemoteTickOffset != CurrentRemoteTickOffset)
             {
                 LastRemoteTickOffset = CurrentRemoteTickOffset;
@@ -167,7 +201,10 @@ public class MDGameClock : Node
 
     protected void OnPlayerPingUpdatedEvent(int PeerId, int Ping)
     {
-        CalculateRemoteOffset();
+        if (!GetTree().Paused)
+        {
+            CalculateRemoteOffset();
+        }
     }
 
     /// <summary>Attempts to calculate what the remote offset should be based on the current ping</summary>
@@ -202,13 +239,28 @@ public class MDGameClock : Node
         }
 
         // Calculate the difference between new and old
-        float difference = Mathf.Abs((newOffset - CurrentRemoteTickOffset) / newOffset);
+        float difference = (float)(newOffset - CurrentRemoteTickOffset) / (float)newOffset;
+        difference = Mathf.Abs(difference);
 
-        if (difference >= RemoteTickPingTolerance)
+        // Is the difference larger than our allowed tolerenace?
+        if (Mathf.Abs(difference) >= RemoteTickPingTolerance)
         {
             MDLog.Trace(LOG_CAT, "Ping difference is too large adjust remote tick offset target from {0} to {1}", CurrentRemoteTickOffsetTarget, newOffset);
             // We need to adjust the remote tick offset
             CurrentRemoteTickOffsetTarget = newOffset;
+        }
+    }
+
+    ///<summary>Clients recieve this from the server as a way to attempt to keep them in synch in case they freeze for any reason</summary>
+    public void CheckSynch(uint EstimateTime, uint EstimatedTick)
+    {   
+        // Figure out what tick we would be at when the estimated time is hit
+        uint localTickAtTime = GetTickAtTimeOffset(EstimateTime - OS.GetTicksMsec());
+        long tickOffset = EstimatedTick - localTickAtTime;
+        if (Math.Abs(tickOffset) > MAX_TICK_DESYNCH)
+        {
+            // We are too far out of synch
+            TickSynchAdjustment = (int)tickOffset;
         }
     }
 }
