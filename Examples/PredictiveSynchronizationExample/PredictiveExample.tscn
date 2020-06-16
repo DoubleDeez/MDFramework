@@ -13,10 +13,10 @@ __meta__ = {
 }
 
 [node name="BtnIncrease" type="Button" parent="CanvasLayer/BtnDisconnect/ButtonRoot" index="0"]
-margin_top = 30.0
-margin_right = 182.0
-margin_bottom = 50.0
-text = "Increase Max Nodes By 100"
+margin_top = 29.0975
+margin_right = 190.0
+margin_bottom = 49.0975
+text = "Increase Max Nodes By 20"
 __meta__ = {
 "_edit_use_anchors_": false
 }
@@ -25,7 +25,7 @@ __meta__ = {
 margin_top = 60.0
 margin_right = 187.0
 margin_bottom = 80.0
-text = "Decrease Max Nodes By 100"
+text = "Decrease Max Nodes By 20"
 __meta__ = {
 "_edit_use_anchors_": false
 }

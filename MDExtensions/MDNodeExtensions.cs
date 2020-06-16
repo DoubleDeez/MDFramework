@@ -29,6 +29,13 @@ public static class MDNodeExtensions
         return GI.GameSynchronizer;
     }
 
+    /// <summary>Grabs the GameClock from the GameInstance</summary>
+    public static MDGameClock GetGameClock(this Node Instance)
+    {
+        MDGameInstance GI = Instance.GetGameInstance();
+        return GI.GameClock;
+    }
+
     /// <summary>Gets the ping of the given peer</summary>
     public static int GetPlayerPing(this Node Instance, int PeerId)
     {

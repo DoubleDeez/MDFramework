@@ -50,7 +50,7 @@ public class ActorSpawner : Node2D
         {
             return;
         }
-        TotalNodes += 100;
+        TotalNodes += 20;
         SpawnNodes();
     }
 
@@ -61,10 +61,10 @@ public class ActorSpawner : Node2D
         {
             return;
         }
-        TotalNodes -= 100;
-        if (TotalNodes <= 100)
+        TotalNodes -= 20;
+        if (TotalNodes <= 20)
         {
-            TotalNodes = 100;
+            TotalNodes = 20;
         }
         SpawnNodes();
     }

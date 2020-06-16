@@ -33,12 +33,15 @@ public class MDGameSynchronizer : Node
     public delegate void SynchStatusUpdateHandler(int PeerId, float ProgressPercentage);
     public event SynchStatusUpdateHandler OnPlayerSynchStatusUpdateEvent = delegate {};
 
+    public delegate void SynchPlayerPingUpdatedHandler(int PeerId, int Ping);
+    public event SynchPlayerPingUpdatedHandler OnPlayerPingUpdatedEvent = delegate {};
+
     public MDGameInstance GameInstance = null;
 
     public MDGameSession GameSession = null;
 
     ///<Summary>Stores the latest ping response times for each player</summary>
-    protected Dictionary<int, Queue<float>> InternalPingList = new Dictionary<int, Queue<float>>();
+    protected Dictionary<int, Queue<int>> InternalPingList = new Dictionary<int, Queue<int>>();
 
     ///<Summary>Stores all the estimated GetTicksMsec offsets for all players</summary>
     protected Dictionary<int, List<int>> InternalTicksList = new Dictionary<int, List<int>>();
@@ -84,6 +87,17 @@ public class MDGameSynchronizer : Node
             return -1;
         }
         return PlayerPing[PeerId];
+    }
+
+    ///<summary>Returns the highest ping we got to any player</summary>
+    public int GetMaxPlayerPing()
+    {
+        int highest = 0;
+        foreach (int ping in PlayerPing.Values)
+        {
+            highest = Math.Max(ping, highest);
+        }
+        return highest;
     }
 
     /// <summary> Returns the estimated OS.GetTicksMsec for the given peer or 0 if the peer does not exist.</summary>
@@ -185,14 +199,14 @@ public class MDGameSynchronizer : Node
     protected void RequestPing(uint ServerTimeOfRequest)
     {
         // Respond
-        this.MDServerRpc(nameof(PingResponse), ServerTimeOfRequest);
+        this.RpcId(Multiplayer.GetRpcSenderId(), nameof(PingResponse), ServerTimeOfRequest);
         MDLog.Trace(LOG_CAT, "Responded to server request for ping");
     }
 
     [Master]
     protected void PingResponse(uint ServerTimeOfRequest)
     {
-        float ping = OS.GetTicksMsec() - ServerTimeOfRequest;
+        int ping = (int)(OS.GetTicksMsec() - ServerTimeOfRequest);
         PushPlayerPingToQueue(Multiplayer.GetRpcSenderId(), ping);
     }
 
@@ -211,7 +225,7 @@ public class MDGameSynchronizer : Node
     {
         MDLog.Debug(LOG_CAT, "Msec response number {0} from peer [{1}] is {2} local Msec is {3}", RequestNumber, Multiplayer.GetRpcSenderId(), ClientTicksMsec, OS.GetTicksMsec());
         // Get and record ping
-        float ping = OS.GetTicksMsec() - ServerTimeOfRequest;
+        int ping = (int)(OS.GetTicksMsec() - ServerTimeOfRequest);
         PushPlayerPingToQueue(Multiplayer.GetRpcSenderId(), ping);
 
         // Calculate ping for one way trip (Ping / 2)
@@ -311,11 +325,11 @@ public class MDGameSynchronizer : Node
     }
 
     ///<summary>Adds the ping to the players ping list and removes any overflow</summary>
-    private void PushPlayerPingToQueue(int PeerId, float Ping)
+    private void PushPlayerPingToQueue(int PeerId, int Ping)
     {
         if (!InternalPingList.ContainsKey(PeerId))
         {
-            InternalPingList.Add(PeerId, new Queue<float>());
+            InternalPingList.Add(PeerId, new Queue<int>());
         }
 
         InternalPingList[PeerId].Enqueue(Ping);
@@ -375,13 +389,26 @@ public class MDGameSynchronizer : Node
         {
             PlayerPing[PeerId] = Ping;
         }
+
+        OnPlayerPingUpdatedEvent(PeerId, Ping);
     }
 
     private void OnPlayerJoinedEvent(int PeerId)
     {
         // Check if this is our own join message or if we are a client
-        if (PeerId == MDStatics.GetPeerId() || MDStatics.IsClient())
+        if (PeerId == MDStatics.GetPeerId())
         {
+            return;
+        }
+
+        if (MDStatics.IsClient())
+        {
+            // Track ping to other players
+            if (!InternalPingList.ContainsKey(PeerId))
+            {
+                InternalPingList.Add(PeerId, new Queue<int>());
+            }
+            StartClientPingCycle(PeerId);
             return;
         }
 
@@ -668,10 +695,10 @@ public class MDGameSynchronizer : Node
         return 2000;
     }
 
-    /// <summary>How often do we ping each client (Default: Every second)</summary>
+    /// <summary>How often do we ping each client (Default: 3f)</summary>
     protected virtual float GetPingInterval()
     {
-        return 1f;
+        return 3f;
     }
 
     /// <summary>Pings to keep for getting average (Default: 10)</summary>
@@ -684,6 +711,11 @@ public class MDGameSynchronizer : Node
     /// <para>You can set the interval with <see cref="GetPingInterval"/></para></summary>
     protected virtual bool IsActivePingEnabled()
     {
+        // Game clock requires active ping
+        if (IsGameClockActive())
+        {
+            return true;
+        }
         return true;
     }
 
@@ -691,6 +723,12 @@ public class MDGameSynchronizer : Node
     protected virtual int GetInitialMeasurementCount()
     {
         return 20;
+    }
+
+    /// <summary>Sets if we should use the MDGameClock or not, this will override IsActivePingEnabled if set to true. (Default: true)</summary>
+    public virtual bool IsGameClockActive()
+    {
+        return true;
     }
 
     /// <summary>If IsPauseOnJoin() is enabled we will wait for at least this level of security for TicksMsec before we resume (Default: GetInitialMeasurementCount() / 2)</summary>

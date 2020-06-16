@@ -63,6 +63,12 @@ public class MDGameInstance : Node
         return typeof(MDGameSynchronizer);
     }
 
+    /// <summary>Override this to provide the your GameClock subclass type</summary>
+    protected virtual Type GetGameClockType()
+    {
+        return typeof(MDGameClock);
+    }
+
     // Override this to provide your own Player class type
     public virtual Type GetPlayerInfoType()
     {
@@ -167,6 +173,19 @@ public class MDGameInstance : Node
             GameSynchronizer.Name = "GameSynchronizer";
             GameSynchronizer.GameInstance = this;
             this.AddNodeToRoot(GameSynchronizer, true);
+
+            // Check if we should create the game clock as well
+            CreateGameClock();
+        }
+    }
+
+    private void CreateGameClock()
+    {
+        if (GameClock == null && GameSynchronizer.IsGameClockActive())
+        {
+            GameClock = CreateTypeInstance<MDGameClock>(GetGameClockType());
+            GameClock.Name = "GameClock";
+            this.AddNodeToRoot(GameClock, true);
         }
     }
 
@@ -243,6 +262,7 @@ public class MDGameInstance : Node
     public MDGameSession GameSession {get; private set;}
 
     public MDGameSynchronizer GameSynchronizer {get; private set;}
+    public MDGameClock GameClock {get; private set;}
     public MDInterfaceManager InterfaceManager {get; private set;}
 
     // TODO - There should be an InputState for each local player
