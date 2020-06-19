@@ -1,5 +1,6 @@
 using Godot;
 using System;
+using System.Collections.Generic;
 using System.Linq.Expressions;
 
 /*
@@ -289,6 +290,34 @@ public static class MDNodeExtensions
     {
         int ServerId = Instance.GetGameSession().GetNetworkMaster();
         return Instance.MDRpcUnreliableId(ServerId, Method, Args);
+    }
+
+    ///<summary>Creates a timer as a child of the current node</summary>
+    ///<param name="Name">The name of the timer</param>
+    ///<param name="OneShot">Is this a one shot timer</param>
+    ///<param name="WaitTime">Duration of the timer</param>
+    ///<param name="TimerAsFirstArgument">Should we pass the timer as the first argument to the timeout method?</param>
+    ///<param name="ConnectionTarget">The object to attach the timeout method to</param>
+    ///<param name="MethodName">The name of the timeout method</param>
+    ///<param name="Parameters">Array of parameters to pass to the timeout function</param>
+    public static Timer CreateTimer(this Node Instance, String Name, bool OneShot, float WaitTime, bool TimerAsFirstArgument, Godot.Object ConnectionTarget, String MethodName, params object[] Parameters)
+    {
+        Timer timer = new Timer();
+        timer.Name = Name;
+        timer.OneShot = OneShot;
+        timer.WaitTime = WaitTime;
+        List<object> parameters = new List<object>();
+        if (TimerAsFirstArgument)
+        {
+            parameters.Add(timer);
+        }
+        foreach (object param in Parameters)
+        {
+            parameters.Add(param);
+        }
+        timer.Connect("timeout", ConnectionTarget, MethodName, new Godot.Collections.Array(parameters));
+        Instance.AddChild(timer);
+        return timer;
     }
 
 }

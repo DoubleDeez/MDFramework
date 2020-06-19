@@ -7,7 +7,6 @@ public class MDOnScreenDebug : Control
 {
     private const string LOG_CAT = "LogOnScreenDebug";
 
-    public static readonly float UPDATE_INTERVAL = 0.3f;
     public delegate String OnScreenInfoFunction();
 
     private Label DisplayLabel;
@@ -15,8 +14,6 @@ public class MDOnScreenDebug : Control
     private static Dictionary<String, OnScreenInfoFunction> DebugInfoList = new Dictionary<string, OnScreenInfoFunction>();
 
     private static bool AddedBasicInfo = false;
-
-    protected float _updateCooldown = 0f;
 
     public override void _Ready()
     {
@@ -39,12 +36,6 @@ public class MDOnScreenDebug : Control
 
     public override void _Process(float delta)
     {
-        _updateCooldown -= delta;
-        if (_updateCooldown <= 0f)
-        {
-            _updateCooldown += UPDATE_INTERVAL;
-            //UpdateLabel();
-        }
         UpdateLabel();
     }
 

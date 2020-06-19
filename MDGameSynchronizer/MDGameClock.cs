@@ -12,7 +12,10 @@ public class MDGameClock : Node
     public static readonly String LOG_CAT = "LogGameClock";
 
     ///<summary>If we are calculating offset from ping this is the minimum offset we can have</summary>
-    public static readonly int MINIMUM_OFFSET = 1;
+    public static readonly int MINIMUM_OFFSET = 5;
+
+    ///<summary>We add some extra buffer to the offset just in case</summary>
+    public static readonly int OFFSET_BUFFER = 5;
 
     ///<summary>Used to control how much we are allowing to be off by for the tick offset</summary>
     public static readonly int MAX_TICK_DESYNCH = 5;
@@ -133,6 +136,7 @@ public class MDGameClock : Node
     {
         MDLog.Debug(LOG_CAT, "Tick changed by code from {0} to {1}", CurrentTick, Tick);
         CurrentTick = Tick;
+        TickSynchAdjustment = 0;
         OnGameTickChanged(CurrentTick);
     }
 
@@ -145,7 +149,7 @@ public class MDGameClock : Node
     ///<summary>Returns the current remote tick used for synchronizing remote players</summary>
     public uint GetRemoteTick()
     {
-        return (uint)Math.Max(CurrentTick + CurrentRemoteTickOffset, 0);
+        return (uint)Math.Max(CurrentTick - CurrentRemoteTickOffset, 0);
     }
 
     ///<summary>In the event the current tick is a repeated tick this will return true</summary>
@@ -214,7 +218,7 @@ public class MDGameClock : Node
         if (RemoteTickOffset > 0)
         {
             MDLog.Trace(LOG_CAT, "Ping offset is set to be static at {0}", RemoteTickOffset);
-            CurrentRemoteTickOffsetTarget = RemoteTickOffset;
+            CurrentRemoteTickOffsetTarget = RemoteTickOffset + OFFSET_BUFFER;
             return;
         }
 
@@ -222,7 +226,7 @@ public class MDGameClock : Node
         int HighestPing = (int)Mathf.Ceil(GameSynchronizer.GetMaxPlayerPing() * RemoteTickPingModifier);
         if (HighestPing == 0)
         {
-            CurrentRemoteTickOffsetTarget = MINIMUM_OFFSET;
+            CurrentRemoteTickOffsetTarget = MINIMUM_OFFSET + OFFSET_BUFFER;
             MDLog.Trace(LOG_CAT, "We got no ping setting offset to minimum offset of {0}", MINIMUM_OFFSET);
             return; 
         }
@@ -233,7 +237,7 @@ public class MDGameClock : Node
         // If it is less than minimum set our target to minimum
         if (newOffset <= MINIMUM_OFFSET)
         {
-            CurrentRemoteTickOffsetTarget = MINIMUM_OFFSET;
+            CurrentRemoteTickOffsetTarget = MINIMUM_OFFSET + OFFSET_BUFFER;
             MDLog.Trace(LOG_CAT, "Ping offset of {0} is less than our minimum offset of {1}", newOffset, MINIMUM_OFFSET);
             return;
         }
@@ -247,18 +251,28 @@ public class MDGameClock : Node
         {
             MDLog.Trace(LOG_CAT, "Ping difference is too large adjust remote tick offset target from {0} to {1}", CurrentRemoteTickOffsetTarget, newOffset);
             // We need to adjust the remote tick offset
-            CurrentRemoteTickOffsetTarget = newOffset;
+            CurrentRemoteTickOffsetTarget = newOffset + OFFSET_BUFFER;
         }
     }
 
     ///<summary>Clients recieve this from the server as a way to attempt to keep them in synch in case they freeze for any reason</summary>
-    public void CheckSynch(uint EstimateTime, uint EstimatedTick)
-    {   
+    public void CheckSynch(long EstimateTime, long EstimatedTick)
+    {
+        long currentTime = OS.GetTicksMsec();
+        if (EstimateTime < currentTime)
+        {
+            // This packet was delayed and is already in the past, ignore
+            MDLog.Trace(LOG_CAT, "[{0}] Ignoring tick packet as it was in the past {1} at {2}", currentTime,  EstimatedTick, EstimateTime);
+            return;
+        }
+
         // Figure out what tick we would be at when the estimated time is hit
-        uint localTickAtTime = GetTickAtTimeOffset(EstimateTime - OS.GetTicksMsec());
-        long tickOffset = EstimatedTick - localTickAtTime;
+        long localTickAtTime = GetTickAtTimeOffset(EstimateTime - currentTime);
+        long tickOffset = (EstimatedTick - localTickAtTime);
         if (Math.Abs(tickOffset) > MAX_TICK_DESYNCH)
         {
+            MDLog.Trace(LOG_CAT, "[{0}] We are out of synch, we should be at tick {1} at {2}", currentTime,  EstimatedTick, EstimateTime);
+            MDLog.Trace(LOG_CAT, "[{0}] We will be at tick {1} which is off by {2}", currentTime, localTickAtTime, tickOffset);
             // We are too far out of synch
             TickSynchAdjustment = (int)tickOffset;
         }

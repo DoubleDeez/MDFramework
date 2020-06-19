@@ -9,6 +9,9 @@ public class ActorSpawner : Node2D
     [Export]
     public int TotalNodes = 10;
 
+    [Export]
+    public string ActorFileName = "Actor.tscn";
+
     [MDBindNode("/root/PredictiveExample/CanvasLayer/BtnDisconnect/ButtonRoot")]
     protected Control ButtonRoot;
 
@@ -98,14 +101,13 @@ public class ActorSpawner : Node2D
     private String GetActorScene()
     {
         // This is to avoid needing references
-        return GetParent().Filename.GetBaseDir() + "/PredictiveActor.tscn";
+        return GetParent().Filename.GetBaseDir() + "/" + ActorFileName;
     }
 
     private void ToggleButtonRoot(bool visible)
     {
         if (ButtonRoot == null)
         {
-            MDLog.Warn(LOG_CAT, "ButtonRoot not found");
             return;
         }
         ButtonRoot.Visible = visible;

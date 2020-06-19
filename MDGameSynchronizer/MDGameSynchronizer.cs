@@ -129,7 +129,7 @@ public class MDGameSynchronizer : Node
         this.NodeCount = NodeCount;
         NodeSynchCompleted = false;
         // Start synch timer
-        Timer timer = CreateTimer("SynchTimer", false, SYNCH_TIMER_CHECK_INTERVAL, true, this, nameof(CheckSynchStatus));
+        Timer timer = CreateUnpausableTimer("SynchTimer", false, SYNCH_TIMER_CHECK_INTERVAL, true, this, nameof(CheckSynchStatus));
         timer.Start();
 
         // Send out synch started event
@@ -303,7 +303,7 @@ public class MDGameSynchronizer : Node
     {
         float waitTime = ((float)(UnpauseTime - OS.GetTicksMsec())) / 1000f;
         MDLog.Trace(LOG_CAT, "Unpausing game in {0}", waitTime);
-        Timer timer = CreateTimer(RESUME_TIMER_NAME, true, waitTime, true, this, nameof(OnUnpauseTimerTimeout));
+        Timer timer = CreateUnpausableTimer(RESUME_TIMER_NAME, true, waitTime, true, this, nameof(OnUnpauseTimerTimeout));
         timer.Start();
         OnSynchCompleteEvent(waitTime);
         if (GameClock != null && MDStatics.IsClient())
@@ -465,7 +465,7 @@ public class MDGameSynchronizer : Node
         Timer timer = (Timer)GetNodeOrNull(ALL_PLAYERS_SYNCHED_TIMER_NAME);
         if (timer == null)
         {
-            timer = CreateTimer(ALL_PLAYERS_SYNCHED_TIMER_NAME, false, SYNCH_TIMER_CHECK_INTERVAL, true, this, nameof(CheckAllClientsSynched));
+            timer = CreateUnpausableTimer(ALL_PLAYERS_SYNCHED_TIMER_NAME, false, SYNCH_TIMER_CHECK_INTERVAL, true, this, nameof(CheckAllClientsSynched));
             timer.Start();
         }
     }
@@ -506,7 +506,7 @@ public class MDGameSynchronizer : Node
                 InternalPingList.Add(PeerId, new Queue<int>());
             }
             MDOnScreenDebug.AddOnScreenDebugInfo("Ping(" + PeerId + ")", () => MDStatics.GetGameSynchronizer().GetPlayerPing(PeerId).ToString());
-            Timer timer = CreateTimer("PingTimer" + PeerId, false, GetPingInterval(), true, this, nameof(OnPingTimerTimeout), PeerId);
+            Timer timer = CreateUnpausableTimer("PingTimer" + PeerId, false, GetPingInterval(), true, this, nameof(OnPingTimerTimeout), PeerId);
             timer.Start();
         }
     }
@@ -695,24 +695,10 @@ public class MDGameSynchronizer : Node
         GetTree().Paused = false;
     }
 
-    private Timer CreateTimer(String Name, bool OneShot, float WaitTime, bool TimerAsFirstArgument, Godot.Object ConnectionTarget, String MethodName, params object[] Parameters)
+    private Timer CreateUnpausableTimer(String Name, bool OneShot, float WaitTime, bool TimerAsFirstArgument, Godot.Object ConnectionTarget, String MethodName, params object[] Parameters)
     {
-        Timer timer = new Timer();
-        timer.Name = Name;
-        timer.OneShot = OneShot;
-        timer.WaitTime = WaitTime;
-        List<object> parameters = new List<object>();
-        if (TimerAsFirstArgument)
-        {
-            parameters.Add(timer);
-        }
-        foreach (object param in Parameters)
-        {
-            parameters.Add(param);
-        }
-        timer.Connect("timeout", ConnectionTarget, MethodName, new Godot.Collections.Array(parameters));
+        Timer timer = this.CreateTimer(Name, OneShot, WaitTime, TimerAsFirstArgument, ConnectionTarget, MethodName, Parameters);
         timer.PauseMode = PauseModeEnum.Process;
-        AddChild(timer);
         return timer;
     }
 
