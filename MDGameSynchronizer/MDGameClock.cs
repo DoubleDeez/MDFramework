@@ -72,7 +72,7 @@ public class MDGameClock : Node
     // Called when the node enters the scene tree for the first time.
     public override void _Ready()
     {
-        MDLog.AddLogCategoryProperties(LOG_CAT, new MDLogProperties(MDLogLevel.Force));
+        MDLog.AddLogCategoryProperties(LOG_CAT, new MDLogProperties(MDLogLevel.Info));
         GameSynchronizer = this.GetGameSynchronizer();
         CurrentRemoteTickOffset = MINIMUM_OFFSET;
         CurrentRemoteTickOffsetTarget = MINIMUM_OFFSET;

@@ -33,6 +33,7 @@ public class MDClockedNetworkDataNode : Node
         GameClock.OnGameTick -= OnGameTick;
     }
 
+    ///<summary>Refresh all properties every tick</summary>
     public void OnGameTick(uint Tick)
     {
         OnChangeAndOneShotValues.ForEach((val) => val.CheckForValueUpdate());
@@ -40,6 +41,7 @@ public class MDClockedNetworkDataNode : Node
         UnreliableIntervalValues.ForEach((val) => val.CheckForValueUpdate());
     }
 
+    ///<summary>When a player joins send them all current on change values</summary>
     protected void OnPlayerJoinedEvent(int PeerId)
     {
         if (!IsNetworkMaster() || PeerId == MDStatics.GetPeerId())
@@ -53,15 +55,20 @@ public class MDClockedNetworkDataNode : Node
     protected void OnJoinTimerTimeout(Timer timer, int PeerId)
     {
         timer.RemoveAndFree();
-        OnChangeAndOneShotValues.ForEach((value) => SendRpcId(PeerId, nameof(ValueChanged), value.GetReliability(), GameClock.GetTick(),
-                    OnChangeAndOneShotValues.IndexOf(value), value.GetValueAsString()));
+        OnChangeAndOneShotValues.ForEach((value) => 
+        {
+            if (value.GetMode() == ClockedPropertyMode.ON_CHANGE)
+            {
+                SendRpcId(PeerId, nameof(ValueChanged), value.GetReliability(), GameClock.GetTick(),
+                        OnChangeAndOneShotValues.IndexOf(value), value.GetValueAsString());
+            }
+        });
     }
 
     public override void _Process(float delta)
     {
         if (!MDStatics.IsNetworkActive() || !IsNetworkMaster())
         {
-            SetProcess(false);
             return;
         }
         _updateCooldown -= delta;
