@@ -712,7 +712,7 @@ public class MDGameSynchronizer : Node
         return true;
     }
 
-    /// <summary>Delay MDReplicator until all nodes are synched (Default: True)</summary>
+    /// <summary>Delay MDReplicator until all nodes are synched (Default: False)</summary>
     public virtual bool IsDelayReplicatorUntilAllNodesAreSynched()
     {
         return false;
@@ -724,7 +724,7 @@ public class MDGameSynchronizer : Node
         return 2000;
     }
 
-    /// <summary>How often do we ping each client (Default: 3f)</summary>
+    /// <summary>How often do we ping each client (Default: 0.5f)</summary>
     protected virtual float GetPingInterval()
     {
         return 0.5f;

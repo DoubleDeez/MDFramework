@@ -4,6 +4,8 @@ using System;
 [MDAutoRegister]
 public class Player : KinematicBody2D
 {
+    public const string PLAYER_GROUP = "PLAYERS";
+
     [Export]
     public float MaxSpeed = 150f;
     [Export]
@@ -53,6 +55,7 @@ public class Player : KinematicBody2D
     // Called when the node enters the scene tree for the first time.
     public override void _Ready()
     {
+        AddToGroup(PLAYER_GROUP);
         SetupPlayer(GetNetworkMaster());
         NetworkedPosition = new MDCNetworkInterpolatedVector2(Position, IsLocalPlayer);
         NetworkedPosition.OnValueChangedEvent += OnPositionChanged;
@@ -97,8 +100,8 @@ public class Player : KinematicBody2D
             Bullet bullet = (Bullet)GetBulletScene().Instance();
             bullet.GlobalPosition = GlobalPosition;
             bullet.SetOwner(GetNetworkMaster());
-            bullet.SetTarget(newValue);
             GetParent().AddChild(bullet);
+            bullet.SetTarget(newValue);
         }
     }
 

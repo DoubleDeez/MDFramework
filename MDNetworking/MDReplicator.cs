@@ -58,16 +58,14 @@ public class MDReplicator
     public void RegisterReplication(Node Instance)
     {
         List<MemberInfo> Members = MDStatics.GetTypeMemberInfos(Instance);
-        List<ReplicatedMember> NodeMembers = new List<ReplicatedMember>();
+        List<IReplicatedMember> NodeMembers = new List<IReplicatedMember>();
         foreach(MemberInfo Member in Members)
         {
             MDReplicated RepAttribute = Member.GetCustomAttribute(typeof(MDReplicated)) as MDReplicated;
             if (RepAttribute != null)
             {
-                ReplicatedMember NodeMember = new ReplicatedMember();
-                NodeMember.Member = Member;
-                NodeMember.IsReliable = RepAttribute.Reliability == MDReliability.Reliable;
-                NodeMember.ReplicatedType = RepAttribute.ReplicatedType;
+                ReplicatedMember NodeMember = new ReplicatedMember(Member, RepAttribute.Reliability == MDReliability.Reliable, 
+                                                                    RepAttribute.ReplicatedType, WeakRef.WeakRef(Instance));
                 NodeMembers.Add(NodeMember);
 
                 MDLog.Trace(LOG_CAT, "Adding Replicated Node {0} Member {1}", Instance.Name, Member.Name);
@@ -132,61 +130,18 @@ public class MDReplicator
                 {
                     for (int j = 0; j < RepNode.Members.Count; ++j)
                     {
-                        ReplicatedMember RepMember = RepNode.Members[j];
-                        MasterAttribute MasterAtr = RepMember.Member.GetCustomAttribute(typeof(MasterAttribute)) as MasterAttribute;
-                        MasterSyncAttribute MasterSyncAtr = RepMember.Member.GetCustomAttribute(typeof(MasterSyncAttribute)) as MasterSyncAttribute;
-                        bool IsMaster = MDStatics.GetPeerId() == Instance.GetNetworkMaster();
-                        if (!(IsMaster && MasterAtr == null && MasterSyncAtr == null) && !(IsMaster == false && (MasterAtr != null || MasterSyncAtr != null)))
+                        IReplicatedMember RepMember = RepNode.Members[j];
+                        if (!RepMember.ShouldReplicate())
                         {
                             continue;
                         }
 
-                        if (RepMember.ReplicatedType == MDReplicatedType.JoinInProgress && JIPPeerId == -1)
+                        if (RepMember.GetReplicatedType() == MDReplicatedType.JoinInProgress && JIPPeerId == -1)
                         {
                             continue;
                         }
                         
-                        object CurrentValue = null;
-                        FieldInfo Field = RepMember.Member as FieldInfo;
-                        if (Field != null)
-                        {
-                            CurrentValue = Field.GetValue(Instance);
-                        }
-
-                        if (CurrentValue == null)
-                        {
-                            PropertyInfo Property = RepMember.Member as PropertyInfo;
-                            if (Property != null)
-                            {
-                                CurrentValue = Property.GetValue(Instance);
-                            }
-                        }
-
-                        if (RepMember.ReplicatedType == MDReplicatedType.Always || object.Equals(RepMember.LastValue, CurrentValue) == false)
-                        {
-                            MDLog.Debug(LOG_CAT, "Replicating {0} with value {1} from {2}", RepMember.Member.Name, CurrentValue, RepMember.LastValue);
-                            if (RepMember.IsReliable)
-                            {
-                                Instance.Rset(RepMember.Member.Name, CurrentValue);
-                            }
-                            else
-                            {
-                                Instance.RsetUnreliable(RepMember.Member.Name, CurrentValue);
-                            }
-                            RepMember.LastValue = CurrentValue;
-                        }
-                        else if (JIPPeerId != -1)
-                        {
-                            MDLog.Debug(LOG_CAT, "Replicating to JIP Peer {0} for member {1} with value {2}", JIPPeerId, RepMember.Member.Name, CurrentValue);
-                            if (RepMember.IsReliable)
-                            {
-                                Instance.RsetId(JIPPeerId, RepMember.Member.Name, CurrentValue);
-                            }
-                            else
-                            {
-                                Instance.RsetUnreliableId(JIPPeerId, RepMember.Member.Name, CurrentValue);
-                            }
-                        }
+                        RepMember.Replicate(JIPPeerId);
                     }
                 }
                 else
@@ -210,9 +165,20 @@ public class MDReplicator
     }
 }
 
+interface IReplicatedMember
+{
+    bool ShouldReplicate();
+
+    void Replicate(int JoinInProgressPeerId);
+
+    MDReplicatedType GetReplicatedType();
+
+    bool IsReliable();
+}
+
 class ReplicatedNode
 {
-    public ReplicatedNode(Node InInstance, List<ReplicatedMember> InMembers)
+    public ReplicatedNode(Node InInstance, List<IReplicatedMember> InMembers)
     {
         Instance = Godot.Object.WeakRef(InInstance);
         Members = InMembers;
@@ -220,16 +186,104 @@ class ReplicatedNode
 
     public WeakRef Instance;
 
-    public List<ReplicatedMember> Members;
+    public List<IReplicatedMember> Members;
 }
 
-class ReplicatedMember
+class ReplicatedMember : IReplicatedMember
 {
-    public MemberInfo Member;
+    private const string LOG_CAT = "LogReplicatedMember";
 
-    public object LastValue;
+    private MemberInfo Member;
 
-    public bool IsReliable;
+    private object LastValue;
 
-    public MDReplicatedType ReplicatedType;
+    private bool Reliable;
+
+    private MDReplicatedType ReplicatedType;
+
+    private WeakRef NodeRef;
+
+    public ReplicatedMember(MemberInfo Member, bool Reliable, MDReplicatedType ReplicatedType, WeakRef NodeRef)
+    {
+        MDLog.AddLogCategoryProperties(LOG_CAT, new MDLogProperties(MDLogLevel.Info));
+        this.Member = Member;
+        this.Reliable = Reliable;
+        this.ReplicatedType = ReplicatedType;
+        this.NodeRef = NodeRef;
+    }
+
+    public object GetValue()
+    {
+        Node Instance = NodeRef.GetRef() as Node;
+        FieldInfo Field = Member as FieldInfo;
+
+        if (Field != null)
+        {
+            return Field.GetValue(Instance);
+        }
+
+        PropertyInfo Property = Member as PropertyInfo;
+        if (Property != null)
+        {
+            return Property.GetValue(Instance);
+        }
+
+        return null;
+    }
+
+    public void Replicate(int JoinInProgressPeerId)
+    {
+        object CurrentValue = GetValue();
+        Node Instance = NodeRef.GetRef() as Node;
+
+        if (ReplicatedType == MDReplicatedType.Always || object.Equals(LastValue, CurrentValue) == false)
+        {
+            MDLog.Debug(LOG_CAT, "Replicating {0} with value {1} from {2}", Member.Name, CurrentValue, LastValue);
+            if (Reliable)
+            {
+                Instance.Rset(Member.Name, CurrentValue);
+            }
+            else
+            {
+                Instance.RsetUnreliable(Member.Name, CurrentValue);
+            }
+            LastValue = CurrentValue;
+        }
+        else if (JoinInProgressPeerId != -1)
+        {
+            MDLog.Debug(LOG_CAT, "Replicating to JIP Peer {0} for member {1} with value {2}", JoinInProgressPeerId, Member.Name, CurrentValue);
+            if (Reliable)
+            {
+                Instance.RsetId(JoinInProgressPeerId, Member.Name, CurrentValue);
+            }
+            else
+            {
+                Instance.RsetUnreliableId(JoinInProgressPeerId, Member.Name, CurrentValue);
+            }
+        }
+    }
+
+    public bool ShouldReplicate()
+    {
+        MasterAttribute MasterAtr = Member.GetCustomAttribute(typeof(MasterAttribute)) as MasterAttribute;
+        MasterSyncAttribute MasterSyncAtr = Member.GetCustomAttribute(typeof(MasterSyncAttribute)) as MasterSyncAttribute;
+        Node Node = NodeRef.GetRef() as Node;
+        bool IsMaster = MDStatics.GetPeerId() == Node.GetNetworkMaster();
+        if (!(IsMaster && MasterAtr == null && MasterSyncAtr == null) && !(IsMaster == false && (MasterAtr != null || MasterSyncAtr != null)))
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    public MDReplicatedType GetReplicatedType()
+    {
+        return ReplicatedType;
+    }
+
+    public bool IsReliable()
+    {
+        return Reliable;
+    }
 }

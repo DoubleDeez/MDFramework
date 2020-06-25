@@ -41,6 +41,13 @@ public class GameController : Node2D
 
     protected virtual void OnPlayerLeftEvent(int PeerId)
     {
+        foreach (Node node in GetTree().GetNodesInGroup(Player.PLAYER_GROUP))
+        {
+            if (node.GetNetworkMaster() == PeerId)
+            {
+                node.RemoveAndFree();
+            }
+        }
         
     }
 }

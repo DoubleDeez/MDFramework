@@ -45,8 +45,13 @@ public class Bullet : KinematicBody2D
             if (player.GetNetworkMaster() != OwnerPeerId)
             {
                 player.Hit();
-                this.RemoveAndFree();
+                CallDeferred(nameof(Destroy));
             }
         }
+    }
+
+    private void Destroy()
+    {
+        this.RemoveAndFree();
     }
 }

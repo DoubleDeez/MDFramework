@@ -152,12 +152,6 @@ public class MDGameClock : Node
         return (uint)Math.Max(CurrentTick - CurrentRemoteTickOffset, 0);
     }
 
-    ///<summary>In the event the current tick is a repeated tick this will return true</summary>
-    public bool IsRemoteDuplicateTick()
-    {
-        return false;
-    }
-
     ///<summary>Get time in milliseconds (OS.GetTickMsec() format) until the tick or since the tick</summary>
     public long GetTimeOfTick(uint Tick)
     {
@@ -167,9 +161,9 @@ public class MDGameClock : Node
     }
 
     ///<summary>Returns the tick that we will be in at the given offset (msec)</summary>
-    public uint GetTickAtTimeOffset(long offset)
+    public uint GetTickAtTimeOffset(long Offset)
     {
-        int tickOffset = (int)Mathf.Round(offset / TICK_INTERVAL_MILLISECONDS);
+        int tickOffset = (int)Mathf.Round(Offset / TICK_INTERVAL_MILLISECONDS);
         return (uint)(GetTick() + tickOffset);
     }
 
