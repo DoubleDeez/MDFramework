@@ -194,8 +194,14 @@ public static class MDNodeExtensions
     // Removes this node from its parent and frees it
     public static void RemoveAndFree(this Node Instance)
     {
-        Instance.GetParent().RemoveChild(Instance);
-        Instance.QueueFree();
+        if (Godot.Object.IsInstanceValid(Instance))
+        {
+            if (Godot.Object.IsInstanceValid(Instance.GetParent()))
+            {
+                Instance.GetParent().RemoveChild(Instance);
+            }
+            Instance.QueueFree();
+        }
     }
 
     // Same as Rpc except it checks if the network is activate first

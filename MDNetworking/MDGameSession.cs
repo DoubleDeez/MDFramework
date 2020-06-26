@@ -43,7 +43,7 @@ public class MDGameSession : Node
     public event NetworkNodeEventHandler OnNetworkNodeAdded = delegate {};
     public event NetworkNodeEventHandler OnNetworkNodeRemoved = delegate {};
 
-    public MDReplicator Replicator {get; private set;} = new MDReplicator();
+    public MDReplicator Replicator {get; set;}
     protected Dictionary<int, MDPlayerInfo> Players = new Dictionary<int, MDPlayerInfo>();
     protected Dictionary<Node, string> NetworkedTypes = new Dictionary<Node, string>();
     protected Dictionary<Node, string> NetworkedScenes = new Dictionary<Node, string>();

@@ -23,6 +23,7 @@ public class MDGameInstance : Node
         GetTree().Connect("node_removed", this, nameof(OnNodeRemoved_Internal));
 
         // Init instances
+        CreateReplicator();
         CreateGameSession();
         CreateGameSynchronizer();
         CreateInterfaceManager();
@@ -67,6 +68,12 @@ public class MDGameInstance : Node
     protected virtual Type GetGameClockType()
     {
         return typeof(MDGameClock);
+    }
+
+    /// <summary>Override this to provide the your Replicator subclass type</summary>
+    protected virtual Type GetReplicatorType()
+    {
+        return typeof(MDReplicator);
     }
 
     // Override this to provide your own Player class type
@@ -153,6 +160,17 @@ public class MDGameInstance : Node
         Instance.UnregisterReplicatedAttributes();
     }
 
+    ///<summary>Ensure Replicator is created</summary>
+    private void CreateReplicator()
+    {
+        if (Replicator == null)
+        {
+            Replicator = CreateTypeInstance<MDReplicator>(GetReplicatorType());
+            Replicator.Name = "Replicator";
+            this.AddNodeToRoot(Replicator, true);
+        }
+    }
+
     ///<summary>Ensure GameSession is created</summary>
     private void CreateGameSession()
     {
@@ -161,6 +179,7 @@ public class MDGameInstance : Node
             GameSession = CreateTypeInstance<MDGameSession>(GetGameSessionType());
             GameSession.Name = "GameSession";
             GameSession.GameInstance = this;
+            GameSession.Replicator = Replicator;
             this.AddNodeToRoot(GameSession, true);
         }
     }
@@ -287,6 +306,8 @@ public class MDGameInstance : Node
     }
 
     public MDGameSession GameSession {get; private set;}
+
+    public MDReplicator Replicator {get; private set;}
 
     public MDGameSynchronizer GameSynchronizer {get; private set;}
     public MDGameClock GameClock {get; private set;}

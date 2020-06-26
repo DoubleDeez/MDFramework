@@ -33,7 +33,21 @@ public class Player : KinematicBody2D
     // Networking code
     [MDBindNode("Networking")]
     MDClockedNetworkDataNode NetworkNode;
-    protected MDCNetworkInterpolatedVector2 NetworkedPosition;
+
+    protected Vector2 _networkedPosition;
+    
+    [MDReplicated(MDReliability.Unreliable, MDReplicatedType.Interval)]
+    protected Vector2 NetworkedPosition {
+        get
+        {
+            return _networkedPosition;
+        }
+        set
+        {
+            _networkedPosition = value;
+            OnPositionChanged();
+        }
+    }
 
     protected MDClockedNetworkValue<Vector2> NetworkedShoot;
 
@@ -57,9 +71,6 @@ public class Player : KinematicBody2D
     {
         AddToGroup(PLAYER_GROUP);
         SetupPlayer(GetNetworkMaster());
-        NetworkedPosition = new MDCNetworkInterpolatedVector2(Position, IsLocalPlayer);
-        NetworkedPosition.OnValueChangedEvent += OnPositionChanged;
-        NetworkNode.AddValue(NetworkedPosition);
 
         NetworkedShoot = new MDClockedNetworkValue<Vector2>(Vector2.Zero, IsLocalPlayer, ClockedPropertyMode.ONE_SHOT, MDReliability.Reliable);
         NetworkedShoot.OnValueChangedEvent += OnShoot;
@@ -85,11 +96,11 @@ public class Player : KinematicBody2D
         HitCounter.Text = HitCounterValue.ToString();
     }
 
-    protected void OnPositionChanged(Vector2 newValue, Vector2 oldValue)
+    protected void OnPositionChanged()
     {
         if (!IsLocalPlayer)
         {
-            Position = newValue;
+            Position = NetworkedPosition;
         }
     }
 
@@ -138,7 +149,7 @@ public class Player : KinematicBody2D
                 ApplyMovement(MovementAxis * Acceleration * delta, MaxSpeed);
             }
             Motion = MoveAndSlide(Motion);
-            NetworkedPosition.SetValue(Position);
+            NetworkedPosition = Position;
         }
     }
 

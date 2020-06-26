@@ -9,7 +9,7 @@ public enum MDReliability
 public enum MDReplicatedType
 {
     OnChange, // Replicates the value when the value has changed
-    Always, // Replicates the value every frame, recommend using Unreliable
+    Interval, // Replicates the value every frame, recommend using Unreliable
     JoinInProgress // Replicates the value to players that join during a session
     // TODO - Add Phased
     // TODO - Add Interpolated
