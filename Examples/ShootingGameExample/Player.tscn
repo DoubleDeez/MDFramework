@@ -1,8 +1,7 @@
-[gd_scene load_steps=5 format=2]
+[gd_scene load_steps=4 format=2]
 
 [ext_resource path="res://icon.png" type="Texture" id=1]
 [ext_resource path="res://MDFramework/Examples/ShootingGameExample/Player.cs" type="Script" id=2]
-[ext_resource path="res://MDFramework/MDGameSynchronizer/MDClockedNetworkDataNode.cs" type="Script" id=3]
 
 [sub_resource type="RectangleShape2D" id=1]
 extents = Vector2( 20.8867, 20.6348 )
@@ -35,6 +34,3 @@ __meta__ = {
 shape = SubResource( 1 )
 
 [node name="Camera2D" type="Camera2D" parent="."]
-
-[node name="Networking" type="Node2D" parent="."]
-script = ExtResource( 3 )

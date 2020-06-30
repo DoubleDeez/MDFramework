@@ -4,21 +4,25 @@ using System;
 [MDAutoRegister]
 public class HidingIcon : Area2D
 {
-    public static readonly String GROUP_ACTORS = "ACTORS";
+	public static readonly String GROUP_ACTORS = "ACTORS";
 
 	[MDBindNode("Sprite")]
 	Sprite Icon;
 
-	[MDBindNode("Networking")]
-	MDClockedNetworkDataNode NetworkNode;
-
 	protected RandomNumberGenerator Random = new RandomNumberGenerator();
 
-	protected MDClockedNetworkValue<Boolean> NetworkedVisible;
+	[MDReplicated]
+	[MDReplicatedSetting(MDClockedReplicatedMember.Settings.OnValueChangedEvent, nameof(OnVisibilityChanged))]
+	protected Boolean NetworkedVisible = true;
 
-	protected MDCNetworkInterpolatedVector2 NetworkedPosition;
+	[MDReplicated]
+	[MDReplicatedSetting(MDClockedReplicatedMember.Settings.OnValueChangedEvent, nameof(OnPositionChanged))]
+	protected Vector2 NetworkedPosition;
 
-	protected MDClockedNetworkValue<Vector2> NetworkedScale;
+	[MDReplicated(MDReliability.Reliable, MDReplicatedType.OnChange)]
+	[MDReplicatedSetting(MDClockedReplicatedMember.Settings.OnValueChangedEvent, nameof(OnScaleChanged))]
+	[MDReplicatedSetting(MDReplicator.Settings.ReplicatedMemberType, typeof(MDClockedReplicatedMember))]
+	protected Vector2 NetworkedScale;
 
 	protected float Radius = 100f;
 	protected float RotationSpeed = 20f;
@@ -31,21 +35,6 @@ public class HidingIcon : Area2D
 	public override void _Ready()
 	{
 		AddToGroup(GROUP_ACTORS);
-		// Setup network variables
-		NetworkedVisible = new MDClockedNetworkValue<Boolean>(true, !this.IsClient(), ClockedPropertyMode.ON_CHANGE, MDReliability.Reliable);
-		NetworkedVisible.OnValueChangedEvent += OnVisibilityChanged;
-		NetworkNode.AddValue(NetworkedVisible);
-
-        NetworkedPosition = new MDCNetworkInterpolatedVector2(Position, !this.IsClient());
-		NetworkedPosition.OnValueChangedEvent += OnPositionChanged;
-		NetworkNode.AddValue(NetworkedPosition);
-
-		NetworkedScale = new MDClockedNetworkValue<Vector2>(Vector2.One, !this.IsClient(), ClockedPropertyMode.ON_CHANGE, MDReliability.Reliable);
-		NetworkedScale.OnValueChangedEvent += OnScaleChanged;
-		NetworkNode.AddValue(NetworkedScale);
-        
-
-		NetworkNode.SetUpdateInterval(0.1f);
 
 		if (!this.IsClient())
 		{
@@ -54,7 +43,9 @@ public class HidingIcon : Area2D
 			Radius = Random.RandfRange(100f, 500f);
 			RotationSpeed = Random.RandfRange(0.1f, 1.5f);
 			float scale = Random.RandfRange(2f, 4f);
-			NetworkedScale.SetValue(new Vector2(scale, scale));
+			NetworkedScale = new Vector2(scale, scale);
+			NetworkedVisible = true;
+			OnScaleChanged();
 		}
 	}
 
@@ -68,29 +59,31 @@ public class HidingIcon : Area2D
 		Angle += RotationSpeed * delta;
 
 		Vector2 offset = new Vector2(Mathf.Sin(Angle), Mathf.Cos(Angle)) * Radius;
-		NetworkedPosition.SetValue(CenterPosition + offset);
+		NetworkedPosition = CenterPosition + offset;
+		OnPositionChanged();
 	}
 
-	protected void OnPositionChanged(Vector2 newValue, Vector2 oldValue)
+	protected void OnPositionChanged()
 	{
-		Position = newValue;
+		Position = NetworkedPosition;
 	}
 
-	protected void OnScaleChanged(Vector2 newValue, Vector2 oldValue)
+	protected void OnScaleChanged()
 	{
-		Scale = newValue;
+		Scale = NetworkedScale;
 	}
 
-	protected void OnVisibilityChanged(bool newValue, bool oldValue)
+	protected void OnVisibilityChanged()
 	{
-		Icon.Visible = newValue;
+		Icon.Visible = NetworkedVisible;
 	}
 
 	private void OnMouseEntered()
 	{
 		if (!MDStatics.IsClient())
 		{
-			NetworkedVisible.SetValue(false);
+			NetworkedVisible = false;
+			OnVisibilityChanged();
 		}
 	}
 
@@ -99,7 +92,8 @@ public class HidingIcon : Area2D
 	{
 		if (!MDStatics.IsClient())
 		{
-			NetworkedVisible.SetValue(true);
+			NetworkedVisible = true;
+			OnVisibilityChanged();
 		}
 	}
 

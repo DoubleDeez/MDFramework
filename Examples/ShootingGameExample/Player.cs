@@ -29,18 +29,12 @@ public class Player : KinematicBody2D
     protected PackedScene BulletScene = null;
 
     protected int HitCounterValue = 0;
-
-    // Networking code
-    [MDBindNode("Networking")]
-    MDClockedNetworkDataNode NetworkNode;
-    
+  
     [MDReplicated(MDReliability.Unreliable, MDReplicatedType.Interval)]
     [MDReplicatedSetting(MDReplicator.Settings.GroupName, "PlayerPositions")]
     [MDReplicatedSetting(MDReplicator.Settings.ProcessWhilePaused, false)]
     [MDReplicatedSetting(MDClockedReplicatedMember.Settings.OnValueChangedEvent, nameof(OnPositionChanged))]
     protected Vector2 NetworkedPosition;
-
-    protected MDClockedNetworkValue<Vector2> NetworkedShoot;
 
     [MDReplicated(MDReliability.Reliable, MDReplicatedType.OnChange)]
     [MDReplicatedSetting(MDClockedReplicatedMember.Settings.OnValueChangedEvent, nameof(UpdateColor))]
@@ -52,9 +46,9 @@ public class Player : KinematicBody2D
         AddToGroup(PLAYER_GROUP);
         SetupPlayer(GetNetworkMaster());
 
-        NetworkedShoot = new MDClockedNetworkValue<Vector2>(Vector2.Zero, IsLocalPlayer, ClockedPropertyMode.ONE_SHOT, MDReliability.Reliable);
-        NetworkedShoot.OnValueChangedEvent += OnShoot;
-        NetworkNode.AddValue(NetworkedShoot);
+        //NetworkedShoot = new MDClockedNetworkValue<Vector2>(Vector2.Zero, IsLocalPlayer, ClockedPropertyMode.ONE_SHOT, MDReliability.Reliable);
+        //NetworkedShoot.OnValueChangedEvent += OnShoot;
+        //NetworkNode.AddValue(NetworkedShoot);
 
         if (IsLocalPlayer)
         {
@@ -115,7 +109,7 @@ public class Player : KinematicBody2D
             if (Input.IsMouseButtonPressed(1) && WeaponActiveCooldown <= 0f)
             {
                 // Shoot towards mouse position
-                NetworkedShoot.SetValue(GetGlobalMousePosition());
+                //NetworkedShoot.SetValue(GetGlobalMousePosition());
                 WeaponActiveCooldown = WeaponCooldown;
             }
             MovementAxis = GetInputAxis();
