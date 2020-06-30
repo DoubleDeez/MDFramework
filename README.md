@@ -8,7 +8,7 @@ There are a lot of features from other game engines that I'm used to, so I wante
 
 # Features
 * Automatically [replicate members](https://github.com/DoubleDeez/MDFramework/wiki/Automatic-Member-Replication) without calling `Rset`.
-* Allows the server to [spawn nodes over the network](#networked-node-spawning) to all clients.
+* Allows the server to [spawn nodes over the network](https://github.com/DoubleDeez/MDFramework/wiki/Networked-Node-Spawning) to all clients.
 * [Command line parameter parsing](https://github.com/DoubleDeez/MDFramework/wiki/Parsing-Command-Line-Arguments) that can be queried at any time
 * A simple [logging system](https://github.com/DoubleDeez/MDFramework/wiki/Logging-System) with logging categories and different log levels for each category for both writing to file and stdout
 * A [console command](https://github.com/DoubleDeez/MDFramework/wiki/Command-Console) prompt that allows you to add commands from single-instance classes
