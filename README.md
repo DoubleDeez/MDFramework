@@ -76,5 +76,5 @@ GameInstance="*res://src/MDFramework/MDGameInstance.cs"
 There are many ways to contribute
 * Report bugs using the GitHub issue tracker
 * Suggest features that would improve the framework using the GitHub issue tracker
-* Submit a pull request that improves documentation or fixes an [https://github.com/DoubleDeez/MDFramework/issues](issue)
+* Submit a pull request that improves documentation or fixes an [issue](https://github.com/DoubleDeez/MDFramework/issues)
     * When working on a pull request, it's recommended that you create a temporary feature branch in your own fork of MDFramework as it will be squash merged which can mess up the history of the branch you did the work in.
