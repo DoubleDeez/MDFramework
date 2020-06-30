@@ -7,8 +7,8 @@ public class MDCRMInterpolatedVector2 : MDClockedReplicatedMember
 {
     protected KeyValuePair<uint, Vector2> LastClockedValue = new KeyValuePair<uint, Vector2>(0, Vector2.Zero);
 
-    public MDCRMInterpolatedVector2(MemberInfo Member, bool Reliable, MDReplicatedType ReplicatedType, WeakRef NodeRef) 
-                                    : base(Member, Reliable, ReplicatedType, NodeRef) 
+    public MDCRMInterpolatedVector2(MemberInfo Member, bool Reliable, MDReplicatedType ReplicatedType, WeakRef NodeRef, MDReplicatedSetting[] Settings) 
+                                    : base(Member, Reliable, ReplicatedType, NodeRef, Settings) 
     {
         
     }
@@ -39,7 +39,7 @@ public class MDCRMInterpolatedVector2 : MDClockedReplicatedMember
         {
             if (GetValue() != ValueList[NextValue])
             {
-                UpdateValue(ValueList[NextValue]);
+                UpdateValue((Vector2)ValueList[NextValue]);
             }
             return;
         }
@@ -69,7 +69,7 @@ public class MDCRMInterpolatedVector2 : MDClockedReplicatedMember
                 break;
             }
             oldKeys.Add(key);
-            LastValue = new KeyValuePair<uint, Vector2>(key, (Vector2)ValueList[key]);
+            LastClockedValue = new KeyValuePair<uint, Vector2>(key, (Vector2)ValueList[key]);
         }
 
         // Remove old

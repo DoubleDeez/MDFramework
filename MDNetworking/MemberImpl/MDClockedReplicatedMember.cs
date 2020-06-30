@@ -5,6 +5,13 @@ using System.Collections.Generic;
 
 public class MDClockedReplicatedMember : MDReplicatedMember
 {
+    public enum Settings
+    {
+        OnValueChangedEvent
+    }
+
+    protected MethodInfo OnValueChangedCallback = null;
+
     private const String REPLICATE_METHOD_NAME = "ReplicateClockedValue";
 
     protected SortedDictionary<uint, object> ValueList = new SortedDictionary<uint, object>();
@@ -15,11 +22,27 @@ public class MDClockedReplicatedMember : MDReplicatedMember
 
     protected uint LastTickValueWasChanged = 0;
 
-    public MDClockedReplicatedMember(MemberInfo Member, bool Reliable, MDReplicatedType ReplicatedType, WeakRef NodeRef) 
-                                    : base(Member, Reliable, ReplicatedType, NodeRef) 
+    public MDClockedReplicatedMember(MemberInfo Member, bool Reliable, MDReplicatedType ReplicatedType, WeakRef NodeRef, MDReplicatedSetting[] Settings) 
+                                    : base(Member, Reliable, ReplicatedType, NodeRef, Settings) 
     {
         GameClock = MDStatics.GetGameSynchronizer().GameClock;
         Replicator = MDStatics.GetGameSession().Replicator;
+        ParseSettings(MDReplicator.ParseParameters(typeof(Settings), Settings));
+    }
+
+    protected void ParseSettings(MDReplicatedSetting[] Settings)
+    {
+        foreach (MDReplicatedSetting setting in Settings)
+        {
+            switch ((Settings)setting.Key)
+            {
+                case MDClockedReplicatedMember.Settings.OnValueChangedEvent:
+                    Node Node = NodeRef.GetRef() as Node;
+                    OnValueChangedCallback = Node.GetType().GetMethod(setting.Value.ToString(),
+                                                                      BindingFlags.NonPublic | BindingFlags.FlattenHierarchy | BindingFlags.Instance);
+                    break;
+            }
+        }
     }
 
     public override void SetValue(uint Tick, object Value)
@@ -65,10 +88,15 @@ public class MDClockedReplicatedMember : MDReplicatedMember
         touchedKeys.ForEach((k) => ValueList.Remove(k));
     }
 
-    protected void UpdateValue(object value)
+    protected virtual void UpdateValue(object value)
     {
         Node Instance = NodeRef.GetRef() as Node;
-        GetPropertyInfo().SetValue(Instance, value, null);
+        Member.SetValue(Instance, value);
+        LastValue = value;
+        if (OnValueChangedCallback != null)
+        {
+            OnValueChangedCallback.Invoke(Instance, null);
+        }
     }
 
     ///<summary>Replicate this value to all clients</summary>

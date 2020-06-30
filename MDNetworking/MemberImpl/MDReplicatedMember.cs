@@ -4,6 +4,10 @@ using System.Reflection;
 
 public class MDReplicatedMember
 {
+    public bool ProcessWhilePaused { get; set; } = true;
+
+    public string ReplicationGroup { get; set; } = null;
+
     protected const string LOG_CAT = "LogReplicatedMember";
 
     protected MemberInfo Member;
@@ -18,7 +22,7 @@ public class MDReplicatedMember
 
     protected bool IsShouldReplicate = false;
 
-    public MDReplicatedMember(MemberInfo Member, bool Reliable, MDReplicatedType ReplicatedType, WeakRef NodeRef)
+    public MDReplicatedMember(MemberInfo Member, bool Reliable, MDReplicatedType ReplicatedType, WeakRef NodeRef, MDReplicatedSetting[] Settings)
     {
         MDLog.AddLogCategoryProperties(LOG_CAT, new MDLogProperties(MDLogLevel.Info));
         this.Member = Member;
@@ -60,7 +64,8 @@ public class MDReplicatedMember
         object CurrentValue = GetValue();
         Node Instance = NodeRef.GetRef() as Node;
 
-        if ((ReplicatedType == MDReplicatedType.Interval && IsIntervalReplicationTime) || object.Equals(LastValue, CurrentValue) == false)
+        if ((ReplicatedType == MDReplicatedType.Interval && IsIntervalReplicationTime) || 
+        (object.Equals(LastValue, CurrentValue) == false && ReplicatedType == MDReplicatedType.OnChange))
         {
             ReplicateToAll(Instance, CurrentValue);
         }
@@ -74,6 +79,7 @@ public class MDReplicatedMember
     protected virtual void ReplicateToAll(Node Node, object Value)
     {
         MDLog.Debug(LOG_CAT, "Replicating {0} with value {1} from {2}", Member.Name, Value, LastValue);
+        GD.Print("Replicating " + Member.Name + " from node " + Node.Name + " with value " + Value);
         if (Reliable)
         {
             Node.Rset(Member.Name, Value);
@@ -138,7 +144,13 @@ public class MDReplicatedMember
         return Reliable;
     }
     
-    public virtual void SetValue(uint Tick, object value)
+    public virtual void SetValue(uint Tick, object Value)
+    {
+        // This is just here to avoid casting so much in the replicator
+        // Used by Clocked values
+    }
+
+    public virtual void SetValues(uint Tick, params object[] Parameters)
     {
         // This is just here to avoid casting so much in the replicator
         // Used by Clocked values

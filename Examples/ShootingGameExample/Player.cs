@@ -33,38 +33,18 @@ public class Player : KinematicBody2D
     // Networking code
     [MDBindNode("Networking")]
     MDClockedNetworkDataNode NetworkNode;
-
-    protected Vector2 _networkedPosition;
     
     [MDReplicated(MDReliability.Unreliable, MDReplicatedType.Interval)]
-    protected Vector2 NetworkedPosition {
-        get
-        {
-            return _networkedPosition;
-        }
-        set
-        {
-            _networkedPosition = value;
-            OnPositionChanged();
-        }
-    }
+    [MDReplicatedSetting(MDReplicator.Settings.GroupName, "PlayerPositions")]
+    [MDReplicatedSetting(MDReplicator.Settings.ProcessWhilePaused, false)]
+    [MDReplicatedSetting(MDClockedReplicatedMember.Settings.OnValueChangedEvent, nameof(OnPositionChanged))]
+    protected Vector2 NetworkedPosition;
 
     protected MDClockedNetworkValue<Vector2> NetworkedShoot;
 
-    protected Color _color;
-
     [MDReplicated(MDReliability.Reliable, MDReplicatedType.OnChange)]
-    protected Color NetworkedColor {
-        get
-        {
-            return _color;
-        }
-        set
-        {
-            _color = value;
-            UpdateColor();
-        }
-    }
+    [MDReplicatedSetting(MDClockedReplicatedMember.Settings.OnValueChangedEvent, nameof(UpdateColor))]
+    protected Color NetworkedColor { get; set; }
 
     // Called when the node enters the scene tree for the first time.
     public override void _Ready()
@@ -82,6 +62,7 @@ public class Player : KinematicBody2D
             rnd.Randomize();
             // Let's set our color
             NetworkedColor = new Color(rnd.Randf(), rnd.Randf(), rnd.Randf());
+            Modulate = NetworkedColor;
         }
     }
 

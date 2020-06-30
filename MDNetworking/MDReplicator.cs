@@ -6,10 +6,18 @@ using System.Collections.Generic;
 [MDAutoRegister]
 public class MDReplicator : Node
 {
+    public enum Settings
+    {
+        ProcessWhilePaused,
+        GroupName,
+        ReplicatedMemberType
+    }
     private List<ReplicatedNode> NodeList = new List<ReplicatedNode>();
     private Queue<NewPlayer> JIPPlayers = new Queue<NewPlayer>();
 
-    private NetworkKeyIdMap NetworkIdKeyMap = new NetworkKeyIdMap();
+    private MDReplicatorNetworkKeyIdMap NetworkIdKeyMap = new MDReplicatorNetworkKeyIdMap();
+
+    private MDReplicatorGroupManager GroupManager = new MDReplicatorGroupManager();
 
     private Dictionary<string, MDReplicatedMember> KeyToMemberMap = new Dictionary<string, MDReplicatedMember>();
 
@@ -20,15 +28,39 @@ public class MDReplicator : Node
 
     private uint ReplicationIdCounter = 0;
 
-    public MDReplicator()
+    public override void _Ready()
     {
         MDLog.AddLogCategoryProperties(LOG_CAT, new MDLogProperties(MDLogLevel.Info));
         MDOnScreenDebug.AddOnScreenDebugInfo("KeyToMemberMap Size", () => KeyToMemberMap.Count.ToString());
         MDOnScreenDebug.AddOnScreenDebugInfo("NetworkIDToKeyMap Size", () => NetworkIdKeyMap.GetCount().ToString());
+        this.GetGameSession().OnSessionStartedEvent += OnSessionStarted;
+        this.GetGameSession().OnPlayerJoinedEvent += OnPlayerJoined;
+        PauseMode = PauseModeEnum.Process;
+
+        GetTree().Connect("idle_frame", this, nameof(TickReplication));
+    }
+
+    public override void _ExitTree()
+    {
+        this.GetGameSession().OnSessionStartedEvent -= OnSessionStarted;
+        this.GetGameSession().OnPlayerJoinedEvent -= OnPlayerJoined;
+    }
+
+    private void OnSessionStarted()
+    {
+        // Reset the NetworkKeyIdMap on new session started
+        NetworkIdKeyMap = new MDReplicatorNetworkKeyIdMap();
     }
 
     public void OnPlayerJoined(int PeerId)
     {
+        // Skip local player
+        if (PeerId == MDStatics.GetPeerId())
+        {
+            return;
+        }
+
+        MDLog.Debug(LOG_CAT, "Registered JIPPlayer with Id", PeerId);
         JIPPlayers.Enqueue(new NewPlayer(PeerId, OS.GetTicksMsec()));
         if (MDStatics.IsServer())
         {
@@ -42,6 +74,13 @@ public class MDReplicator : Node
         }
     }
 
+    // Returns an array of settings for the member
+    private MDReplicatedSetting[] GetSettings(MemberInfo Member)
+    {
+        object[] Settings = Member.GetCustomAttributes(typeof(MDReplicatedSetting), true);
+        return Array.ConvertAll(Settings, item => (MDReplicatedSetting)item);
+    }
+
     // Registers the given instance's fields marked with [MDReplicated()]
     public void RegisterReplication(Node Instance)
     {
@@ -52,8 +91,12 @@ public class MDReplicator : Node
             MDReplicated RepAttribute = Member.GetCustomAttribute(typeof(MDReplicated)) as MDReplicated;
             if (RepAttribute != null)
             {
-                MDReplicatedMember NodeMember = CreateReplicatedMember(Member, RepAttribute, Instance);
+                MDReplicatedSetting[] Settings = GetSettings(Member);
+                MDReplicatedMember NodeMember = CreateReplicatedMember(Member, RepAttribute, Instance, Settings);
+                
                 NodeMembers.Add(NodeMember);
+
+                ProcessSettingsForMember(NodeMember, ParseParameters(typeof(Settings), Settings));
 
                 MDLog.Trace(LOG_CAT, "Adding Replicated Node {0} Member {1}", Instance.Name, Member.Name);
 
@@ -86,6 +129,23 @@ public class MDReplicator : Node
             if (networkIdUpdates.Count > 0)
             {
                 Rpc(nameof(UpdateNetworkIdMap), networkIdUpdates);
+            }
+        }
+    }
+
+    /// Process our settings
+    private void ProcessSettingsForMember(MDReplicatedMember ReplicatedMember, MDReplicatedSetting[] Settings)
+    {
+        foreach (MDReplicatedSetting setting in Settings)
+        {
+            switch ((Settings)setting.Key)
+            {
+                case MDReplicator.Settings.ProcessWhilePaused:
+                    ReplicatedMember.ProcessWhilePaused = (bool)setting.Value;
+                    break;
+                case MDReplicator.Settings.GroupName:
+                    ReplicatedMember.ReplicationGroup = setting.Value.ToString();
+                    break;
             }
         }
     }
@@ -129,6 +189,7 @@ public class MDReplicator : Node
     public void TickReplication()
     {
         bool isIntervalReplicationTime = CheckIntervalReplicationTime();
+        bool paused = GetTree().Paused;
 
         #if DEBUG
         using (MDProfiler Profiler = new MDProfiler("MDReplicator.TickReplication"))
@@ -152,6 +213,11 @@ public class MDReplicator : Node
                         MDReplicatedMember RepMember = RepNode.Members[j];
                         RepMember.CheckForValueUpdate();
                         if (!RepMember.ShouldReplicate())
+                        {
+                            continue;
+                        }
+
+                        if (paused && !RepMember.ProcessWhilePaused)
                         {
                             continue;
                         }
@@ -225,7 +291,6 @@ public class MDReplicator : Node
         }
     }
 
-
     [Remote]
     public void ReplicateClockedValue(uint ID, uint Tick, object Value)
     {
@@ -240,32 +305,87 @@ public class MDReplicator : Node
         KeyToMemberMap[key].SetValue(Tick, Value);
     }
 
+    [Remote]
+    public void ReplicateClockedValues(uint ID, uint Tick, params object[] Parameters)
+    {
+        String key = NetworkIdKeyMap.GetValue(ID);
+        if (key == null || !KeyToMemberMap.ContainsKey(key))
+        {
+            // We got no key so add it to our buffer
+            NetworkIdKeyMap.AddToBuffer(ID, Tick, Parameters);
+            return;
+        }
+
+        KeyToMemberMap[key].SetValues(Tick, Parameters);
+    }
+
     #endregion
 
     #region VIRTUAL METHODS
 
     ///<summary>Can be overwritten to provide custom replication types</summary>
-    protected virtual MDReplicatedMember CreateReplicatedMember(MemberInfo Member, MDReplicated RepAttribute, Node Instance)
+    protected virtual MDReplicatedMember CreateReplicatedMember(MemberInfo Member, MDReplicated RepAttribute, Node Instance, MDReplicatedSetting[] Settings)
     {
+        Type ReplicatedMemberTypeOverride = GetReplicatedMemberOverrideType(ParseParameters(typeof(Settings), Settings));
+        if (ReplicatedMemberTypeOverride != null && ReplicatedMemberTypeOverride.IsAssignableFrom(typeof(MDReplicatedMember)))
+        {
+            return Activator.CreateInstance(ReplicatedMemberTypeOverride, 
+                    new object[] {Member, RepAttribute.Reliability == MDReliability.Reliable, 
+                                    RepAttribute.ReplicatedType, WeakRef(Instance), Settings}) as MDReplicatedMember;
+        }
+
         // Check if game clock is active, if so use it
         if (MDStatics.GetGameSynchronizer() != null && MDStatics.GetGameSynchronizer().IsGameClockActive())
         {
-            PropertyInfo info = Instance.GetType().GetProperty(Member.Name, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy | BindingFlags.Instance);
-            if (info.PropertyType == typeof(Vector2))
+            if (Member.GetUnderlyingType() == typeof(Vector2))
             {
-                return new MDCRMInterpolatedVector2(Member, RepAttribute.Reliability == MDReliability.Reliable, RepAttribute.ReplicatedType, WeakRef(Instance));
+                return new MDCRMInterpolatedVector2(Member, RepAttribute.Reliability == MDReliability.Reliable, RepAttribute.ReplicatedType, WeakRef(Instance), Settings);
             }
-            return new MDClockedReplicatedMember(Member, RepAttribute.Reliability == MDReliability.Reliable, RepAttribute.ReplicatedType, WeakRef(Instance));
+            return new MDClockedReplicatedMember(Member, RepAttribute.Reliability == MDReliability.Reliable, RepAttribute.ReplicatedType, WeakRef(Instance), Settings);
         }
         
-        return new MDReplicatedMember(Member, RepAttribute.Reliability == MDReliability.Reliable, RepAttribute.ReplicatedType, WeakRef(Instance));
+        return new MDReplicatedMember(Member, RepAttribute.Reliability == MDReliability.Reliable, RepAttribute.ReplicatedType, WeakRef(Instance), Settings);
+    }
+
+    private Type GetReplicatedMemberOverrideType(MDReplicatedSetting[] Settings)
+    {
+        foreach (MDReplicatedSetting setting in Settings)
+        {
+            if ((Settings)setting.Key == MDReplicator.Settings.ReplicatedMemberType)
+            {
+                if (setting.Value == null)
+                {
+                    return null;
+                }
+                return Type.GetType(setting.Value.ToString());
+            }
+        }
+        return null;
     }
 
 
     ///<summary>Returns the replication interval in milliseconds (Default: 100)</summary>
     protected virtual int GetReplicationIntervalMilliseconds()
     {
-        return 300;
+        return 100;
+    }
+
+    #endregion
+
+    #region SUPPORT METHODS
+
+    ///<Summary>Look for settings with keys of the specified type</summary>
+    public static MDReplicatedSetting[] ParseParameters(Type TypeToLookFor, MDReplicatedSetting[] Parameters)
+    {
+        List<MDReplicatedSetting> SettingsList = new List<MDReplicatedSetting>();
+        foreach (MDReplicatedSetting setting in Parameters)
+        {
+            if (setting.Key.GetType() == TypeToLookFor)
+            {
+                SettingsList.Add(setting);
+            }
+        }
+        return SettingsList.ToArray();
     }
 
     #endregion
@@ -313,126 +433,5 @@ struct NewPlayer
     {
         this.PeerId = PeerId;
         this.JoinTime = JoinTime;
-    }
-}
-
-class NetworkKeyIdMap
-{
-    private Dictionary<uint, string> NetworkIDToKeyMap = new Dictionary<uint, string>();
-    private Dictionary<string, uint> KeyToNetworkIdMap = new Dictionary<string, uint>();
-
-    // First dictionary uint is the network key, the inner uint is the tick
-    private Dictionary<uint, Dictionary<uint, object>> ClockedValueBuffer = new Dictionary<uint, Dictionary<uint, object>>();
-
-    public void AddNetworkKeyIdPair(uint id, string key)
-    {
-        NetworkIDToKeyMap.Add(id, key);
-        KeyToNetworkIdMap.Add(key, id);
-    }
-
-    public IEnumerable<uint> GetKeys()
-    {
-        return NetworkIDToKeyMap.Keys;
-    }
-
-    public Dictionary<uint, object> GetBufferForId(uint ID)
-    {
-        if (!ClockedValueBuffer.ContainsKey(ID))
-        {
-            ClockedValueBuffer.Add(ID, new Dictionary<uint, object>());
-        }
-
-        return ClockedValueBuffer[ID];
-    }
-
-    public void AddToBuffer(uint ID, uint Tick, object Value)
-    {
-        Dictionary<uint, object> buffer = GetBufferForId(ID);
-        buffer.Add(Tick, Value);
-    }
-
-    public void CheckBuffer(uint ID, MDReplicatedMember Member)
-    {
-        if (ClockedValueBuffer.ContainsKey(ID))
-        {
-            Dictionary<uint, object> buffer = GetBufferForId(ID);
-            foreach (uint tick in buffer.Keys)
-            {
-                Member.SetValue(tick, buffer[tick]);
-            }
-            buffer.Clear();
-            ClockedValueBuffer.Remove(ID);
-        }
-    }
-
-    protected void RemoveBufferId(uint ID)
-    {
-        if (ClockedValueBuffer.ContainsKey(ID))
-        {
-            ClockedValueBuffer.Remove(ID);
-        }
-    }
-
-    public string GetValue(uint id)
-    {
-        if (NetworkIDToKeyMap.ContainsKey(id))
-        {
-            return NetworkIDToKeyMap[id];
-        }
-
-        return null;
-    }
-
-    public uint GetValue(string key)
-    {
-        if (KeyToNetworkIdMap.ContainsKey(key))
-        {
-            return KeyToNetworkIdMap[key];
-        }
-        
-        return 0;
-    }
-
-    public int GetCount()
-    {
-        return KeyToNetworkIdMap.Count;
-    }
-
-    public bool ContainsKey(String key)
-    {
-        return KeyToNetworkIdMap.ContainsKey(key);
-    }
-
-    public bool ContainsKey(uint id)
-    {
-        return NetworkIDToKeyMap.ContainsKey(id);
-    }
-
-    public void RemoveValue(string key)
-    {
-        if (KeyToNetworkIdMap.ContainsKey(key))
-        {
-            NetworkIDToKeyMap.Remove(KeyToNetworkIdMap[key]);
-            RemoveBufferId(KeyToNetworkIdMap[key]);
-            KeyToNetworkIdMap.Remove(key);
-        }
-    }
-
-    public void RemoveValue(uint id)
-    {
-        if (NetworkIDToKeyMap.ContainsKey(id))
-        {
-            KeyToNetworkIdMap.Remove(NetworkIDToKeyMap[id]);
-            RemoveBufferId(id);
-            NetworkIDToKeyMap.Remove(id);
-        }
-    }
-
-    public void RemoveMembers(List<MDReplicatedMember> members)
-    {
-        foreach (MDReplicatedMember member in members)
-        {
-            RemoveValue(member.GetUniqueKey());
-        }
     }
 }
