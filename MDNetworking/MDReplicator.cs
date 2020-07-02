@@ -17,7 +17,7 @@ public class MDReplicator : Node
 
     private MDReplicatorNetworkKeyIdMap NetworkIdKeyMap = new MDReplicatorNetworkKeyIdMap();
 
-    private MDReplicatorGroupManager GroupManager = new MDReplicatorGroupManager();
+    private MDReplicatorGroupManager GroupManager;
 
     private Dictionary<string, MDReplicatedMember> KeyToMemberMap = new Dictionary<string, MDReplicatedMember>();
 
@@ -25,8 +25,6 @@ public class MDReplicator : Node
 
     private const string LOG_CAT = "LogReplicator";
     public const float JIPWaitTime = 1000f;
-
-    private uint LastIntervalReplication = 0;
 
     private uint ReplicationIdCounter = 0;
 
@@ -40,6 +38,8 @@ public class MDReplicator : Node
         this.GetGameSession().OnSessionStartedEvent += OnSessionStarted;
         this.GetGameSession().OnPlayerJoinedEvent += OnPlayerJoined;
         PauseMode = PauseModeEnum.Process;
+
+        GroupManager = new MDReplicatorGroupManager(GetReplicationFrameInterval());
 
         GameClock = this.GetGameClock();
     }
@@ -107,6 +107,8 @@ public class MDReplicator : Node
 
                 ProcessSettingsForMember(NodeMember, ParseParameters(typeof(Settings), Settings));
 
+                GroupManager.AddReplicatedMember(NodeMember);
+
                 MDLog.Trace(LOG_CAT, "Adding Replicated Node {0} Member {1}", Instance.Name, Member.Name);
 
                 if (HasRPCModeSet(Member) == false)
@@ -170,6 +172,7 @@ public class MDReplicator : Node
                     NetworkIdKeyMap.RemoveMembers(repNode.Members);
                     foreach (MDReplicatedMember member in repNode.Members)
                     {
+                        GroupManager.RemoveReplicatedMember(member);
                         KeyToMemberMap.Remove(member.GetUniqueKey());
                     }
                 }
@@ -197,7 +200,6 @@ public class MDReplicator : Node
     // Broadcasts out replicated modified variables if we're the server, propagates changes recieved from the server if client.
     public void TickReplication()
     {
-        bool isIntervalReplicationTime = CheckIntervalReplicationTime();
         bool paused = GetTree().Paused;
 
         #if DEBUG
@@ -213,6 +215,8 @@ public class MDReplicator : Node
             CheckClockedRemoteCalls();
 
             int JIPPeerId = CheckForNewPlayer();
+
+            HashSet<MDReplicatedMember> CurrentReplicationList = GroupManager.GetMembersToReplicate();
 
             for (int i = NodeList.Count - 1; i >= 0; --i)
             {
@@ -241,7 +245,7 @@ public class MDReplicator : Node
                             continue;
                         }
                         
-                        RepMember.Replicate(JIPPeerId, isIntervalReplicationTime);
+                        RepMember.Replicate(JIPPeerId, CurrentReplicationList.Contains(RepMember));
                     }
                 }
                 else
@@ -250,18 +254,6 @@ public class MDReplicator : Node
                 }
             }
         }
-    }
-
-    ///<summary>Simple counter for interval replication</summary>
-    private bool CheckIntervalReplicationTime()
-    {
-        if (LastIntervalReplication + GetReplicationIntervalMilliseconds() <= OS.GetTicksMsec())
-        {
-            LastIntervalReplication = OS.GetTicksMsec();
-            return true;
-        }
-
-        return false;
     }
 
     private bool HasRPCModeSet(MemberInfo Member)
@@ -378,10 +370,10 @@ public class MDReplicator : Node
     }
 
 
-    ///<summary>Returns the replication interval in milliseconds (Default: 100)</summary>
-    protected virtual int GetReplicationIntervalMilliseconds()
+    /// <summary>Interval replication happens every X physic frames. One physics frame is by default about 16 msec (Default: X=6).</summary>
+    protected virtual int GetReplicationFrameInterval()
     {
-        return 100;
+        return 6;
     }
 
     #endregion
