@@ -25,6 +25,7 @@ public class MDGameSession : Node
     public MDGameInstance GameInstance = null;
 
     public bool IsSessionStarted { get; protected set; } = false;
+    public int PlayersCount => Players.Count;
 
     public string ExternalAddress { get; protected set; } = "";
 
@@ -290,8 +291,8 @@ public class MDGameSession : Node
 
     private void OnPlayerLeft_Internal(int PeerId)
     {
-        RemovePlayerObject(PeerId);
         OnPlayerLeftEvent(PeerId);
+        RemovePlayerObject(PeerId);
     }
 
     // Called when disconnected from the server or as the server
