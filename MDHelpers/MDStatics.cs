@@ -5,6 +5,9 @@ using System.Reflection;
 
 public static class MDStatics
 {
+
+    public static BindingFlags BindFlagsAllMembers = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance;
+
     // MDStatics needs a reference to a Godot object to really be useful, so the GameInstance sets a reference to itself here
     public static MDGameInstance GI {get; set;}
 
@@ -21,6 +24,11 @@ public static class MDStatics
     public static MDGameSynchronizer GetGameSynchronizer()
     {
         return GI.GameSynchronizer;
+    }
+
+    public static MDReplicator GetReplicator()
+    {
+        return GI.Replicator;
     }
 
     // Helper to construct a subarray
@@ -76,6 +84,16 @@ public static class MDStatics
         }
 
         return 0;
+    }
+
+    public static bool IsGameClockActive()
+    {
+        if (GetGameSynchronizer() != null && GetGameSynchronizer().IsGameClockActive())
+        {
+            return true;
+        }
+
+        return false;
     }
 
     // Is the game session started in non-standalone?
@@ -149,8 +167,8 @@ public static class MDStatics
         Type NodeType = CurNode.GetType();
         while (NodeType != typeof(Node))
         {
-            Members.AddRange(NodeType.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance));
-            Members.AddRange(NodeType.GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance));
+            Members.AddRange(NodeType.GetFields(BindFlagsAllMembers));
+            Members.AddRange(NodeType.GetProperties(BindFlagsAllMembers));
             NodeType = NodeType.BaseType;
         }
 
@@ -174,6 +192,56 @@ public static class MDStatics
         }
 
         return DeDupedMembers;
+    }
+
+    public static MemberInfo GetMemberByName(Node CurNode, String Name)
+    {
+        Type NodeType = CurNode.GetType();
+        MemberInfo Member = NodeType.GetField(Name, BindFlagsAllMembers);
+        if (Member == null)
+        {
+            Member = NodeType.GetProperty(Name, BindFlagsAllMembers);
+        }
+
+        return Member;
+    }
+
+    public static MDRemoteMode GetMethodRpcType(Node Node, String Method)
+    {
+        Type NodeType = Node.GetType();
+        MethodInfo Info = NodeType.GetMethod(Method, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+
+        if (Info == null)
+        {
+            return MDRemoteMode.Unkown;
+        }
+
+        if (Info.GetCustomAttribute(typeof(RemoteAttribute)) != null)
+        {
+            return MDRemoteMode.Remote;
+        } 
+        else if (Info.GetCustomAttribute(typeof(RemoteSyncAttribute)) != null)
+        {
+            return MDRemoteMode.RemoteSync;
+        }
+        else if (Info.GetCustomAttribute(typeof(PuppetAttribute)) != null)
+        {
+            return MDRemoteMode.Puppet;
+        }
+        else if (Info.GetCustomAttribute(typeof(PuppetSyncAttribute)) != null)
+        {
+            return MDRemoteMode.PuppetSync;
+        }
+        else if (Info.GetCustomAttribute(typeof(MasterAttribute)) != null)
+        {
+            return MDRemoteMode.Master;
+        }
+        else if (Info.GetCustomAttribute(typeof(MasterSyncAttribute)) != null)
+        {
+            return MDRemoteMode.MasterSync;
+        }
+
+        return MDRemoteMode.Unkown;
     }
 
     ///<summary>Converts a size in bytes such as the one from OS.GetStaticMemoryUsage() into a more human readable format</summary>

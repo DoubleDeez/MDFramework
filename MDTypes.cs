@@ -6,3 +6,13 @@ public enum MDNetMode {
     Server,
     Client
 }
+
+public enum MDRemoteMode {
+    Unkown,
+    Master,
+    MasterSync,
+    Remote,
+    RemoteSync,
+    Puppet,
+    PuppetSync
+}

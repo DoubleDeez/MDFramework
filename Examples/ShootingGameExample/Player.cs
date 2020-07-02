@@ -26,6 +26,8 @@ public class Player : KinematicBody2D
 
     protected float WeaponActiveCooldown = 0f;
 
+    protected float RsetActiveCooldown = 0f;
+
     protected PackedScene BulletScene = null;
 
     protected int HitCounterValue = 0;
@@ -40,6 +42,9 @@ public class Player : KinematicBody2D
     [MDReplicatedSetting(MDClockedReplicatedMember.Settings.OnValueChangedEvent, nameof(UpdateColor))]
     protected Color NetworkedColor { get; set; }
 
+    [Puppet]
+    protected String RsetTest = "";
+
     // Called when the node enters the scene tree for the first time.
     public override void _Ready()
     {
@@ -50,10 +55,14 @@ public class Player : KinematicBody2D
         {
             RandomNumberGenerator rnd = new RandomNumberGenerator();
             rnd.Randomize();
-            
+
             // Let's set our color
             NetworkedColor = new Color(rnd.Randf(), rnd.Randf(), rnd.Randf());
             Modulate = NetworkedColor;
+        }
+        else
+        {
+            MDOnScreenDebug.AddOnScreenDebugInfo("RsetTest " + GetNetworkMaster().ToString(), () => {return RsetTest;});
         }
     }
 
@@ -76,15 +85,16 @@ public class Player : KinematicBody2D
         }
     }
 
-    protected void OnShoot(Vector2 newValue, Vector2 oldValue)
+    [Remote]
+    protected void OnShoot(Vector2 Target)
     {
-        if (newValue != Vector2.Zero)
+        if (Target != Vector2.Zero)
         {
             Bullet bullet = (Bullet)GetBulletScene().Instance();
             bullet.GlobalPosition = GlobalPosition;
             bullet.SetOwner(GetNetworkMaster());
             GetParent().AddChild(bullet);
-            bullet.SetTarget(newValue);
+            bullet.SetTarget(Target);
         }
     }
 
@@ -102,12 +112,23 @@ public class Player : KinematicBody2D
         if (IsLocalPlayer)
         {
             WeaponActiveCooldown -= delta;
+            RsetActiveCooldown -= delta;
             // Get input
             if (Input.IsMouseButtonPressed(1) && WeaponActiveCooldown <= 0f)
             {
                 // Shoot towards mouse position
-                // TODO: Implement again once we got MDRPC calls
+                this.MDRpc(nameof(OnShoot), GetGlobalMousePosition());
+                
+                // Call it on local client, could do with RemoteSynch as well but then it won't work in standalone
+                OnShoot(GetGlobalMousePosition());
                 WeaponActiveCooldown = WeaponCooldown;
+            } 
+            else if (Input.IsMouseButtonPressed(2) && RsetActiveCooldown <= 0f)
+            {
+                RandomNumberGenerator rnd = new RandomNumberGenerator();
+                rnd.Randomize();
+                this.MDRset(nameof(RsetTest), rnd.RandiRange(0, 100000).ToString());
+                RsetActiveCooldown = 0.1f;
             }
             MovementAxis = GetInputAxis();
 

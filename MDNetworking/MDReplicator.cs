@@ -21,12 +21,16 @@ public class MDReplicator : Node
 
     private Dictionary<string, MDReplicatedMember> KeyToMemberMap = new Dictionary<string, MDReplicatedMember>();
 
+    private List<ClockedRemoteCall> ClockedRemoteCallList = new List<ClockedRemoteCall>();
+
     private const string LOG_CAT = "LogReplicator";
     public const float JIPWaitTime = 1000f;
 
     private uint LastIntervalReplication = 0;
 
     private uint ReplicationIdCounter = 0;
+
+    private MDGameClock GameClock;
 
     public override void _Ready()
     {
@@ -37,13 +41,18 @@ public class MDReplicator : Node
         this.GetGameSession().OnPlayerJoinedEvent += OnPlayerJoined;
         PauseMode = PauseModeEnum.Process;
 
-        GetTree().Connect("idle_frame", this, nameof(TickReplication));
+        GameClock = this.GetGameClock();
     }
 
     public override void _ExitTree()
     {
         this.GetGameSession().OnSessionStartedEvent -= OnSessionStarted;
         this.GetGameSession().OnPlayerJoinedEvent -= OnPlayerJoined;
+    }
+
+    public override void _PhysicsProcess(float delta)
+    {
+        TickReplication();
     }
 
     private void OnSessionStarted()
@@ -200,6 +209,9 @@ public class MDReplicator : Node
                 return;
             }
 
+            // First process any outstanding clocked calls
+            CheckClockedRemoteCalls();
+
             int JIPPeerId = CheckForNewPlayer();
 
             for (int i = NodeList.Count - 1; i >= 0; --i)
@@ -208,6 +220,8 @@ public class MDReplicator : Node
                 Node Instance = RepNode.Instance.GetRef() as Node;
                 if (Godot.Object.IsInstanceValid(Instance))
                 {
+                    RepNode.CheckIfNetworkMasterChanged(Instance.GetNetworkMaster());
+
                     for (int j = 0; j < RepNode.Members.Count; ++j)
                     {
                         MDReplicatedMember RepMember = RepNode.Members[j];
@@ -389,6 +403,191 @@ public class MDReplicator : Node
     }
 
     #endregion
+
+    #region RPC CALLS WITH GAME CLOCK
+
+    public void SendClockedRpc(int PeerId, MDReliability Reliability, Node Target, String Method, params object[] Parameters)
+    {
+        MDRemoteMode Mode = MDStatics.GetMethodRpcType(Target, Method);
+        switch (Mode)
+        {
+            case MDRemoteMode.Master:
+                if (!Target.IsNetworkMaster())
+                {
+                    // Remote invoke master only
+                    SendClockedCall(PeerId, ClockedRemoteCall.TypeOfCall.RPC, Reliability, Target.GetPath(), Method, Mode, Parameters);
+                }
+                break;
+            case MDRemoteMode.MasterSync:
+                if (!Target.IsNetworkMaster())
+                {
+                    // Remote invoke master only
+                    SendClockedCall(PeerId, ClockedRemoteCall.TypeOfCall.RPC, Reliability, Target.GetPath(), Method, Mode, Parameters);
+                }
+                Target.Invoke(Method, Parameters);
+                break;
+            case MDRemoteMode.Puppet:
+            case MDRemoteMode.Remote:
+                // Remote invoke
+                SendClockedCall(PeerId, ClockedRemoteCall.TypeOfCall.RPC, Reliability, Target.GetPath(), Method, Mode, Parameters);
+                break;
+            case MDRemoteMode.PuppetSync:
+            case MDRemoteMode.RemoteSync:
+                // Remote invoke and local invoke
+                SendClockedCall(PeerId, ClockedRemoteCall.TypeOfCall.RPC, Reliability, Target.GetPath(), Method, Mode, Parameters);
+                Target.Invoke(Method, Parameters);
+                break;
+        }
+    }
+
+    public void SendClockedRset(int PeerId, MDReliability Reliability, Node Target, String Method, object Value)
+    {
+        SendClockedCall(PeerId, ClockedRemoteCall.TypeOfCall.RSET, Reliability, Target.GetPath(), Method, MDRemoteMode.Remote, Value);
+    }
+
+    private void SendClockedCall(int PeerId, ClockedRemoteCall.TypeOfCall Type, MDReliability Reliability, 
+                                 String NodePath, String Method, MDRemoteMode Mode, params object[] Parameters)
+    {
+        if (Reliability == MDReliability.Reliable)
+        {
+            if (PeerId != -1)
+            {
+                RpcId(PeerId, nameof(ClockedCall), GameClock.GetTick(), Type, NodePath, Method, Mode, Parameters);
+            }
+            else
+            {
+                Rpc(nameof(ClockedCall), GameClock.GetTick(), Type, NodePath, Method, Mode, Parameters);
+            }
+        }
+        else
+        {
+            if (PeerId != -1)
+            {
+                RpcUnreliableId(PeerId, nameof(ClockedCall), GameClock.GetTick(), Type, NodePath, Method, Mode, Parameters);
+            }
+            else
+            {
+                RpcUnreliable(nameof(ClockedCall), GameClock.GetTick(), Type, NodePath, Method, Mode, Parameters);
+            }
+        }
+    }
+
+    [Remote]
+    private void ClockedCall(uint Tick, ClockedRemoteCall.TypeOfCall Type, String NodePath, String Method, MDRemoteMode Mode, params object[] Parameters)
+    {
+        Node Target = GetNodeOrNull(NodePath);
+        if (Target == null)
+        {
+            MDLog.Warn(LOG_CAT, "Could not find target [{0}] for ClockedRpcCall.", NodePath);
+            return;
+        }
+        ClockedRemoteCall RemoteCall = new ClockedRemoteCall(Tick, Type, WeakRef(Target), Method, Mode, Parameters);
+
+        // Check if we should already invoke this (if the time has already passed)
+        if (!RemoteCall.Invoke(GameClock.GetRemoteTick()))
+        {
+            ClockedRemoteCallList.Add(RemoteCall);
+        }
+    }
+
+    private void CheckClockedRemoteCalls()
+    {
+        uint Tick = GameClock.GetRemoteTick();
+        // Loop in reverse so we can remove during loop
+        for (int i = ClockedRemoteCallList.Count - 1; i >= 0; i--)
+        {
+            if (ClockedRemoteCallList[i].Invoke(Tick))
+            {
+                ClockedRemoteCallList.RemoveAt(i);
+            }
+        }
+    }
+
+
+    #endregion
+}
+
+class ClockedRemoteCall
+{
+    public enum TypeOfCall
+    {
+        RSET,
+        RPC
+    }
+    private const String LOG_CAT = "LogClockedRemoteCall";
+    private uint Tick;
+    private WeakRef Node;
+    private String Name;
+    private MDRemoteMode Mode;
+    private object[] Parameters;
+    private TypeOfCall Type;
+
+    public ClockedRemoteCall(uint Tick, TypeOfCall Type, WeakRef Node, String Name, MDRemoteMode Mode, params object[] Parameters)
+    {
+        this.Tick = Tick;
+        this.Type = Type;
+        this.Node = Node;
+        this.Name = Name;
+        this.Mode = Mode;
+        this.Parameters = Parameters;
+    }
+
+    /// Returns true once we have invoked or if we can't invoke
+    public bool Invoke(uint Tick)
+    {
+        if (this.Tick <= Tick)
+        {
+            if (Node.GetRef() == null)
+            {
+                MDLog.Warn(LOG_CAT, "Node no longer exists for call");
+                return true;
+            }
+
+            Node Target = Node.GetRef() as Node;
+            switch (Mode)
+            {
+                case MDRemoteMode.Master:
+                case MDRemoteMode.MasterSync:
+                    if (Target.IsNetworkMaster())
+                    {
+                        DoCall(Target);
+                    }
+                    break;
+                case MDRemoteMode.PuppetSync:
+                case MDRemoteMode.Puppet:
+                    if (!Target.IsNetworkMaster())
+                    {
+                        DoCall(Target);
+                    }
+                    break;
+                case MDRemoteMode.Remote:
+                case MDRemoteMode.RemoteSync:
+                    DoCall(Target);
+                    break;
+            }
+            
+            return true;
+        }
+        return false;
+    }
+
+    private void DoCall(Node Target)
+    {
+        switch (Type)
+        {
+            case TypeOfCall.RPC:
+                Target.Invoke(Name, Parameters);
+                break;
+            case TypeOfCall.RSET:
+                MemberInfo member = MDStatics.GetMemberByName(Target, Name);
+                if (member != null)
+                {
+                    member.SetValue(Target, Parameters[0]);
+                }
+                break;
+        }
+    }
+
 }
 
 class ReplicatedNode
@@ -397,7 +596,19 @@ class ReplicatedNode
     {
         Instance = Godot.Object.WeakRef(InInstance);
         Members = InMembers;
+        NetworkMaster = InInstance.GetNetworkMaster();
     }
+
+    public void CheckIfNetworkMasterChanged(int CurrentMaster)
+    {
+        if (CurrentMaster != NetworkMaster)
+        {
+            Members.ForEach(member => member.CheckIfShouldReplicate());
+            NetworkMaster = CurrentMaster;
+        }
+    }
+
+    protected int NetworkMaster;
 
     public WeakRef Instance;
 
