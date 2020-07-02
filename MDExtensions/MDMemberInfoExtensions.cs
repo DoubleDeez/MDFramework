@@ -16,7 +16,7 @@ public static class MDMemberInfoExtensions
                 ((PropertyInfo)member).SetValue(Instance, Value);
                 break;
             default:
-                MDLog.Error(LOG_CAT, "Input MemberInfo must be if type FieldInfo or PropertyInfo");
+                MDLog.Error(LOG_CAT, "Input MemberInfo was of type {0}, it should be of type FieldInfo or PropertyInfo", member.MemberType.ToString());
                 break;
         }
     }
@@ -34,7 +34,8 @@ public static class MDMemberInfoExtensions
             case MemberTypes.Property:
                 return ((PropertyInfo)member).PropertyType;
             default:
-                MDLog.Error(LOG_CAT, "Input MemberInfo must be if type EventInfo, FieldInfo, MethodInfo, or PropertyInfo");
+                MDLog.Error(LOG_CAT, "Input MemberInfo was of type {0}, it should be of type EventInfo, FieldInfo, MethodInfo, or PropertyInfo", 
+                            member.MemberType.ToString());
                 return null;
         }
     }
