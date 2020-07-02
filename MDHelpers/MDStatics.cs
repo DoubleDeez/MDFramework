@@ -206,6 +206,44 @@ public static class MDStatics
         return Member;
     }
 
+    public static MDRemoteMode GetMemberRpcType(Node Node, String MemberName)
+    {
+        Type NodeType = Node.GetType();
+        MemberInfo Info = GetMemberByName(Node, MemberName);
+
+        if (Info == null)
+        {
+            return MDRemoteMode.Unkown;
+        }
+
+        if (Info.GetCustomAttribute(typeof(RemoteAttribute)) != null)
+        {
+            return MDRemoteMode.Remote;
+        } 
+        else if (Info.GetCustomAttribute(typeof(RemoteSyncAttribute)) != null)
+        {
+            return MDRemoteMode.RemoteSync;
+        }
+        else if (Info.GetCustomAttribute(typeof(PuppetAttribute)) != null)
+        {
+            return MDRemoteMode.Puppet;
+        }
+        else if (Info.GetCustomAttribute(typeof(PuppetSyncAttribute)) != null)
+        {
+            return MDRemoteMode.PuppetSync;
+        }
+        else if (Info.GetCustomAttribute(typeof(MasterAttribute)) != null)
+        {
+            return MDRemoteMode.Master;
+        }
+        else if (Info.GetCustomAttribute(typeof(MasterSyncAttribute)) != null)
+        {
+            return MDRemoteMode.MasterSync;
+        }
+
+        return MDRemoteMode.Unkown;
+    }
+
     public static MDRemoteMode GetMethodRpcType(Node Node, String Method)
     {
         Type NodeType = Node.GetType();

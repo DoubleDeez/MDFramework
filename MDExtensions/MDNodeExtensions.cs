@@ -360,6 +360,18 @@ public static class MDNodeExtensions
         return false;
     }
 
+    public static bool SetMemberValue(this Node Instance, String Name, object Value)
+    {
+        MemberInfo member = MDStatics.GetMemberByName(Instance, Name);
+        if (member != null)
+        {
+            member.SetValue(Instance, Value);
+            return true;
+        }
+
+        return false;
+    }
+
     ///<summary>Creates a timer as a child of the current node</summary>
     ///<param name="Name">The name of the timer</param>
     ///<param name="OneShot">Is this a one shot timer</param>

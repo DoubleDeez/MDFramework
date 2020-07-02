@@ -440,9 +440,38 @@ public class MDReplicator : Node
         }
     }
 
-    public void SendClockedRset(int PeerId, MDReliability Reliability, Node Target, String Method, object Value)
+    public void SendClockedRset(int PeerId, MDReliability Reliability, Node Target, String MemberName, object Value)
     {
-        SendClockedCall(PeerId, ClockedRemoteCall.TypeOfCall.RSET, Reliability, Target.GetPath(), Method, MDRemoteMode.Remote, Value);
+        MDRemoteMode Mode = MDStatics.GetMemberRpcType(Target, MemberName);
+        switch (Mode)
+        {
+            case MDRemoteMode.Master:
+                if (!Target.IsNetworkMaster())
+                {
+                    // Remote invoke master only
+                    SendClockedCall(PeerId, ClockedRemoteCall.TypeOfCall.RSET, Reliability, Target.GetPath(), MemberName, Mode, Value);
+                }
+                break;
+            case MDRemoteMode.MasterSync:
+                if (!Target.IsNetworkMaster())
+                {
+                    // Remote invoke master only
+                    SendClockedCall(PeerId, ClockedRemoteCall.TypeOfCall.RSET, Reliability, Target.GetPath(), MemberName, Mode, Value);
+                }
+                Target.SetMemberValue(MemberName, Value);
+                break;
+            case MDRemoteMode.Puppet:
+            case MDRemoteMode.Remote:
+                // Remote invoke
+                SendClockedCall(PeerId, ClockedRemoteCall.TypeOfCall.RSET, Reliability, Target.GetPath(), MemberName, Mode, Value);
+                break;
+            case MDRemoteMode.PuppetSync:
+            case MDRemoteMode.RemoteSync:
+                // Remote invoke and local invoke
+                SendClockedCall(PeerId, ClockedRemoteCall.TypeOfCall.RSET, Reliability, Target.GetPath(), MemberName, Mode, Value);
+                Target.SetMemberValue(MemberName, Value);
+                break;
+        }
     }
 
     private void SendClockedCall(int PeerId, ClockedRemoteCall.TypeOfCall Type, MDReliability Reliability, 
@@ -579,11 +608,7 @@ class ClockedRemoteCall
                 Target.Invoke(Name, Parameters);
                 break;
             case TypeOfCall.RSET:
-                MemberInfo member = MDStatics.GetMemberByName(Target, Name);
-                if (member != null)
-                {
-                    member.SetValue(Target, Parameters[0]);
-                }
+                Target.SetMemberValue(Name, Parameters[0]);
                 break;
         }
     }
