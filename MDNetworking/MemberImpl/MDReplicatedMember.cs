@@ -65,7 +65,7 @@ public class MDReplicatedMember
         Node Instance = NodeRef.GetRef() as Node;
 
         if ((ReplicatedType == MDReplicatedType.Interval && IsIntervalReplicationTime) || 
-        (object.Equals(LastValue, CurrentValue) == false && ReplicatedType == MDReplicatedType.OnChange))
+            (ReplicatedType == MDReplicatedType.OnChange && object.Equals(LastValue, CurrentValue) == false))
         {
             ReplicateToAll(Instance, CurrentValue);
         }
@@ -79,7 +79,6 @@ public class MDReplicatedMember
     protected virtual void ReplicateToAll(Node Node, object Value)
     {
         MDLog.Debug(LOG_CAT, "Replicating {0} with value {1} from {2}", Member.Name, Value, LastValue);
-        GD.Print("Replicating " + Member.Name + " from node " + Node.Name + " with value " + Value);
         if (Reliable)
         {
             Node.Rset(Member.Name, Value);

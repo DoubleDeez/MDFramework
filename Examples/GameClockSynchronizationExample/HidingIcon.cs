@@ -4,7 +4,7 @@ using System;
 [MDAutoRegister]
 public class HidingIcon : Area2D
 {
-	public static readonly String GROUP_ACTORS = "ACTORS";
+	public const String GROUP_ACTORS = "ACTORS";
 
 	[MDBindNode("Sprite")]
 	Sprite Icon;

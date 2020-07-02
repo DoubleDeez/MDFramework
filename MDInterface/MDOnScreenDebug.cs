@@ -97,8 +97,8 @@ public class MDOnScreenDebug : Control
     {
         if (DebugInfoList.ContainsKey(Name))
         {
-
             DebugInfoList[Name].InfoFunction = InfoFunction;
+            DebugInfoList[Name].Color = Color;
         }
         else
         {

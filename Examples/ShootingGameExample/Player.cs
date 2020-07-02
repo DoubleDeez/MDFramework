@@ -46,14 +46,11 @@ public class Player : KinematicBody2D
         AddToGroup(PLAYER_GROUP);
         SetupPlayer(GetNetworkMaster());
 
-        //NetworkedShoot = new MDClockedNetworkValue<Vector2>(Vector2.Zero, IsLocalPlayer, ClockedPropertyMode.ONE_SHOT, MDReliability.Reliable);
-        //NetworkedShoot.OnValueChangedEvent += OnShoot;
-        //NetworkNode.AddValue(NetworkedShoot);
-
         if (IsLocalPlayer)
         {
             RandomNumberGenerator rnd = new RandomNumberGenerator();
             rnd.Randomize();
+            
             // Let's set our color
             NetworkedColor = new Color(rnd.Randf(), rnd.Randf(), rnd.Randf());
             Modulate = NetworkedColor;
@@ -109,7 +106,7 @@ public class Player : KinematicBody2D
             if (Input.IsMouseButtonPressed(1) && WeaponActiveCooldown <= 0f)
             {
                 // Shoot towards mouse position
-                //NetworkedShoot.SetValue(GetGlobalMousePosition());
+                // TODO: Implement again once we got MDRPC calls
                 WeaponActiveCooldown = WeaponCooldown;
             }
             MovementAxis = GetInputAxis();

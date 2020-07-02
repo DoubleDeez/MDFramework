@@ -4,7 +4,7 @@ using System;
 [MDAutoRegister]
 public class Spawner : Node2D
 {
-	public static readonly String GROUP_ACTORS = "ACTORS";
+	public const String GROUP_ACTORS = "ACTORS";
 
 	private const string LOG_CAT = "LogActorSpawner";
 

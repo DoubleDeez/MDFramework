@@ -4,6 +4,7 @@ using System.Reflection;
 
 public static class MDMemberInfoExtensions
 {
+    public const String LOG_CAT = "LogMemberInfoExtension";
     public static void SetValue(this MemberInfo member, object Instance, object Value)
     {
         switch (member.MemberType)
@@ -15,10 +16,8 @@ public static class MDMemberInfoExtensions
                 ((PropertyInfo)member).SetValue(Instance, Value);
                 break;
             default:
-                throw new ArgumentException
-                (
-                "Input MemberInfo must be if type FieldInfo or PropertyInfo"
-                );
+                MDLog.Error(LOG_CAT, "Input MemberInfo must be if type FieldInfo or PropertyInfo");
+                break;
         }
     }
 
@@ -35,10 +34,8 @@ public static class MDMemberInfoExtensions
             case MemberTypes.Property:
                 return ((PropertyInfo)member).PropertyType;
             default:
-                throw new ArgumentException
-                (
-                "Input MemberInfo must be if type EventInfo, FieldInfo, MethodInfo, or PropertyInfo"
-                );
+                MDLog.Error(LOG_CAT, "Input MemberInfo must be if type EventInfo, FieldInfo, MethodInfo, or PropertyInfo");
+                return null;
         }
     }
 }
