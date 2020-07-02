@@ -9,6 +9,7 @@ using System;
 public class MDInterfaceManager : CanvasLayer
 {
     private const string ConsoleName = "Console";
+    private const string OnScreenDebugName = "OnScreenDebug";
     private const string LOG_CAT = "InterfaceManager";
 
     public override void _Ready()
@@ -18,15 +19,20 @@ public class MDInterfaceManager : CanvasLayer
 
     public override void _Input(InputEvent InEvent)
     {
-        if (this.GetGameInstance().IsConsoleAvailable())
+        if (InEvent is InputEventKey EventKey && EventKey.Pressed && !EventKey.Echo)
         {
-            if (InEvent is InputEventKey EventKey)
+            if (this.GetGameInstance().IsConsoleAvailable() && 
+                EventKey.Scancode == this.GetGameInstance().GetConsoleKey())
             {
-                if (EventKey.Pressed && !EventKey.Echo && EventKey.Scancode == this.GetGameInstance().GetConsoleKey())
-                {
-                    ToggleConsole();
-                    this.SetInputHandled();
-                }
+                ToggleConsole();
+                this.SetInputHandled();
+            }
+
+            if (this.GetGameInstance().IsOnScreenDebugAvailable() && 
+                EventKey.Scancode == this.GetGameInstance().GetOnScreenDebugKey())
+            {
+                ToggleOnScreenDebug();
+                this.SetInputHandled();
             }
         }
     }
@@ -44,6 +50,21 @@ public class MDInterfaceManager : CanvasLayer
         else
         {
             Console.Close();
+        }
+    }
+
+    private void ToggleOnScreenDebug()
+    {
+        MDOnScreenDebug OnScreenDebug = FindNode(OnScreenDebugName, true, false) as MDOnScreenDebug;
+        if (OnScreenDebug == null)
+        {
+            OnScreenDebug = new MDOnScreenDebug();
+            OnScreenDebug.Name = OnScreenDebugName;
+            AddChild(OnScreenDebug);
+        }
+        else
+        {
+            OnScreenDebug.Close();
         }
     }
 }

@@ -1,5 +1,6 @@
 using Godot;
 using System;
+using System.Collections.Generic;
 using System.Linq.Expressions;
 
 /*
@@ -27,6 +28,13 @@ public static class MDNodeExtensions
     {
         MDGameInstance GI = Instance.GetGameInstance();
         return GI.GameSynchronizer;
+    }
+
+    /// <summary>Grabs the GameClock from the GameInstance</summary>
+    public static MDGameClock GetGameClock(this Node Instance)
+    {
+        MDGameInstance GI = Instance.GetGameInstance();
+        return GI.GameClock;
     }
 
     /// <summary>Gets the ping of the given peer</summary>
@@ -186,8 +194,14 @@ public static class MDNodeExtensions
     // Removes this node from its parent and frees it
     public static void RemoveAndFree(this Node Instance)
     {
-        Instance.GetParent().RemoveChild(Instance);
-        Instance.QueueFree();
+        if (Godot.Object.IsInstanceValid(Instance))
+        {
+            if (Godot.Object.IsInstanceValid(Instance.GetParent()))
+            {
+                Instance.GetParent().RemoveChild(Instance);
+            }
+            Instance.QueueFree();
+        }
     }
 
     // Same as Rpc except it checks if the network is activate first
@@ -282,6 +296,34 @@ public static class MDNodeExtensions
     {
         int ServerId = Instance.GetGameSession().GetNetworkMaster();
         return Instance.MDRpcUnreliableId(ServerId, Method, Args);
+    }
+
+    ///<summary>Creates a timer as a child of the current node</summary>
+    ///<param name="Name">The name of the timer</param>
+    ///<param name="OneShot">Is this a one shot timer</param>
+    ///<param name="WaitTime">Duration of the timer</param>
+    ///<param name="TimerAsFirstArgument">Should we pass the timer as the first argument to the timeout method?</param>
+    ///<param name="ConnectionTarget">The object to attach the timeout method to</param>
+    ///<param name="MethodName">The name of the timeout method</param>
+    ///<param name="Parameters">Array of parameters to pass to the timeout function</param>
+    public static Timer CreateTimer(this Node Instance, String Name, bool OneShot, float WaitTime, bool TimerAsFirstArgument, Godot.Object ConnectionTarget, String MethodName, params object[] Parameters)
+    {
+        Timer timer = new Timer();
+        timer.Name = Name;
+        timer.OneShot = OneShot;
+        timer.WaitTime = WaitTime;
+        List<object> parameters = new List<object>();
+        if (TimerAsFirstArgument)
+        {
+            parameters.Add(timer);
+        }
+        foreach (object param in Parameters)
+        {
+            parameters.Add(param);
+        }
+        timer.Connect("timeout", ConnectionTarget, MethodName, new Godot.Collections.Array(parameters));
+        Instance.AddChild(timer);
+        return timer;
     }
 
 }

@@ -28,20 +28,18 @@ git submodule add https://github.com/DoubleDeez/MDFramework.git src/MDFramework
 2. Add the MDFramework files to your `Project.csproj`, inside of `<ItemGroup>`, making sure the path matches where you cloned the repo. 
 
 ```xml
-    <Compile Include="src\MDFramework\Examples\BasicNetworkLobby\BasicNetworkLobby.cs" />
-    <Compile Include="src\MDFramework\Examples\BasicNetworkLobby\CustomGameInstance.cs" />
-    <Compile Include="src\MDFramework\Examples\BasicNetworkLobby\PeerSynchStatusRow.cs" />
-    <Compile Include="src\MDFramework\Examples\BasicNetworkLobby\SyncInterface.cs" />
-    <Compile Include="src\MDFramework\Examples\PredictiveSynchronizationExample\ActorSpawner.cs" />
-    <Compile Include="src\MDFramework\Examples\PredictiveSynchronizationExample\PredictiveActor.cs" />
     <Compile Include="src\MDFramework\MDAttributes\MDAutoRegister.cs" />
     <Compile Include="src\MDFramework\MDAttributes\MDBindNode.cs" />
     <Compile Include="src\MDFramework\MDAttributes\MDCommand.cs" />
     <Compile Include="src\MDFramework\MDAttributes\MDReplicated.cs" />
+    <Compile Include="src\MDFramework\MDAttributes\MDReplicatedSetting.cs" />
     <Compile Include="src\MDFramework\MDExtensions\MDControlExtensions.cs" />
+    <Compile Include="src\MDFramework\MDExtensions\MDMemberInfoExtensions.cs" />
     <Compile Include="src\MDFramework\MDExtensions\MDNodeExtensions.cs" />
     <Compile Include="src\MDFramework\MDExtensions\MDVector2Extensions.cs" />
     <Compile Include="src\MDFramework\MDExtensions\MDVector3Extensions.cs" />
+    <Compile Include="src\MDFramework\MDGameSynchronizer\MDGameClock.cs" />
+    <Compile Include="src\MDFramework\MDGameSynchronizer\MDGameSynchronizer.cs" />
     <Compile Include="src\MDFramework\MDHelpers\MDArguments.cs" />
     <Compile Include="src\MDFramework\MDHelpers\MDInput.cs" />
     <Compile Include="src\MDFramework\MDHelpers\MDCommands.cs" />
@@ -50,11 +48,16 @@ git submodule add https://github.com/DoubleDeez/MDFramework.git src/MDFramework
     <Compile Include="src\MDFramework\MDHelpers\MDStatics.cs" />
     <Compile Include="src\MDFramework\MDInterface\MDConsole.cs" />
     <Compile Include="src\MDFramework\MDInterface\MDInterfaceManager.cs" />
+    <Compile Include="src\MDFramework\MDInterface\MDOnScreenDebug.cs" />
     <Compile Include="src\MDFramework\MDNetworking\MDGameSession.cs" />
     <Compile Include="src\MDFramework\MDNetworking\MDPlayerInfo.cs" />
     <Compile Include="src\MDFramework\MDNetworking\MDReplicator.cs" />
-    <Compile Include="src\MDFramework\MDNetworking\MDGameSynchronizer.cs" />
     <Compile Include="src\MDFramework\MDGameInstance.cs" />
+    <Compile Include="src\MDFramework\MDNetworking\MemberImpl\MDClockedReplicatedMember.cs" />
+    <Compile Include="src\MDFramework\MDNetworking\MemberImpl\MDCRMInterpolatedVector2.cs" />
+    <Compile Include="src\MDFramework\MDNetworking\MemberImpl\MDReplicatedMember.cs" />
+    <Compile Include="src\MDFramework\MDNetworking\Misc\MDReplicatorGroupManager.cs" />
+    <Compile Include="src\MDFramework\MDNetworking\Misc\MDReplicatorNetworkKeyIdMap.cs" />
     <Compile Include="src\MDFramework\MDTypes.cs" />
 ```
 or to include all C# files:

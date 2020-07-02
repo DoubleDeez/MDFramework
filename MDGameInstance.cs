@@ -23,6 +23,7 @@ public class MDGameInstance : Node
         GetTree().Connect("node_removed", this, nameof(OnNodeRemoved_Internal));
 
         // Init instances
+        CreateReplicator();
         CreateGameSession();
         CreateGameSynchronizer();
         CreateInterfaceManager();
@@ -61,6 +62,18 @@ public class MDGameInstance : Node
     protected virtual Type GetGameSynchronizerType()
     {
         return typeof(MDGameSynchronizer);
+    }
+
+    /// <summary>Override this to provide the your GameClock subclass type</summary>
+    protected virtual Type GetGameClockType()
+    {
+        return typeof(MDGameClock);
+    }
+
+    /// <summary>Override this to provide the your Replicator subclass type</summary>
+    protected virtual Type GetReplicatorType()
+    {
+        return typeof(MDReplicator);
     }
 
     // Override this to provide your own Player class type
@@ -147,6 +160,17 @@ public class MDGameInstance : Node
         Instance.UnregisterReplicatedAttributes();
     }
 
+    ///<summary>Ensure Replicator is created</summary>
+    private void CreateReplicator()
+    {
+        if (Replicator == null)
+        {
+            Replicator = CreateTypeInstance<MDReplicator>(GetReplicatorType());
+            Replicator.Name = "Replicator";
+            this.AddNodeToRoot(Replicator, true);
+        }
+    }
+
     ///<summary>Ensure GameSession is created</summary>
     private void CreateGameSession()
     {
@@ -155,6 +179,7 @@ public class MDGameInstance : Node
             GameSession = CreateTypeInstance<MDGameSession>(GetGameSessionType());
             GameSession.Name = "GameSession";
             GameSession.GameInstance = this;
+            GameSession.Replicator = Replicator;
             this.AddNodeToRoot(GameSession, true);
         }
     }
@@ -167,6 +192,20 @@ public class MDGameInstance : Node
             GameSynchronizer.Name = "GameSynchronizer";
             GameSynchronizer.GameInstance = this;
             this.AddNodeToRoot(GameSynchronizer, true);
+
+            // Check if we should create the game clock as well
+            CreateGameClock();
+        }
+    }
+
+    private void CreateGameClock()
+    {
+        if (GameClock == null && GameSynchronizer.IsGameClockActive())
+        {
+            GameClock = CreateTypeInstance<MDGameClock>(GetGameClockType());
+            GameClock.Name = "GameClock";
+            GameSynchronizer.GameClock = GameClock;
+            this.AddNodeToRoot(GameClock, true);
         }
     }
 
@@ -203,6 +242,26 @@ public class MDGameInstance : Node
         #endif
     }
 
+    /// <summary>Override to change when the on screen debug is available (Default: Only in debug mode)</summary>
+    public virtual bool IsOnScreenDebugAvailable()
+    {
+        #if DEBUG
+        return true;
+        #else
+        return false;
+        #endif
+    }
+
+    /// <summary>Should basic information like fps and such be added by default (Default: Only in debug mode)</summary>
+    public virtual bool IsOnScreenDebugAddBasicInformation()
+    {
+        #if DEBUG
+        return true;
+        #else
+        return false;
+        #endif
+    }
+
     /// <summary>Override to change when UPNP is used for the server (Default: True)</summary>
     public virtual bool UseUPNP()
     {
@@ -219,6 +278,12 @@ public class MDGameInstance : Node
     public virtual int GetConsoleKey()
     {
         return (int)KeyList.Quoteleft;
+    }
+
+    ///<summary>Get the key used to open the on screen debug. (Default: KeyList.F12)</summary>
+    public virtual int GetOnScreenDebugKey()
+    {
+        return (int)KeyList.F12;
     }
 
     ///<summary>Decides if the network synchronizer is used or not (Default: True)</summary>
@@ -242,7 +307,10 @@ public class MDGameInstance : Node
 
     public MDGameSession GameSession {get; private set;}
 
+    public MDReplicator Replicator {get; private set;}
+
     public MDGameSynchronizer GameSynchronizer {get; private set;}
+    public MDGameClock GameClock {get; private set;}
     public MDInterfaceManager InterfaceManager {get; private set;}
 
     // TODO - There should be an InputState for each local player

@@ -60,7 +60,7 @@ public class MDPlayerInfo : Node
     {
         _playerName = name;
         MDStatics.GetGameSession().NotifyPlayerNameChanged(PeerId);
-        if (PeerId == MDStatics.GetPeerId())
+        if (PeerId == MDStatics.GetPeerId() && MDStatics.IsNetworkActive())
         {
             // Notify other clients
             Rpc(nameof(SetPlayerNameInt), name);
