@@ -2,6 +2,7 @@ using Godot;
 using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
+using System.Reflection;
 
 /*
  * MDNodeExtensions
@@ -204,44 +205,68 @@ public static class MDNodeExtensions
         }
     }
 
-    // Same as Rpc except it checks if the network is activate first
+    // Same as Rpc except it checks if the network is activate first and takes game clock into account
     public static object MDRpc(this Node Instance, string Method, params object[] Args)
     {
         if (MDStatics.IsNetworkActive())
         {
+            if (MDStatics.IsGameClockActive())
+            {
+                // Send through replicator
+                MDStatics.GetReplicator().SendClockedRpc(-1, MDReliability.Reliable, Instance, Method, Args);
+                return null;                
+            }
             return Instance.Rpc(Method, Args);
         }
 
         return null;
     }
 
-    // Same as RpcId except it checks if the network is activate first
+    // Same as RpcId except it checks if the network is activate first and takes game clock into account
     public static object MDRpcId(this Node Instance, int PeerId, string Method, params object[] Args)
     {
         if (MDStatics.IsNetworkActive())
         {
+            if (MDStatics.IsGameClockActive())
+            {
+                // Send through replicator
+                MDStatics.GetReplicator().SendClockedRpc(PeerId, MDReliability.Reliable, Instance, Method, Args);
+                return null;                
+            }
             return Instance.RpcId(PeerId, Method, Args);
         }
 
         return null;
     }
 
-    // Same as RpcUnreliable except it checks if the network is activate first
+    // Same as RpcUnreliable except it checks if the network is activate first and takes game clock into account
     public static object MDRpcUnreliable(this Node Instance, string Method, params object[] Args)
     {
         if (MDStatics.IsNetworkActive())
         {
+            if (MDStatics.IsGameClockActive())
+            {
+                // Send through replicator
+                MDStatics.GetReplicator().SendClockedRpc(-1, MDReliability.Unreliable, Instance, Method, Args);
+                return null;                
+            }
             return Instance.RpcUnreliable(Method, Args);
         }
 
         return null;
     }
 
-    // Same as RpcUnreliableId except it checks if the network is activate first
+    // Same as RpcUnreliableId except it checks if the network is activate first and takes game clock into account
     public static object MDRpcUnreliableId(this Node Instance, int PeerId, string Method, params object[] Args)
     {
         if (MDStatics.IsNetworkActive())
         {
+            if (MDStatics.IsGameClockActive())
+            {
+                // Send through replicator
+                MDStatics.GetReplicator().SendClockedRpc(PeerId, MDReliability.Unreliable, Instance, Method, Args);
+                return null;                
+            }
             return Instance.RpcUnreliableId(PeerId, Method, Args);
         }
 
@@ -253,6 +278,12 @@ public static class MDNodeExtensions
     {
         if (MDStatics.IsNetworkActive())
         {
+            if (MDStatics.IsGameClockActive())
+            {
+                // Send through replicator
+                MDStatics.GetReplicator().SendClockedRset(-1, MDReliability.Reliable, Instance, Property, Value);
+                return;                
+            }
             Instance.Rset(Property, Value);
         }
     }
@@ -262,6 +293,12 @@ public static class MDNodeExtensions
     {
         if (MDStatics.IsNetworkActive())
         {
+            if (MDStatics.IsGameClockActive())
+            {
+                // Send through replicator
+                MDStatics.GetReplicator().SendClockedRset(PeerId, MDReliability.Reliable, Instance, Property, Value);
+                return;                
+            }
             Instance.RsetId(PeerId, Property, Value);
         }
     }
@@ -271,6 +308,12 @@ public static class MDNodeExtensions
     {
         if (MDStatics.IsNetworkActive())
         {
+            if (MDStatics.IsGameClockActive())
+            {
+                // Send through replicator
+                MDStatics.GetReplicator().SendClockedRset(-1, MDReliability.Unreliable, Instance, Property, Value);
+                return;                
+            }
             Instance.RsetUnreliable(Property, Value);
         }
     }
@@ -280,6 +323,12 @@ public static class MDNodeExtensions
     {
         if (MDStatics.IsNetworkActive())
         {
+            if (MDStatics.IsGameClockActive())
+            {
+                // Send through replicator
+                MDStatics.GetReplicator().SendClockedRset(PeerId, MDReliability.Unreliable, Instance, Property, Value);
+                return;                
+            }
             Instance.RsetUnreliableId(PeerId, Property, Value);
         }
     }
@@ -296,6 +345,31 @@ public static class MDNodeExtensions
     {
         int ServerId = Instance.GetGameSession().GetNetworkMaster();
         return Instance.MDRpcUnreliableId(ServerId, Method, Args);
+    }
+
+    public static bool Invoke(this Node Instance, String Method, params object[] Parameters)
+    {
+        Type NodeType = Instance.GetType();
+        MethodInfo Info = NodeType.GetMethod(Method, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+        if (Info != null)
+        {
+            Info.Invoke(Instance, Parameters);
+            return true;
+        }
+
+        return false;
+    }
+
+    public static bool SetMemberValue(this Node Instance, String Name, object Value)
+    {
+        MemberInfo member = MDStatics.GetMemberByName(Instance, Name);
+        if (member != null)
+        {
+            member.SetValue(Instance, Value);
+            return true;
+        }
+
+        return false;
     }
 
     ///<summary>Creates a timer as a child of the current node</summary>

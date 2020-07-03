@@ -232,7 +232,8 @@ public class MDGameSynchronizer : Node
     protected void RequestTicksMsec(int RequestNumber, uint ServerTimeOfRequest)
     {
         // Respond
-        this.MDServerRpc(nameof(ResponseTicksMsec), OS.GetTicksMsec(), ServerTimeOfRequest, RequestNumber);
+        
+        RpcId(GameSession.GetNetworkMaster(), nameof(ResponseTicksMsec), OS.GetTicksMsec(), ServerTimeOfRequest, RequestNumber);
         MDLog.Trace(LOG_CAT, "Responded to server request number {0} for OS.GetTicksMsec with [{1}]", RequestNumber, OS.GetTicksMsec());
     }
 
@@ -646,7 +647,7 @@ public class MDGameSynchronizer : Node
             // This is the first time we synched all nodes, notify the server
             MDLog.Debug(LOG_CAT, "Node synch complete, notifying server");
             NodeSynchCompleted = true;
-            this.MDServerRpc(nameof(NotifyAllNodesSynched));
+            RpcId(GameSession.GetNetworkMaster(), nameof(NotifyAllNodesSynched));
         }
 
         int NotSynchedNodes = 0;
@@ -681,7 +682,7 @@ public class MDGameSynchronizer : Node
             float percentage = (float)SynchedNodes / NodeCount;
             MDLog.Debug(LOG_CAT, "We have {0} nodes that are still synching. Current status: {1}%", NotSynchedNodes, percentage * 100);
             // Notify the server of how many nodes we got synched
-            this.MDServerRpc(nameof(ClientSynchStatus), SynchedNodes);
+            RpcId(GameSession.GetNetworkMaster(), nameof(ClientSynchStatus), SynchedNodes);
 
             // Update our own UI
             OnPlayerSynchStatusUpdateEvent(MDStatics.GetPeerId(), percentage);

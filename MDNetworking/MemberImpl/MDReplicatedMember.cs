@@ -106,8 +106,6 @@ public class MDReplicatedMember
 
     public virtual bool ShouldReplicate()
     {
-        // Note this means we don't support nodes swapping network master.
-        // If that should be supported then CheckIfShouldReplicate has to be run every update.
         return IsShouldReplicate;
     }
 
@@ -117,7 +115,7 @@ public class MDReplicatedMember
         return Instance.GetType().GetProperty(Member.Name, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy | BindingFlags.Instance);
     }
 
-    private void CheckIfShouldReplicate()
+    public void CheckIfShouldReplicate()
     {
         MasterAttribute MasterAtr = Member.GetCustomAttribute(typeof(MasterAttribute)) as MasterAttribute;
         MasterSyncAttribute MasterSyncAtr = Member.GetCustomAttribute(typeof(MasterSyncAttribute)) as MasterSyncAttribute;
