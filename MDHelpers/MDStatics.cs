@@ -120,6 +120,11 @@ public static class MDStatics
         return GetGameSession().GetNetworkMaster();
     }
 
+    public static int GetPlayersCount()
+    {
+        return GetGameSession().PlayersCount;
+    }
+
     // Gets the net mode of the local client
     public static MDNetMode GetNetMode()
     {

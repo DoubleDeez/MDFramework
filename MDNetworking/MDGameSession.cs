@@ -25,6 +25,7 @@ public class MDGameSession : Node
     public MDGameInstance GameInstance = null;
 
     public bool IsSessionStarted { get; protected set; } = false;
+    public int PlayersCount => Players.Count;
 
     public string ExternalAddress { get; protected set; } = "";
 
@@ -77,7 +78,8 @@ public class MDGameSession : Node
         NetworkedMultiplayerENet peer = new NetworkedMultiplayerENet();
         peer.Connect("peer_connected", this, nameof(ServerOnPeerConnected));
         peer.Connect("peer_disconnected", this, nameof(ServerOnPeerDisconnected));
-
+        ConfigurePeer(peer);
+        
         Error error = peer.CreateServer(Port, MaxPlayers);
         bool Success = error == Error.Ok;
         MDLog.CLog(Success, LOG_CAT, MDLogLevel.Info, "Starting server on port {0} with {1} max players.", Port, MaxPlayers);
@@ -104,6 +106,7 @@ public class MDGameSession : Node
         peer.Connect("connection_succeeded", this, nameof(ClientOnConnected));
         peer.Connect("connection_failed", this, nameof(ClientOnFailedToConnect));
         peer.Connect("server_disconnected", this, nameof(ClientOnServerDisconnect));
+        ConfigurePeer(peer);
         
         Error error = peer.CreateClient(Address, Port);
         bool Success = error == Error.Ok;
@@ -116,6 +119,15 @@ public class MDGameSession : Node
         }
 
         return Success;
+    }
+
+    private void ConfigurePeer(NetworkedMultiplayerENet Peer)
+    {
+        Peer.ServerRelay = MDPeerConfigs.ServerRelay;
+        Peer.AlwaysOrdered = MDPeerConfigs.AlwaysOrdered;
+        Peer.ChannelCount = MDPeerConfigs.ChannelCount;
+        Peer.CompressionMode = MDPeerConfigs.CompressionMode;
+        Peer.TransferChannel = MDPeerConfigs.TransferChannel;
     }
 
     [MDCommand()]
@@ -282,8 +294,8 @@ public class MDGameSession : Node
 
     private void OnPlayerLeft_Internal(int PeerId)
     {
-        RemovePlayerObject(PeerId);
         OnPlayerLeftEvent(PeerId);
+        RemovePlayerObject(PeerId);
     }
 
     // Called when disconnected from the server or as the server
