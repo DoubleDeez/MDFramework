@@ -10,6 +10,14 @@ public class MDGameInstance : Node
 {
     private const string LOG_CAT = "LogGameInstance";
 
+    public MDGameSession GameSession { get; private set; }
+
+    public MDGameSynchronizer GameSynchronizer { get; private set; }
+    public MDInterfaceManager InterfaceManager { get; private set; }
+
+    // TODO - There should be an InputState for each local player
+    public MDInput InputState { get; protected set; } = new MDInput();
+
     public override void _Ready()
     {
         // Init static classes first
@@ -82,13 +90,11 @@ public class MDGameInstance : Node
     // Called whenever a node is added to the scene
     protected virtual void OnNodeAdded(Node AddedNode)
     {
-
     }
 
     // Called whenever a node is removed to the scene
     protected virtual void OnNodeRemoved(Node RemovedNode)
     {
-
     }
 
     // Travels the tree and registers the existing nodes
@@ -216,7 +222,7 @@ public class MDGameInstance : Node
             MDLog.Error(LOG_CAT, "Type [{0}] is not a subclass of [{1}]", Type.Name, typeof(T).Name);
             return null;
         }
-        
+
         return Activator.CreateInstance(Type) as T;
     }
 
@@ -306,15 +312,4 @@ public class MDGameInstance : Node
     {
         return true;
     }
-
-    public MDGameSession GameSession { get; private set; }
-
-    public MDReplicator Replicator {get; private set;}
-    
-    public MDGameSynchronizer GameSynchronizer { get; private set; }
-    public MDGameClock GameClock {get; private set;}
-    public MDInterfaceManager InterfaceManager { get; private set; }
-
-    // TODO - There should be an InputState for each local player
-    public MDInput InputState { get; protected set; } = new MDInput();
 }

@@ -14,6 +14,19 @@ using static Godot.StringExtensions;
  */
 public static class MDCommands
 {
+    // Small struct containing the info to call a command
+    private struct CommandInfo
+    {
+        public string HelpText;
+
+        // TODO - Make weak
+        public object Instance;
+
+        public MethodInfo Method;
+
+        public object[] DefaultArgs;
+    }
+
     private const string LOG_CAT = "MDCommands";
     private const string HISTORY_FILE = "CommandHistory";
     private const string HISTORY_DIR = "user://cmd/";
@@ -279,18 +292,5 @@ public static class MDCommands
         }
 
         return true;
-    }
-
-    // Small struct containing the info to call a command
-    private struct CommandInfo
-    {
-        public string HelpText;
-
-        // TODO - Make weak
-        public object Instance;
-
-        public MethodInfo Method;
-
-        public object[] DefaultArgs;
     }
 }

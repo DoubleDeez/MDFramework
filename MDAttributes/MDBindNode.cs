@@ -7,7 +7,9 @@ using Godot;
 public class MDBindNode : Attribute
 {
     private const string LOG_CAT = "LogBindNode";
-
+    
+    private string Path;
+    
     // If PathToNode is left empty, we'll search the children based on the the member name
     public MDBindNode(string PathToNode = "")
     {
@@ -18,8 +20,6 @@ public class MDBindNode : Attribute
     {
         return Path == "" ? DefaultPath : Path;
     }
-
-    private string Path;
 
     public static void PopulateBindNodes(Node Instance)
     {

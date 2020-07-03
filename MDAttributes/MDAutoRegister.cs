@@ -10,10 +10,10 @@ public enum MDAutoRegisterType
 [AttributeUsage(AttributeTargets.Class)]
 public class MDAutoRegister : Attribute
 {
+    public MDAutoRegisterType RegisterType { private set; get; }
     public MDAutoRegister(MDAutoRegisterType InRegisterType = MDAutoRegisterType.Production)
     {
         RegisterType = InRegisterType;
     }
 
-    public MDAutoRegisterType RegisterType { private set; get; }
 }

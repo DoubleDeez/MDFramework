@@ -18,13 +18,13 @@ public enum MDReplicatedType
 [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
 public class MDReplicated : Attribute
 {
+    public MDReliability Reliability { private set; get; }
+    public MDReplicatedType ReplicatedType { private set; get; }
+
     public MDReplicated(MDReliability InReliability = MDReliability.Reliable,
         MDReplicatedType RepType = MDReplicatedType.OnChange)
     {
         Reliability = InReliability;
         ReplicatedType = RepType;
     }
-
-    public MDReliability Reliability { private set; get; }
-    public MDReplicatedType ReplicatedType { private set; get; }
 }

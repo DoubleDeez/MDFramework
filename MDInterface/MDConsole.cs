@@ -10,6 +10,20 @@ public class MDConsole : Control
 {
     private const int HISTORY_DISPLAY_COUNT = 10;
 
+    private bool IsDisplayingHistory = false;
+    private bool IsDisplayingHelp = false;
+    private int CmdHistoryIndex = -1;
+    private int CmdHelpIndex = -1;
+    private string StoredCommand = "";
+
+    private List<string> CommandHistory;
+    private List<string> FilteredCommands;
+    private List<string> CommandList;
+    private LineEdit ConsoleInput;
+    private VBoxContainer ConsoleBox;
+    private VBoxContainer HistoryHelpBox;
+    private PanelContainer HistoryHelpContainer;
+
     public override void _Ready()
     {
         base._Ready();
@@ -271,17 +285,4 @@ public class MDConsole : Control
         ConsoleInput.Text = Command;
         ConsoleInput.CaretPosition = ConsoleInput.Text.Length;
     }
-
-    private LineEdit ConsoleInput;
-    private List<string> CommandHistory;
-    private List<string> FilteredCommands;
-    private List<string> CommandList;
-    private VBoxContainer ConsoleBox;
-    private VBoxContainer HistoryHelpBox;
-    private PanelContainer HistoryHelpContainer;
-    private int CmdHistoryIndex = -1;
-    private int CmdHelpIndex = -1;
-    private bool IsDisplayingHistory = false;
-    private bool IsDisplayingHelp = false;
-    private string StoredCommand = "";
 }
