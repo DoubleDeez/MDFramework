@@ -4,10 +4,18 @@ using System.Diagnostics;
 
 public class MDProfiler : IDisposable
 {
-    private static HashSet<string> EnabledProfiles;
+    private const string LOG_ARG = "logprofile";
+    private const string LOG_CAT = "LogProfiler";
+
+    private static HashSet<string> _enabledProfiles;
+
+    private string ProfileName;
+    private string LowerProfileName;
+    private Stopwatch Timer = new Stopwatch();
+
     public static void Initialize()
     {
-        EnabledProfiles = new HashSet<string>();
+        _enabledProfiles = new HashSet<string>();
         MDCommands.RegisterCommandAttributes(typeof(MDProfiler));
     }
 
@@ -15,9 +23,9 @@ public class MDProfiler : IDisposable
     public static void EnableProfile(string ProfileName)
     {
         string LowerProfileName = ProfileName.ToLower();
-        if (EnabledProfiles.Contains(LowerProfileName) == false)
+        if (_enabledProfiles.Contains(LowerProfileName) == false)
         {
-            EnabledProfiles.Add(LowerProfileName);
+            _enabledProfiles.Add(LowerProfileName);
         }
     }
 
@@ -25,9 +33,9 @@ public class MDProfiler : IDisposable
     public static void DisableProfile(string ProfileName)
     {
         string LowerProfileName = ProfileName.ToLower();
-        if (EnabledProfiles.Contains(LowerProfileName))
+        if (_enabledProfiles.Contains(LowerProfileName))
         {
-            EnabledProfiles.Remove(LowerProfileName);
+            _enabledProfiles.Remove(LowerProfileName);
         }
     }
 
@@ -35,18 +43,14 @@ public class MDProfiler : IDisposable
     public static void ToggleProfile(string ProfileName)
     {
         string LowerProfileName = ProfileName.ToLower();
-        if (EnabledProfiles.Contains(LowerProfileName))
+        if (_enabledProfiles.Contains(LowerProfileName))
         {
-            EnabledProfiles.Remove(LowerProfileName);
+            _enabledProfiles.Remove(LowerProfileName);
         }
         else
         {
-            EnabledProfiles.Add(LowerProfileName);
+            _enabledProfiles.Add(LowerProfileName);
         }
-    }
-
-    private MDProfiler()
-    {
     }
 
     public MDProfiler(string InProfileName)
@@ -64,15 +68,9 @@ public class MDProfiler : IDisposable
     public void Dispose()
     {
         Timer.Stop();
-        if (EnabledProfiles.Contains(LowerProfileName) || MDArguments.HasArg(LOG_ARG))
+        if (_enabledProfiles.Contains(LowerProfileName) || MDArguments.HasArg(LOG_ARG))
         {
             MDLog.Info(LOG_CAT, "Profiling [{0}] took {1}us", ProfileName, GetMicroSeconds());
         }
     }
-
-    private const string LOG_ARG = "logprofile";
-    private const string LOG_CAT = "LogProfiler";
-    private Stopwatch Timer = new Stopwatch();
-    private string ProfileName;
-    private string LowerProfileName;
 }

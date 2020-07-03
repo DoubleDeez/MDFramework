@@ -35,14 +35,11 @@ public class MDGameInstance : Node
     {
         base._Notification(NotificationType);
 
-        switch(NotificationType)
+        switch (NotificationType)
         {
             case MainLoop.NotificationWmQuitRequest:
                 MDLog.Info(LOG_CAT, "Quit notification received.");
-                if (GameSession != null)
-                {
-                    GameSession.Disconnect();
-                }
+                GameSession?.Disconnect();
                 break;
         }
     }
@@ -97,15 +94,15 @@ public class MDGameInstance : Node
     // Travels the tree and registers the existing nodes
     private void RegisterNodeAndChildren(Node RootNode)
     {
-        if (RootNode != null)
+        if (RootNode == null)
         {
-            OnNodeAdded_Internal(RootNode);
-
-            int ChildCount = RootNode.GetChildCount();
-            for (int i = 0; i < ChildCount; ++i)
-            {
-                RegisterNodeAndChildren(RootNode.GetChild(i));
-            }
+            return;
+        }
+        OnNodeAdded_Internal(RootNode);
+        int ChildCount = RootNode.GetChildCount();
+        for (int i = 0; i < ChildCount; ++i)
+        {
+            RegisterNodeAndChildren(RootNode.GetChild(i));
         }
     }
 
@@ -124,14 +121,15 @@ public class MDGameInstance : Node
     private void OnNodeRemoved_Internal(Godot.Object NodeObj)
     {
         Node RemovedNode = NodeObj as Node;
-        if (RemovedNode != null)
+        if (RemovedNode == null)
         {
-            UnregisterNode(RemovedNode);
-            OnNodeRemoved(RemovedNode);
-            if (GameSession != null && GameSession != RemovedNode)
-            {
-                GameSession.OnNodeRemoved(RemovedNode);
-            }
+            return;
+        }
+        UnregisterNode(RemovedNode);
+        OnNodeRemoved(RemovedNode);
+        if (GameSession != null && GameSession != RemovedNode)
+        {
+            GameSession.OnNodeRemoved(RemovedNode);
         }
     }
 
@@ -139,7 +137,8 @@ public class MDGameInstance : Node
     private void RegisterNewNode(Node Instance)
     {
         MDAutoRegister AutoRegAtr = MDStatics.FindClassAttribute<MDAutoRegister>(Instance.GetType());
-        if ((RequireAutoRegister() && AutoRegAtr == null) || (AutoRegAtr != null && AutoRegAtr.RegisterType == MDAutoRegisterType.None))
+        if (RequireAutoRegister() && AutoRegAtr == null ||
+            AutoRegAtr != null && AutoRegAtr.RegisterType == MDAutoRegisterType.None)
         {
             return;
         }
@@ -210,7 +209,7 @@ public class MDGameInstance : Node
     }
 
     /// <summary>Creates an instance of the type based on the base class T</summary>
-    private T CreateTypeInstance<T>(Type Type) where T: class
+    private T CreateTypeInstance<T>(Type Type) where T : class
     {
         if (!MDStatics.IsSameOrSubclass(Type, typeof(T)))
         {
@@ -226,8 +225,11 @@ public class MDGameInstance : Node
     {
         if (InterfaceManager == null)
         {
-            InterfaceManager = new MDInterfaceManager();
-            InterfaceManager.Name = "InterfaceManager";
+            InterfaceManager = new MDInterfaceManager
+            {
+                Name = "InterfaceManager"
+            };
+
             this.AddNodeToRoot(InterfaceManager, true);
         }
     }
@@ -235,11 +237,11 @@ public class MDGameInstance : Node
     /// <summary>Override to change when the console is available (Default: Only in debug mode)</summary>
     public virtual bool IsConsoleAvailable()
     {
-        #if DEBUG
+#if DEBUG
         return true;
-        #else
+#else
         return false;
-        #endif
+#endif
     }
 
     /// <summary>Override to change when the on screen debug is available (Default: Only in debug mode)</summary>
@@ -277,7 +279,7 @@ public class MDGameInstance : Node
     ///<summary>Get the key used to open the console. (Default: KeyList.QuoteLeft)</summary>
     public virtual int GetConsoleKey()
     {
-        return (int)KeyList.Quoteleft;
+        return (int) KeyList.Quoteleft;
     }
 
     ///<summary>Get the key used to open the on screen debug. (Default: KeyList.F12)</summary>
@@ -292,26 +294,26 @@ public class MDGameInstance : Node
         return true;
     }
 
-    ///<summary>Get the directory for MDLog logfiles
+    ///<summary>Get the directory for MDLog log files
     ///<para>Official documentation for the user path: https://docs.godotengine.org/en/stable/tutorials/io/data_paths.html</para></summary>
-    public virtual String GetLogDirectory()
+    public virtual string GetLogDirectory()
     {
         return "user://logs/";
     }
 
     ///<summary>If true we will keep a reference to all loaded scenes around so we don't need to load the resource from disc every time</summary>
-    public virtual bool UseSceneBuffer(String NodePath)
+    public virtual bool UseSceneBuffer(string NodePath)
     {
         return true;
     }
 
-    public MDGameSession GameSession {get; private set;}
+    public MDGameSession GameSession { get; private set; }
 
     public MDReplicator Replicator {get; private set;}
-
-    public MDGameSynchronizer GameSynchronizer {get; private set;}
+    
+    public MDGameSynchronizer GameSynchronizer { get; private set; }
     public MDGameClock GameClock {get; private set;}
-    public MDInterfaceManager InterfaceManager {get; private set;}
+    public MDInterfaceManager InterfaceManager { get; private set; }
 
     // TODO - There should be an InputState for each local player
     public MDInput InputState { get; protected set; } = new MDInput();

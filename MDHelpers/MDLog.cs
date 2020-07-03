@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using static Godot.StringExtensions;
 using Directory = Godot.Directory;
 using GDError = Godot.Error;
 using File = Godot.File;
@@ -20,10 +19,10 @@ public enum MDLogLevel
 public struct MDLogProperties
 {
     // Minimum LogLevel required to write this log to file
-    public MDLogLevel FileLogLevel {get; set;}
+    public MDLogLevel FileLogLevel { get; set; }
 
     // Minimum LogLevel required to write this log to the console
-    public MDLogLevel ConsoleLogLevel {get; set;}
+    public MDLogLevel ConsoleLogLevel { get; set; }
 
     public MDLogProperties(MDLogLevel LogLevel)
     {
@@ -49,8 +48,12 @@ public static class MDLog
     private const string EXT_LOG = ".log";
     private const string LOG_CAT = "Log";
 
+    private static string FullLogFilePath;
+    private static File LogFile;
+    private static Dictionary<string, MDLogProperties> LogProperties;
+
     // Initialize internal data and set the directory to store log files
-    public static void Initialize(String LogDir)
+    public static void Initialize(string LogDir)
     {
         LogProperties = new Dictionary<string, MDLogProperties>();
         InitLogFile(LogDir);
@@ -58,7 +61,7 @@ public static class MDLog
     }
 
     // Logs the message (supports formatting) in accordance with the LogProperties set for the specified log category
-    public static void Log(string CategoryName, MDLogLevel LogLevel, string Message, params object[] args)
+    public static void Log(string CategoryName, MDLogLevel LogLevel, string Message, params object[] Args)
     {
         // TODO - Get calling method's name automatically: https://stackoverflow.com/a/5443690
         bool LogFile = true;
@@ -74,7 +77,7 @@ public static class MDLog
         {
             int PeerID = MDStatics.GetPeerId();
             MDNetMode NetMode = MDStatics.GetNetMode();
-            string ClientID = "PEER " + PeerID.ToString();
+            string ClientID = "PEER " + PeerID;
             if (NetMode == MDNetMode.Standalone)
             {
                 ClientID = "STANDALONE";
@@ -85,10 +88,10 @@ public static class MDLog
             }
 
             string FullMessage = "[" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + "]" +
-                "[" + (Godot.Engine.GetIdleFrames() % 1000).ToString("D3") + "]" +
-                "[" + ClientID + "] " +
-                "[" + CategoryName + "::" + LogLevel.ToString() + "] " +
-                string.Format(Message, args);
+                                 "[" + (Godot.Engine.GetIdleFrames() % 1000).ToString("D3") + "]" +
+                                 "[" + ClientID + "] " +
+                                 "[" + CategoryName + "::" + LogLevel + "] " +
+                                 string.Format(Message, Args);
 
             if (LogFile)
             {
@@ -108,95 +111,96 @@ public static class MDLog
     }
 
     // Calls Log with level == force
-    public static void Force(string CategoryName, string Message, params object[] args)
+    public static void Force(string CategoryName, string Message, params object[] Args)
     {
-        Log(CategoryName, MDLogLevel.Force, Message, args);
+        Log(CategoryName, MDLogLevel.Force, Message, Args);
     }
 
     // Calls Log with level == fatal
-    public static void Fatal(string CategoryName, string Message, params object[] args)
+    public static void Fatal(string CategoryName, string Message, params object[] Args)
     {
-        Log(CategoryName, MDLogLevel.Fatal, Message, args);
+        Log(CategoryName, MDLogLevel.Fatal, Message, Args);
     }
 
     // Calls Log with level == error
-    public static void Error(string CategoryName, string Message, params object[] args)
+    public static void Error(string CategoryName, string Message, params object[] Args)
     {
-        Log(CategoryName, MDLogLevel.Error, Message, args);
+        Log(CategoryName, MDLogLevel.Error, Message, Args);
     }
 
     // Calls Log with level == warn
-    public static void Warn(string CategoryName, string Message, params object[] args)
+    public static void Warn(string CategoryName, string Message, params object[] Args)
     {
-        Log(CategoryName, MDLogLevel.Warn, Message, args);
+        Log(CategoryName, MDLogLevel.Warn, Message, Args);
     }
 
     // Calls Log with level == info
-    public static void Info(string CategoryName, string Message, params object[] args)
+    public static void Info(string CategoryName, string Message, params object[] Args)
     {
-        Log(CategoryName, MDLogLevel.Info, Message, args);
+        Log(CategoryName, MDLogLevel.Info, Message, Args);
     }
 
     // Calls Log with level == debug
-    public static void Debug(string CategoryName, string Message, params object[] args)
+    public static void Debug(string CategoryName, string Message, params object[] Args)
     {
-        Log(CategoryName, MDLogLevel.Debug, Message, args);
+        Log(CategoryName, MDLogLevel.Debug, Message, Args);
     }
 
     // Calls Log with level == trace
-    public static void Trace(string CategoryName, string Message, params object[] args)
+    public static void Trace(string CategoryName, string Message, params object[] Args)
     {
-        Log(CategoryName, MDLogLevel.Trace, Message, args);
+        Log(CategoryName, MDLogLevel.Trace, Message, Args);
     }
 
     // Calls Log with level == force
-    public static void CForce(bool Condition, string CategoryName, string Message, params object[] args)
+    public static void CForce(bool Condition, string CategoryName, string Message, params object[] Args)
     {
-        CLog(Condition, CategoryName, MDLogLevel.Force, Message, args);
+        CLog(Condition, CategoryName, MDLogLevel.Force, Message, Args);
     }
 
     // Calls Log with level == fatal
-    public static void CFatal(bool Condition, string CategoryName, string Message, params object[] args)
+    public static void CFatal(bool Condition, string CategoryName, string Message, params object[] Args)
     {
-        CLog(Condition, CategoryName, MDLogLevel.Fatal, Message, args);
+        CLog(Condition, CategoryName, MDLogLevel.Fatal, Message, Args);
     }
 
     // Calls Log with level == error
-    public static void CError(bool Condition, string CategoryName, string Message, params object[] args)
+    public static void CError(bool Condition, string CategoryName, string Message, params object[] Args)
     {
-        CLog(Condition, CategoryName, MDLogLevel.Error, Message, args);
+        CLog(Condition, CategoryName, MDLogLevel.Error, Message, Args);
     }
 
     // Calls Log with level == warn
-    public static void CWarn(bool Condition, string CategoryName, string Message, params object[] args)
+    public static void CWarn(bool Condition, string CategoryName, string Message, params object[] Args)
     {
-        CLog(Condition, CategoryName, MDLogLevel.Warn, Message, args);
+        CLog(Condition, CategoryName, MDLogLevel.Warn, Message, Args);
     }
 
     // Calls Log with level == info
-    public static void CInfo(bool Condition, string CategoryName, string Message, params object[] args)
+    public static void CInfo(bool Condition, string CategoryName, string Message, params object[] Args)
     {
-        CLog(Condition, CategoryName, MDLogLevel.Info, Message, args);
+        CLog(Condition, CategoryName, MDLogLevel.Info, Message, Args);
     }
 
     // Calls Log with level == debug
-    public static void CDebug(bool Condition, string CategoryName, string Message, params object[] args)
+    public static void CDebug(bool Condition, string CategoryName, string Message, params object[] Args)
     {
-        CLog(Condition, CategoryName, MDLogLevel.Debug, Message, args);
+        CLog(Condition, CategoryName, MDLogLevel.Debug, Message, Args);
     }
 
     // Calls Log with level == trace
-    public static void CTrace(bool Condition, string CategoryName, string Message, params object[] args)
+    public static void CTrace(bool Condition, string CategoryName, string Message, params object[] Args)
     {
-        CLog(Condition, CategoryName, MDLogLevel.Trace, Message, args);
+        CLog(Condition, CategoryName, MDLogLevel.Trace, Message, Args);
     }
 
     // Sames as Log() except it only logs if Condition == true
-    public static void CLog(bool Condition, string CategoryName, MDLogLevel LogLevel, string Message, params object[] args)
+    public static void CLog(bool Condition, string CategoryName, MDLogLevel LogLevel, string Message,
+        params object[] Args)
     {
         if (Condition)
         {
-            Log(CategoryName, LogLevel, Message, args);
+            Log(CategoryName, LogLevel, Message, Args);
         }
     }
 
@@ -206,7 +210,7 @@ public static class MDLog
         LogProperties[CategoryName] = LogProps;
     }
 
-    [MDCommand()]
+    [MDCommand]
     public static void SetLogLevel(string CategoryName, MDLogLevel LogLevel)
     {
         LogProperties[CategoryName] = new MDLogProperties(LogLevel);
@@ -227,7 +231,7 @@ public static class MDLog
     }
 
     // Creates our time-stamped log file and opens it for writing
-    private static void InitLogFile(String LogDir)
+    private static void InitLogFile(string LogDir)
     {
         FullLogFilePath = LogDir + DateTime.Now.ToString("yyyy.MM.dd-HH.mm.ss") + EXT_LOG;
         if (CreateLogDirectoryIfNotExists(LogDir))
@@ -271,8 +275,4 @@ public static class MDLog
             Debugger.Break();
         }
     }
-
-    private static string FullLogFilePath;
-    private static File LogFile;
-    private static Dictionary<string, MDLogProperties> LogProperties;
 }

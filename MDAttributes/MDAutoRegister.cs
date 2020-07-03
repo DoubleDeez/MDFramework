@@ -14,6 +14,6 @@ public class MDAutoRegister : Attribute
     {
         RegisterType = InRegisterType;
     }
-    
-    public MDAutoRegisterType RegisterType {private set; get;}
+
+    public MDAutoRegisterType RegisterType { private set; get; }
 }

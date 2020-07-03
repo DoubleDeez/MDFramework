@@ -43,8 +43,10 @@ public class MDInterfaceManager : CanvasLayer
         MDConsole Console = FindNode(ConsoleName, true, false) as MDConsole;
         if (Console == null)
         {
-            Console = new MDConsole();
-            Console.Name = ConsoleName;
+            Console = new MDConsole
+            {
+                Name = ConsoleName
+            };
             AddChild(Console);
         }
         else

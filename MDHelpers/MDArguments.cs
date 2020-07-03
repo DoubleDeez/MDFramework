@@ -12,16 +12,19 @@ public static class MDArguments
     private const string ARG_PREFIX = "-";
     private const string LOG_CAT = "MDArgs";
 
+    // Maps arguments to their values in PopulateArgs()
+    private static Dictionary<string, string> _args;
+
     // Does this argument exist?
     public static bool HasArg(string ArgKey)
     {
-        return Args.ContainsKey(ArgKey);
+        return _args.ContainsKey(ArgKey);
     }
 
     // Empty string if not found
     public static string GetArg(string ArgKey)
     {
-        return HasArg(ArgKey) ? Args[ArgKey] : "";
+        return HasArg(ArgKey) ? _args[ArgKey] : "";
     }
 
     // -1 if not found
@@ -43,19 +46,19 @@ public static class MDArguments
      */
     public static void PopulateArgs()
     {
-        if (Args != null)
+        if (_args != null)
         {
             // We already parsed args
             return;
         }
 
-        string[] ArgArray = System.Environment.GetCommandLineArgs();
-        MDLog.Log(LOG_CAT, MDLogLevel.Info, "Populating Arguments: " + String.Join(" ", ArgArray));
+        string[] ArgArray = Environment.GetCommandLineArgs();
+        MDLog.Log(LOG_CAT, MDLogLevel.Info, "Populating Arguments: " + string.Join(" ", ArgArray));
 
-        Args = new Dictionary<string, string>();
-        for (int i = 0; i < ArgArray.Length; ++i)
+        _args = new Dictionary<string, string>();
+        foreach (string Arg in ArgArray)
         {
-            string ThisArg = ArgArray[i].ToLower();
+            string ThisArg = Arg.ToLower();
             if (!ThisArg.BeginsWith(ARG_PREFIX))
             {
                 // TODO - Log non prefix arg or change to support non-prefixed?
@@ -70,15 +73,12 @@ public static class MDArguments
             {
                 string ArgKey = NoPrefixArg.Substring(0, EqualIndex);
                 string ArgVal = NoPrefixArg.Substring(EqualIndex + 1);
-                Args.Add(ArgKey, ArgVal);
+                _args.Add(ArgKey, ArgVal);
             }
             else
             {
-                Args.Add(NoPrefixArg, "");
+                _args.Add(NoPrefixArg, "");
             }
         }
     }
-
-    // Maps arguments to their values in PopulateArgs()
-    private static Dictionary<string, string> Args;
 }

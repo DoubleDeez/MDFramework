@@ -18,6 +18,8 @@ public static class MDCommands
     private const string HISTORY_FILE = "CommandHistory";
     private const string HISTORY_DIR = "user://cmd/";
 
+    private static Dictionary<string, CommandInfo> _commandMap;
+
     // Registers all the methods marked with an MDCommand
     public static void RegisterCommandAttributes(object Instance)
     {
@@ -70,11 +72,12 @@ public static class MDCommands
         foreach (ParameterInfo ParamInfo in Method.GetParameters())
         {
             string ParamString = ParamInfo.ToString();
-            int DotIndex = ParamString.LastIndexOf(".");
+            int DotIndex = ParamString.LastIndexOf(".", StringComparison.Ordinal);
             if (DotIndex >= 0)
             {
                 ParamString = ParamString.Substring(DotIndex + 1);
             }
+
             HelpText += " [" + ParamString + "]";
         }
 
@@ -82,20 +85,21 @@ public static class MDCommands
     }
 
     // Register a command, with custom help text that can be displayed in the console
-    public static void RegisterCommand(object Instance, MethodInfo Method, string HelpText, object[] DefaultParams = null)
+    public static void RegisterCommand(object Instance, MethodInfo Method, string HelpText,
+        object[] DefaultParams = null)
     {
         if (Method == null)
         {
             return;
         }
 
-        if (CommandMap == null)
+        if (_commandMap == null)
         {
-            CommandMap = new Dictionary<string, CommandInfo>();
+            _commandMap = new Dictionary<string, CommandInfo>();
         }
 
         string MethodName = Method.Name.ToLower();
-        if (CommandMap.ContainsKey(MethodName))
+        if (_commandMap.ContainsKey(MethodName))
         {
             MDLog.Warn(LOG_CAT, "Command with name [{0}] is already registered, it will be replaced", Method.Name);
         }
@@ -106,7 +110,7 @@ public static class MDCommands
         NewCommand.Method = Method;
         NewCommand.DefaultArgs = DefaultParams;
 
-        CommandMap[MethodName] = NewCommand;
+        _commandMap[MethodName] = NewCommand;
     }
 
     // Unregister a command
@@ -117,22 +121,22 @@ public static class MDCommands
             return;
         }
 
-        if (CommandMap == null)
+        if (_commandMap == null)
         {
-            CommandMap = new Dictionary<string, CommandInfo>();
+            _commandMap = new Dictionary<string, CommandInfo>();
             return;
         }
 
         string MethodName = Method.Name.ToLower();
-        if (!CommandMap.ContainsKey(MethodName))
+        if (!_commandMap.ContainsKey(MethodName))
         {
             return;
         }
 
-        CommandInfo Command = CommandMap[MethodName];
+        CommandInfo Command = _commandMap[MethodName];
         if (Command.Instance == Instance)
         {
-            CommandMap.Remove(MethodName);
+            _commandMap.Remove(MethodName);
         }
     }
 
@@ -150,13 +154,13 @@ public static class MDCommands
         AddCommandToHistory(Command);
 
         string CmdName = Args[0].ToLower();
-        if (!CommandMap.ContainsKey(CmdName))
+        if (!_commandMap.ContainsKey(CmdName))
         {
             MDLog.Error(LOG_CAT, "Command not found: [{0}]", Command);
             return false;
         }
 
-        CommandInfo CmdInfo = CommandMap[CmdName];
+        CommandInfo CmdInfo = _commandMap[CmdName];
         ParameterInfo[] Params = CmdInfo.Method.GetParameters();
         object[] ParamArray;
 
@@ -211,7 +215,7 @@ public static class MDCommands
         CmdFile.Close();
 
         List<string> CommandHistory = new List<string>(HistoryText.Split('\n'));
-        CommandHistory = CommandHistory.Where(s => !string.IsNullOrWhiteSpace(s)).ToList();
+        CommandHistory = CommandHistory.Where(Command => !string.IsNullOrWhiteSpace(Command)).ToList();
         CommandHistory.Reverse();
         return CommandHistory;
     }
@@ -236,19 +240,14 @@ public static class MDCommands
         CmdFile.Close();
     }
 
-    public static List<String> GetCommandList()
+    public static List<string> GetCommandList()
     {
-        return CommandMap.Keys.ToList();
+        return _commandMap.Keys.ToList();
     }
 
     public static string GetHelpText(string Command)
     {
-        if (CommandMap.ContainsKey(Command))
-        {
-            return CommandMap[Command].HelpText;
-        }
-
-        return "";
+        return _commandMap.ContainsKey(Command) ? _commandMap[Command].HelpText : "";
     }
 
     private static File GetHistoryFile()
@@ -273,19 +272,17 @@ public static class MDCommands
 
     private static bool CreateHistoryDirectoryIfNotExists(string FileDir)
     {
-        Directory dir = new Directory();
-        if (!dir.DirExists(FileDir))
+        Directory Dir = new Directory();
+        if (!Dir.DirExists(FileDir))
         {
-            return dir.MakeDirRecursive(FileDir) == GDError.Ok;
+            return Dir.MakeDirRecursive(FileDir) == GDError.Ok;
         }
 
         return true;
     }
 
-    private static Dictionary<string, CommandInfo> CommandMap;
-
     // Small struct containing the info to call a command
-    struct CommandInfo
+    private struct CommandInfo
     {
         public string HelpText;
 

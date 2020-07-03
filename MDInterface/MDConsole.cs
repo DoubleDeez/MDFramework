@@ -9,10 +9,11 @@ using System.Collections.Generic;
 public class MDConsole : Control
 {
     private const int HISTORY_DISPLAY_COUNT = 10;
+
     public override void _Ready()
     {
         base._Ready();
-        
+
         this.SetAnchor(0, 0, 1, 1);
         this.SetMargin(0, 0, 0, 0);
 
@@ -26,42 +27,40 @@ public class MDConsole : Control
 
     public override void _Input(InputEvent InEvent)
     {
-        if (InEvent is InputEventKey EventKey)
+        if (!(InEvent is InputEventKey EventKey)) return;
+        if (!EventKey.Pressed || EventKey.Echo) return;
+        if (EventKey.Scancode == (int) KeyList.Up)
         {
-            if (EventKey.Pressed && !EventKey.Echo)
+            if (IsDisplayingHelp && ConsoleInput.Text.Empty() == false)
             {
-                if (EventKey.Scancode == (int)KeyList.Up)
-                {
-                    if (IsDisplayingHelp && ConsoleInput.Text.Empty() == false)
-                    {
-                        NavigateHelp(1);
-                    }
-                    else
-                    {
-                        NavigateHistory(1);
-                    }
-                    this.SetInputHandled();
-                }
-                else if (EventKey.Scancode == (int)KeyList.Down)
-                {
-                    if (IsDisplayingHelp && ConsoleInput.Text.Empty() == false)
-                    {
-                        NavigateHelp(-1);
-                    }
-                    else
-                    {
-                        NavigateHistory(-1);
-                    }
-                    this.SetInputHandled();
-                }
-                else if (EventKey.Scancode == (int)KeyList.Tab)
-                {
-                    if (IsDisplayingHelp)
-                    {
-                        HandleTabPressed();
-                        this.SetInputHandled();
-                    }
-                }
+                NavigateHelp(1);
+            }
+            else
+            {
+                NavigateHistory(1);
+            }
+
+            this.SetInputHandled();
+        }
+        else if (EventKey.Scancode == (int) KeyList.Down)
+        {
+            if (IsDisplayingHelp && ConsoleInput.Text.Empty() == false)
+            {
+                NavigateHelp(-1);
+            }
+            else
+            {
+                NavigateHistory(-1);
+            }
+
+            this.SetInputHandled();
+        }
+        else if (EventKey.Scancode == (int) KeyList.Tab)
+        {
+            if (IsDisplayingHelp)
+            {
+                HandleTabPressed();
+                this.SetInputHandled();
             }
         }
     }
@@ -195,6 +194,7 @@ public class MDConsole : Control
         {
             MDCommands.InvokeCommand(Command);
         }
+
         Close();
     }
 
@@ -247,13 +247,13 @@ public class MDConsole : Control
             HelpLabel.Text = UseHelpText ? MDCommands.GetHelpText(StringList[StringIndex]) : StringList[StringIndex];
             HelpLabel.Visible = true;
         }
-        
+
         // Create new ones as needed
         for (; i < HelpCmdCount; ++i)
         {
             int StringIndex = HelpCmdCount - i - 1;
             Label HelpLabel = new Label();
-            HelpLabel.Text = UseHelpText ? MDCommands.GetHelpText(StringList[StringIndex]) : StringList[StringIndex]; 
+            HelpLabel.Text = UseHelpText ? MDCommands.GetHelpText(StringList[StringIndex]) : StringList[StringIndex];
             HistoryHelpBox.AddChild(HelpLabel);
         }
 

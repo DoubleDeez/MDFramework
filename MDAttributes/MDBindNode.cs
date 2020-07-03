@@ -27,39 +27,41 @@ public class MDBindNode : Attribute
         foreach (MemberInfo Member in Members)
         {
             MDBindNode BindAttr = Member.GetCustomAttribute(typeof(MDBindNode)) as MDBindNode;
-            if (BindAttr != null)
+            if (BindAttr == null)
+                continue;
+
+            Type MemberType = null;
+            FieldInfo Field = Member as FieldInfo;
+            PropertyInfo Property = Member as PropertyInfo;
+            if (Field != null)
             {
-                Type MemberType = null;
-                FieldInfo Field = Member as FieldInfo;
-                PropertyInfo Property = Member as PropertyInfo;
-                if (Field != null)
-                {
-                    MemberType = Field.FieldType;
-                }
-                else if (Property != null)
-                {
-                    MemberType = Property.PropertyType;
-                }
+                MemberType = Field.FieldType;
+            }
+            else if (Property != null)
+            {
+                MemberType = Property.PropertyType;
+            }
 
-                if (!MDStatics.IsSameOrSubclass(MemberType, typeof(Node)))
-                {
-                    MDLog.Error(LOG_CAT, "Not Node-Type field [{0}] on Node {1} with Type [{2}] was marked with [MDBindNode()]", Member.Name, Instance.Name, Instance.GetType().Name);
-                    continue;
-                }
+            if (!MDStatics.IsSameOrSubclass(MemberType, typeof(Node)))
+            {
+                MDLog.Error(LOG_CAT,
+                    "Not Node-Type field [{0}] on Node {1} with Type [{2}] was marked with [MDBindNode()]",
+                    Member.Name, Instance.Name, Instance.GetType().Name);
+                continue;
+            }
 
-                string PathToNode = BindAttr.GetNodePath(Member.Name);
-                Node BoundNode = FindNode(Instance, PathToNode);
-                if (BoundNode != null)
-                {
-                    if (Field != null)
-                    {
-                        Field.SetValue(Instance, BoundNode);
-                    }
-                    else if (Property != null)
-                    {
-                        Property.SetValue(Instance, BoundNode);
-                    }
-                }
+            string PathToNode = BindAttr.GetNodePath(Member.Name);
+            Node BoundNode = FindNode(Instance, PathToNode);
+            if (BoundNode == null)
+                continue;
+
+            if (Field != null)
+            {
+                Field.SetValue(Instance, BoundNode);
+            }
+            else if (Property != null)
+            {
+                Property.SetValue(Instance, BoundNode);
             }
         }
     }

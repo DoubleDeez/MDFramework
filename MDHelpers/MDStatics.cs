@@ -1,6 +1,7 @@
 using Godot;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 
 public static class MDStatics
@@ -41,7 +42,7 @@ public static class MDStatics
         }
 
         T[] result = new T[NewLength];
-        System.Array.Copy(data, StartIndex, result, 0, NewLength);
+        Array.Copy(data, StartIndex, result, 0, NewLength);
         return result;
     }
 
@@ -56,19 +57,19 @@ public static class MDStatics
     {
         // Count the total number of bytes
         int TotalBytes = 0;
-        for (int i = 0; i < ByteArrays.Length; ++i)
+        foreach (var ByteArray in ByteArrays)
         {
-            TotalBytes += ByteArrays[i].Length;
+            TotalBytes += ByteArray.Length;
         }
 
         // Copy all the bytes into the new array
         byte[] JoinedArray = new byte[TotalBytes];
 
         int NumBytesCopied = 0;
-        for (int i = 0; i < ByteArrays.Length; ++i)
+        foreach (var ByteArray in ByteArrays)
         {
-            ByteArrays[i].CopyTo(JoinedArray, NumBytesCopied);
-            NumBytesCopied += ByteArrays[i].Length;
+            ByteArray.CopyTo(JoinedArray, NumBytesCopied);
+            NumBytesCopied += ByteArray.Length;
         }
 
         return JoinedArray;
@@ -134,7 +135,7 @@ public static class MDStatics
     // Gets the SceneTree from the GameInstance
     public static SceneTree GetTree()
     {
-        return (GI != null && GI.IsInsideTree()) ? GI.GetTree() : null;
+        return GI != null && GI.IsInsideTree() ? GI.GetTree() : null;
     }
 
     // Returns true if the types are equal or is SubClass is a a subclass of Base
@@ -170,7 +171,7 @@ public static class MDStatics
     {
         List<MemberInfo> Members = new List<MemberInfo>();
         Type NodeType = CurNode.GetType();
-        while (NodeType != typeof(Node))
+        while (NodeType != null && NodeType != typeof(Node))
         {
             Members.AddRange(NodeType.GetFields(BindFlagsAllMembers));
             Members.AddRange(NodeType.GetProperties(BindFlagsAllMembers));
@@ -183,11 +184,10 @@ public static class MDStatics
             bool IsUnique = true;
             foreach(MemberInfo DeDupedMember in DeDupedMembers)
             {
-                if (DeDupedMember.DeclaringType == Member.DeclaringType && DeDupedMember.Name == Member.Name)
-                {
-                    IsUnique = false;
-                    break;
-                }
+                if (DeDupedMember.DeclaringType != Member.DeclaringType || DeDupedMember.Name != Member.Name) 
+                    continue;
+                IsUnique = false;
+                break;
             }
 
             if (IsUnique)
