@@ -10,7 +10,8 @@ public class MDReplicator : Node
     {
         ProcessWhilePaused,
         GroupName,
-        ReplicatedMemberType
+        ReplicatedMemberType,
+        ListConverter
     }
     private List<ReplicatedNode> NodeList = new List<ReplicatedNode>();
     private Queue<NewPlayer> JIPPlayers = new Queue<NewPlayer>();

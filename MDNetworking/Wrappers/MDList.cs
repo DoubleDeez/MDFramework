@@ -31,11 +31,11 @@ public class MDList<T>
 
     private uint ListId = 0;
 
-    private IMDListDataConverter<T> DataConverter;
+    private IMDListDataConverter DataConverter;
 
     private MDReplicator Replicator;
 
-    public MDList(IMDListDataConverter<T> DataConverter, uint ListId, MDReplicator Replicator)
+    public MDList(IMDListDataConverter DataConverter, uint ListId, MDReplicator Replicator)
     {
         MDLog.AddLogCategoryProperties(LOG_CAT, new MDLogProperties(MDLogLevel.Info));
         this.DataConverter = DataConverter;
@@ -136,13 +136,13 @@ public class MDList<T>
     // Just for convenience
     private object[] ConvertToObject(object item)
     {
-        return DataConverter.ConvertToObject((T)item);
+        return DataConverter.ConvertToObjectArray(item);
     }
 
     // Just for convenience
     private T ConvertFromObject(object[] Parameters)
     {
-        return DataConverter.ConvertFromObject(Parameters);
+        return (T)DataConverter.ConvertFromObjectArray(Parameters);
     }
 
     // Get the current command from the queue and remove it if it exists
@@ -467,11 +467,4 @@ public class MDList<T>
     }
 
 #endregion
-}
-
-public interface IMDListDataConverter<T>
-{
-    object[] ConvertToObject(T item);
-
-    T ConvertFromObject(object[] Parameters);
 }
