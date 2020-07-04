@@ -5,8 +5,27 @@ using System.Collections.ObjectModel;
 
 public class MDList<T>
 {
+    private class ListActionRecord
+    {
+        public ListActionRecord(uint Number, ListActions Type, object[] Parameters)
+        {
+            this.ActionNumber = Number;
+            this.ActionType = Type;
+            this.Parameters = Parameters;
+        }
+
+        public uint ActionNumber = 0;
+        public ListActions ActionType = ListActions.UNKOWN;
+        public object[] Parameters;
+
+        public void Send()
+        {
+            // TODO: Implement
+        }
+    }
     public enum ListActions
     {
+        UNKOWN,
         MODIFICATION,
         ADD,
         ADD_AT_INDEX,
@@ -18,14 +37,38 @@ public class MDList<T>
     }
     private List<T> RealList = new List<T>();
 
+    private Queue<ListActionRecord> CommandHistory = new Queue<ListActionRecord>();
+
+    private uint CommandCounter = 0;
+
     public MDList()
     {
 
     }
 
-    protected void RecordAction(ListActions actions, params object[] values)
+    public void SendActions()
     {
+        // For now not much error handling
+        while (CommandHistory.Count > 0)
+        {
+            CommandHistory.Dequeue().Send();
+        }
+    }
 
+    public void ProcessAction(uint Number, ListActions Type, params object[] Parameters)
+    {
+        // TODO: Implement this, this is for clients when they recieve a command.
+    }
+
+    protected void RecordAction(ListActions Type, params object[] Parameters)
+    {
+        CommandHistory.Enqueue(new ListActionRecord(GetActionNumber(), Type, Parameters));
+    }
+
+    private uint GetActionNumber()
+    {
+        CommandCounter++;
+        return CommandCounter-1;
     }
 
 #region MODIFYING METHODS
