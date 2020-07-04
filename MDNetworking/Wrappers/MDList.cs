@@ -17,11 +17,6 @@ public class MDList<T>
         public uint ActionNumber = 0;
         public ListActions ActionType = ListActions.UNKOWN;
         public object[] Parameters;
-
-        public void Send()
-        {
-            // TODO: Implement
-        }
     }
     public enum ListActions
     {
@@ -41,9 +36,14 @@ public class MDList<T>
 
     private uint CommandCounter = 0;
 
-    public MDList()
-    {
+    private uint ListId = 0;
 
+    private IMDListDataConverter<T> DataConverter;
+
+    public MDList(IMDListDataConverter<T> DataConverter, uint ListId)
+    {
+        this.DataConverter = DataConverter;
+        this.ListId = ListId;
     }
 
     public void SendActions()
@@ -51,8 +51,24 @@ public class MDList<T>
         // For now not much error handling
         while (CommandHistory.Count > 0)
         {
-            CommandHistory.Dequeue().Send();
+            SendAction(CommandHistory.Dequeue());
         }
+    }
+
+    private void SendAction(ListActionRecord ActionRecord)
+    {
+        MDStatics.GetReplicator().SendListData(ListId, ActionRecord.ActionNumber, ActionRecord.ActionType, ParseParameters(ActionRecord)));
+    }
+
+    private object[] ParseParameters(ListActionRecord ActionRecord)
+    {
+        switch (ActionRecord.ActionType)
+        {
+            case ListActions.ADD:
+                return DataConverter.ConvertToObject((T)ActionRecord.Parameters[0]);
+        }
+
+        return null;
     }
 
     public void ProcessAction(uint Number, ListActions Type, params object[] Parameters)
@@ -359,4 +375,11 @@ public class MDList<T>
     }
 
 #endregion
+}
+
+public interface IMDListDataConverter<T>
+{
+    object[] ConvertToObject(T item);
+
+    T ConvertFromObject(object[] Parameters);
 }
