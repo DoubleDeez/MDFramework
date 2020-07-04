@@ -1,9 +1,12 @@
 using System;
 
-[AttributeUsage(AttributeTargets.Method)]
-public class MDCommand : Attribute
+namespace MD
 {
-    public string HelpText { get; set; }
+    [AttributeUsage(AttributeTargets.Method)]
+    public class MDCommand : Attribute
+    {
+        public string HelpText { get; set; }
 
-    public object[] DefaultArgs { get; set; }
+        public object[] DefaultArgs { get; set; }
+    }
 }

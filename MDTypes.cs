@@ -1,16 +1,20 @@
-public enum MDNetMode
+namespace MD
 {
-    Standalone,
-    Server,
-    Client
-}
+    public enum MDNetMode
+    {
+        Standalone,
+        Server,
+        Client
+    }
 
-public enum MDRemoteMode {
-    Unkown,
-    Master,
-    MasterSync,
-    Remote,
-    RemoteSync,
-    Puppet,
-    PuppetSync
+    public enum MDRemoteMode
+    {
+        Unknown,
+        Master,
+        MasterSync,
+        Remote,
+        RemoteSync,
+        Puppet,
+        PuppetSync
+    }
 }

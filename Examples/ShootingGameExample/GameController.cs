@@ -1,53 +1,56 @@
 using Godot;
 using System;
 
-public class GameController : Node2D
+namespace MD
 {
-    protected MDGameSession GameSession;
-
-    // Called when the node enters the scene tree for the first time.
-    public override void _Ready()
+    public class GameController : Node2D
     {
-        GameSession = this.GetGameSession();
-        GameSession.OnPlayerJoinedEvent += OnPlayerJoinedEvent;
-        GameSession.OnPlayerLeftEvent += OnPlayerLeftEvent;
-    }
+        protected MDGameSession GameSession;
 
-    public override void _ExitTree()
-    {
-        GameSession.OnPlayerJoinedEvent -= OnPlayerJoinedEvent;
-        GameSession.OnPlayerLeftEvent -= OnPlayerLeftEvent;
-    }
-
-    protected virtual void OnPlayerJoinedEvent(int PeerId)
-    {
-        if (this.IsClient())
+        // Called when the node enters the scene tree for the first time.
+        public override void _Ready()
         {
-            return;
+            GameSession = this.GetGameSession();
+            GameSession.OnPlayerJoinedEvent += OnPlayerJoinedEvent;
+            GameSession.OnPlayerLeftEvent += OnPlayerLeftEvent;
         }
-        CallDeferred(nameof(SpawnPlayer), PeerId);
-    }
 
-    protected void SpawnPlayer(int PeerId)
-    {
-        this.SpawnNetworkedNode(GetPlayerScene(), "Player", PeerId);
-    }
-
-    private String GetPlayerScene()
-    {
-        // This is to avoid needing references
-        return GetParent().Filename.GetBaseDir() + "/Player.tscn";
-    }
-
-    protected virtual void OnPlayerLeftEvent(int PeerId)
-    {
-        foreach (Node node in GetTree().GetNodesInGroup(Player.PLAYER_GROUP))
+        public override void _ExitTree()
         {
-            if (node.GetNetworkMaster() == PeerId)
+            GameSession.OnPlayerJoinedEvent -= OnPlayerJoinedEvent;
+            GameSession.OnPlayerLeftEvent -= OnPlayerLeftEvent;
+        }
+
+        protected virtual void OnPlayerJoinedEvent(int PeerId)
+        {
+            if (this.IsClient())
             {
-                node.RemoveAndFree();
+                return;
+            }
+
+            CallDeferred(nameof(SpawnPlayer), PeerId);
+        }
+
+        protected void SpawnPlayer(int PeerId)
+        {
+            this.SpawnNetworkedNode(GetPlayerScene(), "Player", PeerId);
+        }
+
+        private String GetPlayerScene()
+        {
+            // This is to avoid needing references
+            return GetParent().Filename.GetBaseDir() + "/Player.tscn";
+        }
+
+        protected virtual void OnPlayerLeftEvent(int PeerId)
+        {
+            foreach (Node node in GetTree().GetNodesInGroup(Player.PLAYER_GROUP))
+            {
+                if (node.GetNetworkMaster() == PeerId)
+                {
+                    node.RemoveAndFree();
+                }
             }
         }
-        
     }
 }

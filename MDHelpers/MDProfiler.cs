@@ -2,75 +2,78 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 
-public class MDProfiler : IDisposable
+namespace MD
 {
-    private const string LOG_ARG = "logprofile";
-    private const string LOG_CAT = "LogProfiler";
-
-    private static HashSet<string> _enabledProfiles;
-
-    private string ProfileName;
-    private string LowerProfileName;
-    private Stopwatch Timer = new Stopwatch();
-
-    public static void Initialize()
+    public class MDProfiler : IDisposable
     {
-        _enabledProfiles = new HashSet<string>();
-        MDCommands.RegisterCommandAttributes(typeof(MDProfiler));
-    }
+        private const string LOG_ARG = "logprofile";
+        private const string LOG_CAT = "LogProfiler";
 
-    [MDCommand]
-    public static void EnableProfile(string ProfileName)
-    {
-        string LowerProfileName = ProfileName.ToLower();
-        if (_enabledProfiles.Contains(LowerProfileName) == false)
+        private static HashSet<string> _enabledProfiles;
+
+        private string ProfileName;
+        private string LowerProfileName;
+        private Stopwatch Timer = new Stopwatch();
+
+        public static void Initialize()
         {
-            _enabledProfiles.Add(LowerProfileName);
+            _enabledProfiles = new HashSet<string>();
+            MDCommands.RegisterCommandAttributes(typeof(MDProfiler));
         }
-    }
 
-    [MDCommand]
-    public static void DisableProfile(string ProfileName)
-    {
-        string LowerProfileName = ProfileName.ToLower();
-        if (_enabledProfiles.Contains(LowerProfileName))
+        [MDCommand]
+        public static void EnableProfile(string ProfileName)
         {
-            _enabledProfiles.Remove(LowerProfileName);
+            string LowerProfileName = ProfileName.ToLower();
+            if (_enabledProfiles.Contains(LowerProfileName) == false)
+            {
+                _enabledProfiles.Add(LowerProfileName);
+            }
         }
-    }
 
-    [MDCommand]
-    public static void ToggleProfile(string ProfileName)
-    {
-        string LowerProfileName = ProfileName.ToLower();
-        if (_enabledProfiles.Contains(LowerProfileName))
+        [MDCommand]
+        public static void DisableProfile(string ProfileName)
         {
-            _enabledProfiles.Remove(LowerProfileName);
+            string LowerProfileName = ProfileName.ToLower();
+            if (_enabledProfiles.Contains(LowerProfileName))
+            {
+                _enabledProfiles.Remove(LowerProfileName);
+            }
         }
-        else
+
+        [MDCommand]
+        public static void ToggleProfile(string ProfileName)
         {
-            _enabledProfiles.Add(LowerProfileName);
+            string LowerProfileName = ProfileName.ToLower();
+            if (_enabledProfiles.Contains(LowerProfileName))
+            {
+                _enabledProfiles.Remove(LowerProfileName);
+            }
+            else
+            {
+                _enabledProfiles.Add(LowerProfileName);
+            }
         }
-    }
 
-    public MDProfiler(string InProfileName)
-    {
-        ProfileName = InProfileName;
-        LowerProfileName = ProfileName.ToLower();
-        Timer.Start();
-    }
-
-    public long GetMicroSeconds()
-    {
-        return Timer.ElapsedTicks / 10;
-    }
-
-    public void Dispose()
-    {
-        Timer.Stop();
-        if (_enabledProfiles.Contains(LowerProfileName) || MDArguments.HasArg(LOG_ARG))
+        public MDProfiler(string InProfileName)
         {
-            MDLog.Info(LOG_CAT, "Profiling [{0}] took {1}us", ProfileName, GetMicroSeconds());
+            ProfileName = InProfileName;
+            LowerProfileName = ProfileName.ToLower();
+            Timer.Start();
+        }
+
+        public long GetMicroSeconds()
+        {
+            return Timer.ElapsedTicks / 10;
+        }
+
+        public void Dispose()
+        {
+            Timer.Stop();
+            if (_enabledProfiles.Contains(LowerProfileName) || MDArguments.HasArg(LOG_ARG))
+            {
+                MDLog.Info(LOG_CAT, "Profiling [{0}] took {1}us", ProfileName, GetMicroSeconds());
+            }
         }
     }
 }

@@ -1,315 +1,321 @@
 using Godot;
 using System;
 
+namespace MD
+{
 /*
  * MDGameInstance
  *
  * Single-instance class that persists throughout the life-time of the game application.
  */
-public class MDGameInstance : Node
-{
-    private const string LOG_CAT = "LogGameInstance";
-
-    public MDGameSession GameSession { get; private set; }
-
-    public MDGameSynchronizer GameSynchronizer { get; private set; }
-    public MDInterfaceManager InterfaceManager { get; private set; }
-
-    // TODO - There should be an InputState for each local player
-    public MDInput InputState { get; protected set; } = new MDInput();
-
-    public override void _Ready()
+    public class MDGameInstance : Node
     {
-        // Init static classes first
-        MDStatics.GI = this;
-        MDLog.Initialize(GetLogDirectory());
-        MDArguments.PopulateArgs();
-        MDProfiler.Initialize();
+        private const string LOG_CAT = "LogGameInstance";
+        public MDReplicator Replicator { get; private set; }
 
-        // Hook up events
-        GetTree().Connect("node_added", this, nameof(OnNodeAdded_Internal));
-        GetTree().Connect("node_removed", this, nameof(OnNodeRemoved_Internal));
+        public MDGameSession GameSession { get; private set; }
+        public MDGameClock GameClock { get; private set; }
+        public MDGameSynchronizer GameSynchronizer { get; private set; }
+        public MDInterfaceManager InterfaceManager { get; private set; }
 
-        // Init instances
-        CreateReplicator();
-        CreateGameSession();
-        CreateGameSynchronizer();
-        CreateInterfaceManager();
+        // TODO - There should be an InputState for each local player
+        public MDInput InputState { get; protected set; } = new MDInput();
 
-        RegisterNodeAndChildren(GetTree().Root);
-    }
-
-    public override void _Notification(int NotificationType)
-    {
-        base._Notification(NotificationType);
-
-        switch (NotificationType)
+        public override void _Ready()
         {
-            case MainLoop.NotificationWmQuitRequest:
-                MDLog.Info(LOG_CAT, "Quit notification received.");
-                GameSession?.Disconnect();
-                break;
-        }
-    }
+            // Init static classes first
+            MDStatics.GI = this;
+            MDLog.Initialize(GetLogDirectory());
+            MDArguments.PopulateArgs();
+            MDProfiler.Initialize();
 
-    public override void _Input(InputEvent Event)
-    {
-        InputState.OnInputEvent(Event);
-    }
+            // Hook up events
+            GetTree().Connect("node_added", this, nameof(OnNodeAdded_Internal));
+            GetTree().Connect("node_removed", this, nameof(OnNodeRemoved_Internal));
 
-    /// <summary>Override this to provide the your GameSession subclass type</summary>
-    protected virtual Type GetGameSessionType()
-    {
-        return typeof(MDGameSession);
-    }
+            // Init instances
+            CreateReplicator();
+            CreateGameSession();
+            CreateGameSynchronizer();
+            CreateInterfaceManager();
 
-    /// <summary>Override this to provide the your GameSynchronizer subclass type</summary>
-    protected virtual Type GetGameSynchronizerType()
-    {
-        return typeof(MDGameSynchronizer);
-    }
-
-    /// <summary>Override this to provide the your GameClock subclass type</summary>
-    protected virtual Type GetGameClockType()
-    {
-        return typeof(MDGameClock);
-    }
-
-    /// <summary>Override this to provide the your Replicator subclass type</summary>
-    protected virtual Type GetReplicatorType()
-    {
-        return typeof(MDReplicator);
-    }
-
-    // Override this to provide your own Player class type
-    public virtual Type GetPlayerInfoType()
-    {
-        return typeof(MDPlayerInfo);
-    }
-
-    // Called whenever a node is added to the scene
-    protected virtual void OnNodeAdded(Node AddedNode)
-    {
-    }
-
-    // Called whenever a node is removed to the scene
-    protected virtual void OnNodeRemoved(Node RemovedNode)
-    {
-    }
-
-    // Travels the tree and registers the existing nodes
-    private void RegisterNodeAndChildren(Node RootNode)
-    {
-        if (RootNode == null)
-        {
-            return;
-        }
-        OnNodeAdded_Internal(RootNode);
-        int ChildCount = RootNode.GetChildCount();
-        for (int i = 0; i < ChildCount; ++i)
-        {
-            RegisterNodeAndChildren(RootNode.GetChild(i));
-        }
-    }
-
-    // Bound to SceneTree.node_added
-    private void OnNodeAdded_Internal(Godot.Object NodeObj)
-    {
-        Node AddedNode = NodeObj as Node;
-        if (AddedNode != null)
-        {
-            RegisterNewNode(AddedNode);
-            OnNodeAdded(AddedNode);
-        }
-    }
-
-    // Bound to SceneTree.node_removed
-    private void OnNodeRemoved_Internal(Godot.Object NodeObj)
-    {
-        Node RemovedNode = NodeObj as Node;
-        if (RemovedNode == null)
-        {
-            return;
-        }
-        UnregisterNode(RemovedNode);
-        OnNodeRemoved(RemovedNode);
-        if (GameSession != null && GameSession != RemovedNode)
-        {
-            GameSession.OnNodeRemoved(RemovedNode);
-        }
-    }
-
-    // Registers a new node to MDFramework systems
-    private void RegisterNewNode(Node Instance)
-    {
-        MDAutoRegister AutoRegAtr = MDStatics.FindClassAttribute<MDAutoRegister>(Instance.GetType());
-        if (RequireAutoRegister() && AutoRegAtr == null ||
-            AutoRegAtr != null && AutoRegAtr.RegisterType == MDAutoRegisterType.None)
-        {
-            return;
+            RegisterNodeAndChildren(GetTree().Root);
         }
 
-        Instance.PopulateBindNodes();
-        Instance.RegisterReplicatedAttributes();
-        if (AutoRegAtr != null && AutoRegAtr.RegisterType == MDAutoRegisterType.Debug)
+        public override void _Notification(int NotificationType)
         {
-            Instance.RegisterCommandAttributes();
-        }
-    }
+            base._Notification(NotificationType);
 
-    // Unregisters a removed node from MDFramework systems
-    private void UnregisterNode(Node Instance)
-    {
-        // We automatically unregister commands even though we don't automatically register them to avoid relying on the user to do so
-        Instance.UnregisterCommandAttributes();
-        Instance.UnregisterReplicatedAttributes();
-    }
-
-    ///<summary>Ensure Replicator is created</summary>
-    private void CreateReplicator()
-    {
-        if (Replicator == null)
-        {
-            Replicator = CreateTypeInstance<MDReplicator>(GetReplicatorType());
-            Replicator.Name = "Replicator";
-            this.AddNodeToRoot(Replicator, true);
-        }
-    }
-
-    ///<summary>Ensure GameSession is created</summary>
-    private void CreateGameSession()
-    {
-        if (GameSession == null)
-        {
-            GameSession = CreateTypeInstance<MDGameSession>(GetGameSessionType());
-            GameSession.Name = "GameSession";
-            GameSession.GameInstance = this;
-            GameSession.Replicator = Replicator;
-            this.AddNodeToRoot(GameSession, true);
-        }
-    }
-
-    private void CreateGameSynchronizer()
-    {
-        if (GameSynchronizer == null && UseGameSynchronizer())
-        {
-            GameSynchronizer = CreateTypeInstance<MDGameSynchronizer>(GetGameSynchronizerType());
-            GameSynchronizer.Name = "GameSynchronizer";
-            GameSynchronizer.GameInstance = this;
-            this.AddNodeToRoot(GameSynchronizer, true);
-
-            // Check if we should create the game clock as well
-            CreateGameClock();
-        }
-    }
-
-    private void CreateGameClock()
-    {
-        if (GameClock == null && GameSynchronizer.IsGameClockActive())
-        {
-            GameClock = CreateTypeInstance<MDGameClock>(GetGameClockType());
-            GameClock.Name = "GameClock";
-            GameSynchronizer.GameClock = GameClock;
-            this.AddNodeToRoot(GameClock, true);
-        }
-    }
-
-    /// <summary>Creates an instance of the type based on the base class T</summary>
-    private T CreateTypeInstance<T>(Type Type) where T : class
-    {
-        if (!MDStatics.IsSameOrSubclass(Type, typeof(T)))
-        {
-            MDLog.Error(LOG_CAT, "Type [{0}] is not a subclass of [{1}]", Type.Name, typeof(T).Name);
-            return null;
-        }
-
-        return Activator.CreateInstance(Type) as T;
-    }
-
-    // Ensure InterfaceManager is created
-    private void CreateInterfaceManager()
-    {
-        if (InterfaceManager == null)
-        {
-            InterfaceManager = new MDInterfaceManager
+            switch (NotificationType)
             {
-                Name = "InterfaceManager"
-            };
-
-            this.AddNodeToRoot(InterfaceManager, true);
+                case MainLoop.NotificationWmQuitRequest:
+                    MDLog.Info(LOG_CAT, "Quit notification received.");
+                    GameSession?.Disconnect();
+                    break;
+            }
         }
-    }
 
-    /// <summary>Override to change when the console is available (Default: Only in debug mode)</summary>
-    public virtual bool IsConsoleAvailable()
-    {
+        public override void _Input(InputEvent Event)
+        {
+            InputState.OnInputEvent(Event);
+        }
+
+        /// <summary>Override this to provide the your GameSession subclass type</summary>
+        protected virtual Type GetGameSessionType()
+        {
+            return typeof(MDGameSession);
+        }
+
+        /// <summary>Override this to provide the your GameSynchronizer subclass type</summary>
+        protected virtual Type GetGameSynchronizerType()
+        {
+            return typeof(MDGameSynchronizer);
+        }
+
+        /// <summary>Override this to provide the your GameClock subclass type</summary>
+        protected virtual Type GetGameClockType()
+        {
+            return typeof(MDGameClock);
+        }
+
+        /// <summary>Override this to provide the your Replicator subclass type</summary>
+        protected virtual Type GetReplicatorType()
+        {
+            return typeof(MDReplicator);
+        }
+
+        // Override this to provide your own Player class type
+        public virtual Type GetPlayerInfoType()
+        {
+            return typeof(MDPlayerInfo);
+        }
+
+        // Called whenever a node is added to the scene
+        protected virtual void OnNodeAdded(Node AddedNode)
+        {
+        }
+
+        // Called whenever a node is removed to the scene
+        protected virtual void OnNodeRemoved(Node RemovedNode)
+        {
+        }
+
+        // Travels the tree and registers the existing nodes
+        private void RegisterNodeAndChildren(Node RootNode)
+        {
+            if (RootNode == null)
+            {
+                return;
+            }
+
+            OnNodeAdded_Internal(RootNode);
+            int ChildCount = RootNode.GetChildCount();
+            for (int i = 0; i < ChildCount; ++i)
+            {
+                RegisterNodeAndChildren(RootNode.GetChild(i));
+            }
+        }
+
+        // Bound to SceneTree.node_added
+        private void OnNodeAdded_Internal(Godot.Object NodeObj)
+        {
+            Node AddedNode = NodeObj as Node;
+            if (AddedNode != null)
+            {
+                RegisterNewNode(AddedNode);
+                OnNodeAdded(AddedNode);
+            }
+        }
+
+        // Bound to SceneTree.node_removed
+        private void OnNodeRemoved_Internal(Godot.Object NodeObj)
+        {
+            Node RemovedNode = NodeObj as Node;
+            if (RemovedNode == null)
+            {
+                return;
+            }
+
+            UnregisterNode(RemovedNode);
+            OnNodeRemoved(RemovedNode);
+            if (GameSession != null && GameSession != RemovedNode)
+            {
+                GameSession.OnNodeRemoved(RemovedNode);
+            }
+        }
+
+        // Registers a new node to MDFramework systems
+        private void RegisterNewNode(Node Instance)
+        {
+            MDAutoRegister AutoRegAtr = MDStatics.FindClassAttribute<MDAutoRegister>(Instance.GetType());
+            if (RequireAutoRegister() && AutoRegAtr == null ||
+                AutoRegAtr != null && AutoRegAtr.RegisterType == MDAutoRegisterType.None)
+            {
+                return;
+            }
+
+            Instance.PopulateBindNodes();
+            Instance.RegisterReplicatedAttributes();
+            if (AutoRegAtr != null && AutoRegAtr.RegisterType == MDAutoRegisterType.Debug)
+            {
+                Instance.RegisterCommandAttributes();
+            }
+        }
+
+        // Unregisters a removed node from MDFramework systems
+        private void UnregisterNode(Node Instance)
+        {
+            // We automatically unregister commands even though we don't automatically register them to avoid relying on the user to do so
+            Instance.UnregisterCommandAttributes();
+            Instance.UnregisterReplicatedAttributes();
+        }
+
+        ///<summary>Ensure Replicator is created</summary>
+        private void CreateReplicator()
+        {
+            if (Replicator == null)
+            {
+                Replicator = CreateTypeInstance<MDReplicator>(GetReplicatorType());
+                Replicator.Name = "Replicator";
+                this.AddNodeToRoot(Replicator, true);
+            }
+        }
+
+        ///<summary>Ensure GameSession is created</summary>
+        private void CreateGameSession()
+        {
+            if (GameSession == null)
+            {
+                GameSession = CreateTypeInstance<MDGameSession>(GetGameSessionType());
+                GameSession.Name = "GameSession";
+                GameSession.GameInstance = this;
+                GameSession.Replicator = Replicator;
+                this.AddNodeToRoot(GameSession, true);
+            }
+        }
+
+        private void CreateGameSynchronizer()
+        {
+            if (GameSynchronizer == null && UseGameSynchronizer())
+            {
+                GameSynchronizer = CreateTypeInstance<MDGameSynchronizer>(GetGameSynchronizerType());
+                GameSynchronizer.Name = "GameSynchronizer";
+                GameSynchronizer.GameInstance = this;
+                this.AddNodeToRoot(GameSynchronizer, true);
+
+                // Check if we should create the game clock as well
+                CreateGameClock();
+            }
+        }
+
+        private void CreateGameClock()
+        {
+            if (GameClock == null && GameSynchronizer.IsGameClockActive())
+            {
+                GameClock = CreateTypeInstance<MDGameClock>(GetGameClockType());
+                GameClock.Name = "GameClock";
+                GameSynchronizer.GameClock = GameClock;
+                this.AddNodeToRoot(GameClock, true);
+            }
+        }
+
+        /// <summary>Creates an instance of the type based on the base class T</summary>
+        private T CreateTypeInstance<T>(Type Type) where T : class
+        {
+            if (!MDStatics.IsSameOrSubclass(Type, typeof(T)))
+            {
+                MDLog.Error(LOG_CAT, "Type [{0}] is not a subclass of [{1}]", Type.Name, typeof(T).Name);
+                return null;
+            }
+
+            return Activator.CreateInstance(Type) as T;
+        }
+
+        // Ensure InterfaceManager is created
+        private void CreateInterfaceManager()
+        {
+            if (InterfaceManager == null)
+            {
+                InterfaceManager = new MDInterfaceManager
+                {
+                    Name = "InterfaceManager"
+                };
+
+                this.AddNodeToRoot(InterfaceManager, true);
+            }
+        }
+
+        /// <summary>Override to change when the console is available (Default: Only in debug mode)</summary>
+        public virtual bool IsConsoleAvailable()
+        {
 #if DEBUG
-        return true;
+            return true;
 #else
         return false;
 #endif
-    }
+        }
 
-    /// <summary>Override to change when the on screen debug is available (Default: Only in debug mode)</summary>
-    public virtual bool IsOnScreenDebugAvailable()
-    {
-        #if DEBUG
-        return true;
-        #else
+        /// <summary>Override to change when the on screen debug is available (Default: Only in debug mode)</summary>
+        public virtual bool IsOnScreenDebugAvailable()
+        {
+#if DEBUG
+            return true;
+#else
         return false;
-        #endif
-    }
+#endif
+        }
 
-    /// <summary>Should basic information like fps and such be added by default (Default: Only in debug mode)</summary>
-    public virtual bool IsOnScreenDebugAddBasicInformation()
-    {
-        #if DEBUG
-        return true;
-        #else
+        /// <summary>Should basic information like fps and such be added by default (Default: Only in debug mode)</summary>
+        public virtual bool IsOnScreenDebugAddBasicInformation()
+        {
+#if DEBUG
+            return true;
+#else
         return false;
-        #endif
-    }
+#endif
+        }
 
-    /// <summary>Override to change when UPNP is used for the server (Default: True)</summary>
-    public virtual bool UseUPNP()
-    {
-        return true;
-    }
+        /// <summary>Override to change when UPNP is used for the server (Default: True)</summary>
+        public virtual bool UseUPNP()
+        {
+            return true;
+        }
 
-    /// <summary>Override to change is MDAutoRegister is required (Default: False)</summary>
-    public virtual bool RequireAutoRegister()
-    {
-        return false;
-    }
+        /// <summary>Override to change is MDAutoRegister is required (Default: False)</summary>
+        public virtual bool RequireAutoRegister()
+        {
+            return false;
+        }
 
-    ///<summary>Get the key used to open the console. (Default: KeyList.QuoteLeft)</summary>
-    public virtual int GetConsoleKey()
-    {
-        return (int) KeyList.Quoteleft;
-    }
+        ///<summary>Get the key used to open the console. (Default: KeyList.QuoteLeft)</summary>
+        public virtual int GetConsoleKey()
+        {
+            return (int) KeyList.Quoteleft;
+        }
 
-    ///<summary>Get the key used to open the on screen debug. (Default: KeyList.F12)</summary>
-    public virtual int GetOnScreenDebugKey()
-    {
-        return (int)KeyList.F12;
-    }
+        ///<summary>Get the key used to open the on screen debug. (Default: KeyList.F12)</summary>
+        public virtual int GetOnScreenDebugKey()
+        {
+            return (int) KeyList.F12;
+        }
 
-    ///<summary>Decides if the network synchronizer is used or not (Default: True)</summary>
-    public virtual bool UseGameSynchronizer()
-    {
-        return true;
-    }
+        ///<summary>Decides if the network synchronizer is used or not (Default: True)</summary>
+        public virtual bool UseGameSynchronizer()
+        {
+            return true;
+        }
 
-    ///<summary>Get the directory for MDLog log files
-    ///<para>Official documentation for the user path: https://docs.godotengine.org/en/stable/tutorials/io/data_paths.html</para></summary>
-    public virtual string GetLogDirectory()
-    {
-        return "user://logs/";
-    }
+        ///<summary>Get the directory for MDLog log files
+        ///<para>Official documentation for the user path: https://docs.godotengine.org/en/stable/tutorials/io/data_paths.html</para></summary>
+        public virtual string GetLogDirectory()
+        {
+            return "user://logs/";
+        }
 
-    ///<summary>If true we will keep a reference to all loaded scenes around so we don't need to load the resource from disc every time</summary>
-    public virtual bool UseSceneBuffer(string NodePath)
-    {
-        return true;
+        ///<summary>If true we will keep a reference to all loaded scenes around so we don't need to load the resource from disc every time</summary>
+        public virtual bool UseSceneBuffer(string NodePath)
+        {
+            return true;
+        }
     }
 }

@@ -1,11 +1,14 @@
 using Godot;
 using System;
 
-public class CustomGameInstance : MDGameInstance
+namespace MD
 {
-    public override bool UseUPNP()
+    public class CustomGameInstance : MDGameInstance
     {
-        //TODO: Remove this once configuration files are introduced
-        return false;
+        public override bool UseUPNP()
+        {
+            //TODO: Remove this once configuration files are introduced
+            return false;
+        }
     }
 }
