@@ -5,34 +5,27 @@ using System.Collections.ObjectModel;
 
 public class MDList<T>
 {
+    protected const String LOG_CAT = "LogMDList";
+
     private class ListActionRecord
     {
-        public ListActionRecord(uint Number, ListActions Type, object[] Parameters)
+        public ListActionRecord(uint Number, MDListActions Type, object[] Parameters)
         {
-            this.ActionNumber = Number;
-            this.ActionType = Type;
+            this.CommandNumber = Number;
+            this.Type = Type;
             this.Parameters = Parameters;
         }
 
-        public uint ActionNumber = 0;
-        public ListActions ActionType = ListActions.UNKOWN;
+        public uint CommandNumber = 0;
+        public MDListActions Type = MDListActions.UNKOWN;
         public object[] Parameters;
     }
-    public enum ListActions
-    {
-        UNKOWN,
-        MODIFICATION,
-        ADD,
-        ADD_AT_INDEX,
-        REMOVE_INDEX,
-        REMOVE_RANGE,
-        REVERSE_INDEX,
-        REVERSE,
-        CLEAR
-    }
+    
     private List<T> RealList = new List<T>();
 
     private Queue<ListActionRecord> CommandHistory = new Queue<ListActionRecord>();
+
+    private List<ListActionRecord> CommandQueue = new List<ListActionRecord>();
 
     private uint CommandCounter = 0;
 
@@ -40,13 +33,20 @@ public class MDList<T>
 
     private IMDListDataConverter<T> DataConverter;
 
-    public MDList(IMDListDataConverter<T> DataConverter, uint ListId)
+    private MDReplicator Replicator;
+
+    public MDList(IMDListDataConverter<T> DataConverter, uint ListId, MDReplicator Replicator)
     {
+        MDLog.AddLogCategoryProperties(LOG_CAT, new MDLogProperties(MDLogLevel.Info));
         this.DataConverter = DataConverter;
         this.ListId = ListId;
+        this.Replicator = Replicator;
     }
 
-    public void SendActions()
+#region PUBLIC METHODS
+
+    ///<summary>Do not call this! This should only be used by the MDReplicator</summary>
+    public void MDSendActions()
     {
         // For now not much error handling
         while (CommandHistory.Count > 0)
@@ -55,28 +55,118 @@ public class MDList<T>
         }
     }
 
+    ///<summary>Do not call this! This should only be used by the MDReplicator</summary>
+    public void MDProcessAction(uint Number, MDListActions Type, params object[] Parameters)
+    {
+        if (Number > CommandCounter)
+        {
+            CommandQueue.Add(new ListActionRecord(Number, Type, Parameters));
+            return;
+        }
+        else if (Number < CommandCounter)
+        {
+            // This should not happen
+            MDLog.Error(LOG_CAT, "Recieved a command with number {0} when our internal CommandCounter is {1}", Number, CommandCounter);
+            return;
+        }
+
+        // Process incoming command
+        switch (Type)
+        {
+            case MDListActions.MODIFICATION:
+                RealList[(int)Parameters[0]] = ConvertFromObject(Parameters.SubArray(1));
+                break;
+            case MDListActions.ADD:
+                RealList.Add(ConvertFromObject(Parameters));
+                break;
+            case MDListActions.INSERT:
+                RealList.Insert((int)Parameters[0],ConvertFromObject(Parameters.SubArray(1)));
+                break;
+            case MDListActions.REMOVE_AT:
+                RealList.RemoveAt((int)Parameters[0]);
+                break;
+            case MDListActions.REMOVE_RANGE:
+                RealList.RemoveRange((int)Parameters[0], (int)Parameters[1]);
+                break;
+            case MDListActions.REVERSE_INDEX:
+                RealList.Reverse((int)Parameters[0], (int)Parameters[1]);
+                break;
+            case MDListActions.REVERSE:
+                RealList.Reverse();
+                break;
+            case MDListActions.CLEAR:
+                RealList.Clear();
+                break;
+
+        }
+
+        // Increase counter and check if next command is queued
+        CommandCounter++;
+        ListActionRecord NextCommand = GetCurrentCommandFromQueue();
+        if (NextCommand != null)
+        {
+            MDProcessAction(NextCommand.CommandNumber, NextCommand.Type, NextCommand.Parameters);
+        }
+    }
+
+#endregion
+
+#region PRIVATE METHODS
+
     private void SendAction(ListActionRecord ActionRecord)
     {
-        MDStatics.GetReplicator().SendListData(ListId, ActionRecord.ActionNumber, ActionRecord.ActionType, ParseParameters(ActionRecord)));
+        Replicator.SendListData(ListId, ActionRecord.CommandNumber, ActionRecord.Type, ParseParameters(ActionRecord));
     }
 
     private object[] ParseParameters(ListActionRecord ActionRecord)
     {
-        switch (ActionRecord.ActionType)
+        // Any ListAction that has a T object in it needs to be converted, for anything else just pass along the parameters
+        switch (ActionRecord.Type)
         {
-            case ListActions.ADD:
-                return DataConverter.ConvertToObject((T)ActionRecord.Parameters[0]);
+            case MDListActions.ADD:
+                return ConvertToObject(ActionRecord.Parameters[0]);
+            case MDListActions.MODIFICATION:
+            case MDListActions.INSERT:
+                return new object[] { ActionRecord.Parameters[0], ConvertToObject(ActionRecord.Parameters[1]) };
+            default:
+                return ActionRecord.Parameters;
+        }
+    }
+
+    // Just for convenience
+    private object[] ConvertToObject(object item)
+    {
+        return DataConverter.ConvertToObject((T)item);
+    }
+
+    // Just for convenience
+    private T ConvertFromObject(object[] Parameters)
+    {
+        return DataConverter.ConvertFromObject(Parameters);
+    }
+
+    // Get the current command from the queue and remove it if it exists
+    private ListActionRecord GetCurrentCommandFromQueue()
+    {
+        ListActionRecord ActionRecord = null;
+        foreach (ListActionRecord record in CommandQueue)
+        {
+            if (record.CommandNumber == CommandCounter)
+            {
+                ActionRecord = record;
+                break;
+            }
         }
 
-        return null;
+        if (ActionRecord != null)
+        {
+            CommandQueue.Remove(ActionRecord);
+        }
+
+        return ActionRecord;
     }
 
-    public void ProcessAction(uint Number, ListActions Type, params object[] Parameters)
-    {
-        // TODO: Implement this, this is for clients when they recieve a command.
-    }
-
-    protected void RecordAction(ListActions Type, params object[] Parameters)
+    private void RecordAction(MDListActions Type, params object[] Parameters)
     {
         CommandHistory.Enqueue(new ListActionRecord(GetActionNumber(), Type, Parameters));
     }
@@ -87,6 +177,8 @@ public class MDList<T>
         return CommandCounter-1;
     }
 
+#endregion
+
 #region MODIFYING METHODS
     public T this[int index] 
     { 
@@ -96,14 +188,14 @@ public class MDList<T>
         } 
         set
         {
-            RecordAction(ListActions.MODIFICATION, index, value);
+            RecordAction(MDListActions.MODIFICATION, index, value);
             RealList[index] = value;
         } 
     }
 
     public void Add(T item)
     {
-        RecordAction(ListActions.ADD, item);
+        RecordAction(MDListActions.ADD, item);
         RealList.Add(item);
     }
     
@@ -117,13 +209,13 @@ public class MDList<T>
 
     public void Clear()
     {
-        RecordAction(ListActions.CLEAR);
+        RecordAction(MDListActions.CLEAR);
         RealList.Clear();
     }
 
     public void Insert(int index, T item)
     {
-        RecordAction(ListActions.ADD_AT_INDEX, index, item);
+        RecordAction(MDListActions.INSERT, index, item);
         RealList.Insert(index, item);
     }
     
@@ -159,25 +251,25 @@ public class MDList<T>
     public void RemoveAt(int index)
     {
         RealList.RemoveAt(index);
-        RecordAction(ListActions.REMOVE_INDEX, index);
+        RecordAction(MDListActions.REMOVE_AT, index);
     }
     
     public void RemoveRange(int index, int count)
     {
         RealList.RemoveRange(index, count);
-        RecordAction(ListActions.REMOVE_RANGE, index, count);
+        RecordAction(MDListActions.REMOVE_RANGE, index, count);
     }
     
     public void Reverse(int index, int count)
     {
         RealList.Reverse(index, count);
-        RecordAction(ListActions.REVERSE_INDEX, index, count);
+        RecordAction(MDListActions.REVERSE_INDEX, index, count);
     }
     
     public void Reverse()
     {
         RealList.Reverse();
-        RecordAction(ListActions.REVERSE);
+        RecordAction(MDListActions.REVERSE);
     }
 
 #endregion

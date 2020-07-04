@@ -327,6 +327,15 @@ public class MDReplicator : Node
 
     #endregion
 
+    #region LIST REPLICATION
+
+    public void SendListData(uint ListId, uint CommandNumber, MDListActions Type, params object[] Parameters)
+    {
+        // TODO: Implement
+    }
+
+    #endregion
+
     #region VIRTUAL METHODS
 
     ///<summary>Can be overwritten to provide custom replication types</summary>
