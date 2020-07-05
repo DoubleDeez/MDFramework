@@ -64,8 +64,8 @@ public class MDReplicatedMember
         object CurrentValue = GetValue();
         Node Instance = NodeRef.GetRef() as Node;
 
-        if ((ReplicatedType == MDReplicatedType.Interval && IsIntervalReplicationTime) || 
-            (ReplicatedType == MDReplicatedType.OnChange && object.Equals(LastValue, CurrentValue) == false))
+        if ((GetReplicatedType() == MDReplicatedType.Interval && IsIntervalReplicationTime) || 
+            (GetReplicatedType() == MDReplicatedType.OnChange && object.Equals(LastValue, CurrentValue) == false))
         {
             ReplicateToAll(Instance, CurrentValue);
         }
@@ -79,7 +79,7 @@ public class MDReplicatedMember
     protected virtual void ReplicateToAll(Node Node, object Value)
     {
         MDLog.Debug(LOG_CAT, "Replicating {0} with value {1} from {2}", Member.Name, Value, LastValue);
-        if (Reliable)
+        if (IsReliable())
         {
             Node.Rset(Member.Name, Value);
         }
@@ -94,7 +94,7 @@ public class MDReplicatedMember
     protected virtual void ReplicateToPeer(Node Node, object Value, int PeerId)
     {
         MDLog.Debug(LOG_CAT, "Replicating to JIP Peer {0} for member {1} with value {2}", PeerId, Member.Name, Value);
-        if (Reliable)
+        if (IsReliable())
         {
             Node.RsetId(PeerId, Member.Name, Value);
         }
@@ -107,12 +107,6 @@ public class MDReplicatedMember
     public virtual bool ShouldReplicate()
     {
         return IsShouldReplicate;
-    }
-
-    public PropertyInfo GetPropertyInfo()
-    {
-        Node Instance = NodeRef.GetRef() as Node;
-        return Instance.GetType().GetProperty(Member.Name, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy | BindingFlags.Instance);
     }
 
     public void CheckIfShouldReplicate()

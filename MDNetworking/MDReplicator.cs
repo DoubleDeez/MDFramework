@@ -10,8 +10,7 @@ public class MDReplicator : Node
     {
         ProcessWhilePaused,
         GroupName,
-        ReplicatedMemberType,
-        ListConverter
+        ReplicatedMemberType
     }
     private List<ReplicatedNode> NodeList = new List<ReplicatedNode>();
     private Queue<NewPlayer> JIPPlayers = new Queue<NewPlayer>();
@@ -328,15 +327,6 @@ public class MDReplicator : Node
 
     #endregion
 
-    #region LIST REPLICATION
-
-    public void SendListData(uint ListId, uint CommandNumber, MDListActions Type, params object[] Parameters)
-    {
-        // TODO: Implement
-    }
-
-    #endregion
-
     #region VIRTUAL METHODS
 
     ///<summary>Can be overwritten to provide custom replication types</summary>
@@ -348,6 +338,12 @@ public class MDReplicator : Node
             return Activator.CreateInstance(ReplicatedMemberTypeOverride, 
                     new object[] {Member, RepAttribute.Reliability == MDReliability.Reliable, 
                                     RepAttribute.ReplicatedType, WeakRef(Instance), Settings}) as MDReplicatedMember;
+        }
+
+        // Check if we got a Command Replicator
+        if (Member.GetUnderlyingType().IsAssignableFrom(typeof(IMDCommandReplicator)))
+        {
+            return new MDReplicatedCommandReplicator(Member, RepAttribute.Reliability == MDReliability.Reliable, RepAttribute.ReplicatedType, WeakRef(Instance), Settings);
         }
 
         // Check if game clock is active, if so use it

@@ -16,16 +16,3 @@ public enum MDRemoteMode {
     Puppet,
     PuppetSync
 }
-
-public enum MDListActions
-{
-    UNKOWN,
-    MODIFICATION,
-    ADD,
-    INSERT,
-    REMOVE_AT,
-    REMOVE_RANGE,
-    REVERSE_INDEX,
-    REVERSE,
-    CLEAR
-}

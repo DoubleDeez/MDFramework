@@ -3,13 +3,27 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 
-public class MDList<T>
+public class MDList<T> : IMDCommandReplicator
 {
+    public enum MDListActions
+    {
+        UNKOWN,
+        SET_CURRENT_COMMAND_ID,
+        MODIFICATION,
+        ADD,
+        INSERT,
+        REMOVE_AT,
+        REMOVE_RANGE,
+        REVERSE_INDEX,
+        REVERSE,
+        CLEAR
+    }
+
     protected const String LOG_CAT = "LogMDList";
 
-    private class ListActionRecord
+    private class ListCommandRecord
     {
-        public ListActionRecord(uint Number, MDListActions Type, object[] Parameters)
+        public ListCommandRecord(uint Number, MDListActions Type, object[] Parameters)
         {
             this.CommandNumber = Number;
             this.Type = Type;
@@ -23,56 +37,90 @@ public class MDList<T>
     
     private List<T> RealList = new List<T>();
 
-    private Queue<ListActionRecord> CommandHistory = new Queue<ListActionRecord>();
+    private Queue<ListCommandRecord> CommandHistory = new Queue<ListCommandRecord>();
 
-    private List<ListActionRecord> CommandQueue = new List<ListActionRecord>();
+    private List<ListCommandRecord> CommandQueue = new List<ListCommandRecord>();
 
     private uint CommandCounter = 0;
 
-    private uint ListId = 0;
-
-    private IMDListDataConverter DataConverter;
+    private IMDDataConverter DataConverter;
 
     private MDReplicator Replicator;
 
-    public MDList(IMDListDataConverter DataConverter, uint ListId, MDReplicator Replicator)
+    public MDList()
     {
         MDLog.AddLogCategoryProperties(LOG_CAT, new MDLogProperties(MDLogLevel.Info));
-        this.DataConverter = DataConverter;
-        this.ListId = ListId;
-        this.Replicator = Replicator;
+        this.Replicator = MDStatics.GetReplicator();
     }
 
 #region PUBLIC METHODS
 
-    ///<summary>Do not call this! This should only be used by the MDReplicator</summary>
-    public void MDSendActions()
+    public List<object[]> MDGetCommandsForNewPlayer()
     {
-        // For now not much error handling
-        while (CommandHistory.Count > 0)
+        uint CurrentAction = 0;
+        ListCommandRecord record = null;
+        List<object[]> Commands = new List<object[]>();
+
+        // Add all items to the command list
+        foreach (T item in RealList)
         {
-            SendAction(CommandHistory.Dequeue());
+            record = new ListCommandRecord(CurrentAction, MDListActions.ADD, new object[] {item});
+            Commands.Add(AsObjectArray(record));
+            CurrentAction++;
         }
+
+        // Add current command we are at
+        record = new ListCommandRecord(CurrentAction, MDListActions.SET_CURRENT_COMMAND_ID, new object[] {CommandCounter});
+        Commands.Add(AsObjectArray(record));
+
+        return Commands;
     }
 
     ///<summary>Do not call this! This should only be used by the MDReplicator</summary>
-    public void MDProcessAction(uint Number, MDListActions Type, params object[] Parameters)
+    public void MDSetSettings(MDReplicatedSetting[] Settings)
     {
-        if (Number > CommandCounter)
+        SetConverter(Settings);
+    }
+
+    ///<summary>Do not call this! This should only be used by the MDReplicator</summary>
+    public List<object[]> MDGetCommands()
+    {
+        List<object[]> Commands = new List<object[]>();
+        // For now not much error handling
+        while (CommandHistory.Count > 0)
         {
-            CommandQueue.Add(new ListActionRecord(Number, Type, Parameters));
+            Commands.Add(AsObjectArray(CommandHistory.Dequeue()));
+        }
+
+        return Commands;
+    }
+
+    ///<summary>Do not call this! This should only be used by the MDReplicator</summary>
+    public void MDProcessCommand(params object[] Params)
+    {
+        // Parse input
+        uint CmdNumber = (uint)Params[0];
+        MDListActions Type = (MDListActions)Params[1];
+        object[] Parameters = Params.SubArray(2);
+
+        if (CmdNumber > CommandCounter)
+        {
+            CommandQueue.Add(new ListCommandRecord(CmdNumber, Type, Parameters));
             return;
         }
-        else if (Number < CommandCounter)
+        else if (CmdNumber < CommandCounter)
         {
             // This should not happen
-            MDLog.Error(LOG_CAT, "Recieved a command with number {0} when our internal CommandCounter is {1}", Number, CommandCounter);
+            MDLog.Error(LOG_CAT, "Recieved a command with number {0} when our internal CommandCounter is {1}", CmdNumber, CommandCounter);
             return;
         }
 
         // Process incoming command
         switch (Type)
         {
+            case MDListActions.SET_CURRENT_COMMAND_ID:
+                CommandCounter = (uint)Parameters[0];
+                break;
             case MDListActions.MODIFICATION:
                 RealList[(int)Parameters[0]] = ConvertFromObject(Parameters.SubArray(1));
                 break;
@@ -102,10 +150,10 @@ public class MDList<T>
 
         // Increase counter and check if next command is queued
         CommandCounter++;
-        ListActionRecord NextCommand = GetCurrentCommandFromQueue();
+        ListCommandRecord NextCommand = GetCurrentCommandFromQueue();
         if (NextCommand != null)
         {
-            MDProcessAction(NextCommand.CommandNumber, NextCommand.Type, NextCommand.Parameters);
+            MDProcessCommand(NextCommand.CommandNumber, NextCommand.Type, NextCommand.Parameters);
         }
     }
 
@@ -113,12 +161,45 @@ public class MDList<T>
 
 #region PRIVATE METHODS
 
-    private void SendAction(ListActionRecord ActionRecord)
+    private void SetConverter(MDReplicatedSetting[] Settings)
     {
-        Replicator.SendListData(ListId, ActionRecord.CommandNumber, ActionRecord.Type, ParseParameters(ActionRecord));
+        Type DataConverterType = GetConverterType(MDReplicator.ParseParameters(typeof(MDReplicatedCommandReplicator.Settings), Settings));
+        if (DataConverterType != null && DataConverterType.IsAssignableFrom(typeof(IMDDataConverter)))
+        {
+            DataConverter = Activator.CreateInstance(DataConverterType) as IMDDataConverter;
+            return;
+        }
+        
+        // Default Converter
+        DataConverter = new MDObjectDataConverter();
     }
 
-    private object[] ParseParameters(ListActionRecord ActionRecord)
+    private Type GetConverterType(MDReplicatedSetting[] Settings)
+    {
+        foreach (MDReplicatedSetting setting in Settings)
+        {
+            if ((MDReplicatedCommandReplicator.Settings)setting.Key == MDReplicatedCommandReplicator.Settings.Converter)
+            {
+                if (setting.Value == null)
+                {
+                    return null;
+                }
+                return Type.GetType(setting.Value.ToString());
+            }
+        }
+        return null;
+    }
+
+    private object[] AsObjectArray(ListCommandRecord ActionRecord)
+    {
+        List<object> ObjectList = new List<object>();
+        ObjectList.Add(ActionRecord.CommandNumber);
+        ObjectList.Add(ActionRecord.Type);
+        ObjectList.AddRange(ParseParameters(ActionRecord));
+        return ObjectList.ToArray();
+    }
+
+    private object[] ParseParameters(ListCommandRecord ActionRecord)
     {
         // Any ListAction that has a T object in it needs to be converted, for anything else just pass along the parameters
         switch (ActionRecord.Type)
@@ -138,7 +219,7 @@ public class MDList<T>
     {
         return DataConverter.ConvertToObjectArray(item);
     }
-
+    
     // Just for convenience
     private T ConvertFromObject(object[] Parameters)
     {
@@ -146,10 +227,10 @@ public class MDList<T>
     }
 
     // Get the current command from the queue and remove it if it exists
-    private ListActionRecord GetCurrentCommandFromQueue()
+    private ListCommandRecord GetCurrentCommandFromQueue()
     {
-        ListActionRecord ActionRecord = null;
-        foreach (ListActionRecord record in CommandQueue)
+        ListCommandRecord ActionRecord = null;
+        foreach (ListCommandRecord record in CommandQueue)
         {
             if (record.CommandNumber == CommandCounter)
             {
@@ -168,7 +249,7 @@ public class MDList<T>
 
     private void RecordAction(MDListActions Type, params object[] Parameters)
     {
-        CommandHistory.Enqueue(new ListActionRecord(GetActionNumber(), Type, Parameters));
+        CommandHistory.Enqueue(new ListCommandRecord(GetActionNumber(), Type, Parameters));
     }
 
     private uint GetActionNumber()

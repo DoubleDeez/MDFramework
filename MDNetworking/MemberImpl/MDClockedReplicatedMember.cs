@@ -103,7 +103,7 @@ public class MDClockedReplicatedMember : MDReplicatedMember
     protected override void ReplicateToAll(Node Node, object Value)
     {
         MDLog.Debug(LOG_CAT, "Replicating {0} with value {1} from {2}", Member.Name, Value, LastValue);
-        if (Reliable)
+        if (IsReliable())
         {
             Replicator.Rpc(REPLICATE_METHOD_NAME, Replicator.GetReplicationIdForKey(GetUniqueKey()), GameClock.GetTick(), Value);
         }
@@ -118,7 +118,7 @@ public class MDClockedReplicatedMember : MDReplicatedMember
     protected override void ReplicateToPeer(Node Node, object Value, int PeerId)
     {
         MDLog.Debug(LOG_CAT, "Replicating to JIP Peer {0} for member {1} with value {2}", PeerId, Member.Name, Value);
-        if (Reliable)
+        if (IsReliable())
         {
             Replicator.RpcId(PeerId, REPLICATE_METHOD_NAME, Replicator.GetReplicationIdForKey(GetUniqueKey()), GameClock.GetTick(), Value);
         }
