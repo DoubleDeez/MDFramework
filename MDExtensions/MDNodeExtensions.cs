@@ -111,6 +111,13 @@ public static class MDNodeExtensions
         return GameSession.SpawnNetworkedNode(ScenePath, Instance, NodeName, NetworkMaster, SpawnPos);
     }
 
+    public static void ChangeNetworkMaster(this Node Instance, int NewNetworkMaster)
+    {
+        MDGameSession GameSession = Instance.GetGameSession();
+        GameSession.ChangeNetworkMaster(Instance, NewNetworkMaster);
+
+    }
+
     // Shortcut for GetTree().GetRoot().AddChild()
     public static void AddNodeToRoot(this Node Instance, Node Child, bool Deferred = false)
     {

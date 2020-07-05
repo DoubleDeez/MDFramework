@@ -99,9 +99,15 @@ public class MDList<T> : IMDCommandReplicator
     public void MDProcessCommand(params object[] Params)
     {
         // Parse input
-        uint CmdNumber = (uint)Params[0];
-        MDListActions Type = (MDListActions)Params[1];
+        uint CmdNumber = Convert.ToUInt32(Params[0]);
+        MDListActions Type = (MDListActions)Enum.Parse(typeof(MDListActions), Params[1].ToString());
         object[] Parameters = Params.SubArray(2);
+
+        MDLog.Trace(LOG_CAT, "Recieved command [{0}] {1}", CmdNumber.ToString(), Type.ToString());
+        foreach(object obj in Parameters)
+        {
+            MDLog.Trace(LOG_CAT, "Parameter: {0}", obj.ToString());
+        }
 
         if (CmdNumber > CommandCounter)
         {
@@ -115,29 +121,32 @@ public class MDList<T> : IMDCommandReplicator
             return;
         }
 
+        // Increase command counter
+        CommandCounter++;
+
         // Process incoming command
         switch (Type)
         {
             case MDListActions.SET_CURRENT_COMMAND_ID:
-                CommandCounter = (uint)Parameters[0];
+                CommandCounter = Convert.ToUInt32(Parameters[0]);
                 break;
             case MDListActions.MODIFICATION:
-                RealList[(int)Parameters[0]] = ConvertFromObject(Parameters.SubArray(1));
+                RealList[Convert.ToInt32(Parameters[0])] = ConvertFromObject(Parameters.SubArray(1));
                 break;
             case MDListActions.ADD:
                 RealList.Add(ConvertFromObject(Parameters));
                 break;
             case MDListActions.INSERT:
-                RealList.Insert((int)Parameters[0],ConvertFromObject(Parameters.SubArray(1)));
+                RealList.Insert(Convert.ToInt32(Parameters[0]), ConvertFromObject(Parameters.SubArray(1)));
                 break;
             case MDListActions.REMOVE_AT:
-                RealList.RemoveAt((int)Parameters[0]);
+                RealList.RemoveAt(Convert.ToInt32(Parameters[0]));
                 break;
             case MDListActions.REMOVE_RANGE:
-                RealList.RemoveRange((int)Parameters[0], (int)Parameters[1]);
+                RealList.RemoveRange(Convert.ToInt32(Parameters[0]), Convert.ToInt32(Parameters[1]));
                 break;
             case MDListActions.REVERSE_INDEX:
-                RealList.Reverse((int)Parameters[0], (int)Parameters[1]);
+                RealList.Reverse(Convert.ToInt32(Parameters[0]), Convert.ToInt32(Parameters[1]));
                 break;
             case MDListActions.REVERSE:
                 RealList.Reverse();
@@ -148,8 +157,7 @@ public class MDList<T> : IMDCommandReplicator
 
         }
 
-        // Increase counter and check if next command is queued
-        CommandCounter++;
+        // Check if next command is queued
         ListCommandRecord NextCommand = GetCurrentCommandFromQueue();
         if (NextCommand != null)
         {
@@ -194,7 +202,7 @@ public class MDList<T> : IMDCommandReplicator
     {
         List<object> ObjectList = new List<object>();
         ObjectList.Add(ActionRecord.CommandNumber);
-        ObjectList.Add(ActionRecord.Type);
+        ObjectList.Add((int)ActionRecord.Type);
         ObjectList.AddRange(ParseParameters(ActionRecord));
         return ObjectList.ToArray();
     }
@@ -208,7 +216,10 @@ public class MDList<T> : IMDCommandReplicator
                 return ConvertToObject(ActionRecord.Parameters[0]);
             case MDListActions.MODIFICATION:
             case MDListActions.INSERT:
-                return new object[] { ActionRecord.Parameters[0], ConvertToObject(ActionRecord.Parameters[1]) };
+                List<object> ObjectList = new List<object>();
+                ObjectList.Add(ActionRecord.Parameters[0]);
+                ObjectList.AddRange(ConvertToObject(ActionRecord.Parameters[1]));
+                return ObjectList.ToArray();
             default:
                 return ActionRecord.Parameters;
         }
@@ -461,7 +472,7 @@ public class MDList<T> : IMDCommandReplicator
     }
     
     ///<summary>Be careful not to modify the list itself from this method</summary>
-    public IEnumerator<T> GetEnumerator()
+    public IEnumerable<T> GetEnumerator()
     {
         foreach (T item in RealList)
         {

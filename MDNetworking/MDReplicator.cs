@@ -341,7 +341,7 @@ public class MDReplicator : Node
         }
 
         // Check if we got a Command Replicator
-        if (Member.GetUnderlyingType().IsAssignableFrom(typeof(IMDCommandReplicator)))
+        if (Member.GetUnderlyingType().GetInterface(nameof(IMDCommandReplicator)) != null)
         {
             return new MDReplicatedCommandReplicator(Member, RepAttribute.Reliability == MDReliability.Reliable, RepAttribute.ReplicatedType, WeakRef(Instance), Settings);
         }

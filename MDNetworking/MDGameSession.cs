@@ -535,6 +535,35 @@ public class MDGameSession : Node
         return SpawnNodeScene(ScenePath, ParentPath, NodeName, NodeMaster, SpawnPosVal);
     }
 
+    public bool ChangeNetworkMaster(Node Node, int NewNetworkMaster)
+    {
+        if (!GetAllPeerIds().Contains(NewNetworkMaster))
+        {
+            // Invalid network master
+            return false;
+        }
+        
+        // Only server can change network master, we could also allow server?
+        if (MDStatics.IsNetworkActive() && MDStatics.IsServer())
+        {
+            Node.SetNetworkMaster(NewNetworkMaster);
+            Rpc(nameof(ChangeNetworkMasterOnClients), Node.GetPath(), NewNetworkMaster);
+            return true;
+        }
+
+        return false;
+    }
+
+    [Puppet]
+    private void ChangeNetworkMasterOnClients(string NodePath, int NewNetworkMaster)
+    {
+        Node Node = GetNodeOrNull(NodePath);
+        if (Node != null)
+        {
+            Node.SetNetworkMaster(NewNetworkMaster);
+        }
+    }
+
     [Puppet]
     private Node SpawnNodeType(string NodeTypeString, string ParentPath, string NodeName, int NetworkMaster, Vector3 SpawnPos)
     {

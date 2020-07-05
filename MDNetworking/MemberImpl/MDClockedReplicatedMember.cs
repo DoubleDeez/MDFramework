@@ -39,7 +39,7 @@ public class MDClockedReplicatedMember : MDReplicatedMember
                 case MDClockedReplicatedMember.Settings.OnValueChangedEvent:
                     Node Node = NodeRef.GetRef() as Node;
                     OnValueChangedCallback = Node.GetType().GetMethod(setting.Value.ToString(),
-                                                                      BindingFlags.NonPublic | BindingFlags.FlattenHierarchy | BindingFlags.Instance);
+                            BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy | BindingFlags.Instance);
                     break;
             }
         }

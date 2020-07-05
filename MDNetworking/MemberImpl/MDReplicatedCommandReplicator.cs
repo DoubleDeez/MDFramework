@@ -21,14 +21,15 @@ public class MDReplicatedCommandReplicator : MDReplicatedMember
 
     public enum Settings
     {
-        Converter
+        Converter,
+        OnValueChangedEvent
     }
+
+    protected MethodInfo OnValueChangedCallback = null;
 
     protected MDReplicator Replicator;
 
     protected MDGameSession GameSession;
-
-    protected IMDCommandReplicator CommandReplicator;
 
     public MDReplicatedCommandReplicator(MemberInfo Member, bool Reliable, MDReplicatedType ReplicatedType, WeakRef NodeRef, MDReplicatedSetting[] Settings) 
                                     : base(Member, true, ReplicatedType, NodeRef, Settings) 
@@ -36,22 +37,55 @@ public class MDReplicatedCommandReplicator : MDReplicatedMember
         GameSession = MDStatics.GetGameSession();
         Replicator = GameSession.Replicator;
         Node node = NodeRef.GetRef() as Node;
-        InitializeCommandReplicator(Member, node);
+        IMDCommandReplicator CommandReplicator = InitializeCommandReplicator(Member, node);
+        ParseSettings(MDReplicator.ParseParameters(typeof(Settings), Settings));
         CommandReplicator.MDSetSettings(Settings);
+    }
+
+    protected void ParseSettings(MDReplicatedSetting[] Settings)
+    {
+        foreach (MDReplicatedSetting setting in Settings)
+        {
+            switch ((Settings)setting.Key)
+            {
+                case MDReplicatedCommandReplicator.Settings.OnValueChangedEvent:
+                    Node Node = NodeRef.GetRef() as Node;
+                    OnValueChangedCallback = Node.GetType().GetMethod(setting.Value.ToString(),
+                            BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy | BindingFlags.Instance);
+                    break;
+            }
+        }
     }
 
     public override void SetValues(uint Tick, params object[] Parameters)
     {
-        CommandReplicator.MDProcessCommand(Parameters);
+        GetCommandReplicator().MDProcessCommand(Parameters);
+        if (OnValueChangedCallback != null)
+        {
+            Node Instance = NodeRef.GetRef() as Node;
+            OnValueChangedCallback.Invoke(Instance, null);
+        }
+    }
+
+    private IMDCommandReplicator GetCommandReplicator()
+    {
+        return (IMDCommandReplicator)GetValue();
     }
 
     public override void Replicate(int JoinInProgressPeerId, bool IsIntervalReplicationTime)
     {
+        IMDCommandReplicator CommandReplicator = GetCommandReplicator();
         Node Instance = NodeRef.GetRef() as Node;
+
+        if (CommandReplicator == null)
+        {
+            MDLog.Error("Command replicator is null for member {0}#{1}", Instance.GetPath(), Member.Name);
+            return;
+        }
 
         if ((GetReplicatedType() == MDReplicatedType.Interval && IsIntervalReplicationTime) || (GetReplicatedType() == MDReplicatedType.OnChange))
         {
-            List<object[]> commands = CommandReplicator.MDGetCommands();
+            List<object[]> commands = GetCommandReplicator().MDGetCommands();
             if (commands.Count > 0)
             {
                 // Do replication to all except joining peer if we got one
@@ -59,7 +93,7 @@ public class MDReplicatedCommandReplicator : MDReplicatedMember
                 {
                     foreach (int PeerId in GameSession.GetAllPeerIds())
                     {
-                        if (PeerId != JoinInProgressPeerId)
+                        if (PeerId != JoinInProgressPeerId && PeerId != MDStatics.GetPeerId())
                         {
                             ReplicateCommandToPeer(value, PeerId);
                         }
@@ -83,13 +117,21 @@ public class MDReplicatedCommandReplicator : MDReplicatedMember
     }
 
 
-    private void InitializeCommandReplicator(MemberInfo Member, Node Node)
+    private IMDCommandReplicator InitializeCommandReplicator(MemberInfo Member, Node Node)
     {
-        Type MemberType = Member.GetType();
-        if (MemberType != null && MemberType.IsAssignableFrom(typeof(IMDCommandReplicator)))
+        if (GetValue() != null)
         {
-            CommandReplicator = Activator.CreateInstance(MemberType) as IMDCommandReplicator;
+            return GetCommandReplicator();
         }
-        Member.SetValue(Node, CommandReplicator);
+
+        Type MemberType = Member.GetUnderlyingType();
+        if (MemberType != null && MemberType.GetInterface(nameof(IMDCommandReplicator)) != null)
+        {
+            IMDCommandReplicator CommandReplicator = Activator.CreateInstance(MemberType) as IMDCommandReplicator;
+            Member.SetValue(Node, CommandReplicator);
+            return CommandReplicator;
+        }
+
+        return null;
     }    
 }
