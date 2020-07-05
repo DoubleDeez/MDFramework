@@ -1,5 +1,6 @@
 using Godot;
 using System;
+using System.Collections.Generic;
 
 [MDAutoRegister]
 public class ListActor : Node2D
@@ -11,7 +12,7 @@ public class ListActor : Node2D
     [MDBindNode("CanvasLayer/ItemList")]
     private ItemList DisplayList;
 
-    [MDBindNode("CanvasLayer/Controls/TxtAddItem")]
+    [MDBindNode("CanvasLayer/Controls/GridContainer/TxtAddItem")]
     private TextEdit ItemInput;
 
     [MDBindNode("CanvasLayer/Controls/ChangeNetworkMaster")]
@@ -186,6 +187,66 @@ public class ListActor : Node2D
         RefreshList();
     }
 
+    private void OnAddRangePressed()
+    {
+        if (IsNotAllowedToModify())
+        {
+            return;
+        }
+
+        String value = ItemInput.Text;
+        if (value != null && value != "")
+        {
+            List<String> RangeAdd = new List<string>();
+            for (int i =0; i < 5; i++)
+            {
+                RangeAdd.Add(value + "0" + i);
+            }
+            ItemInput.Text = "";
+            ReplicatedStringList.AddRange(RangeAdd);
+            RefreshList();
+        }
+    }
+
+    private void OnRemoveAllPressed()
+    {
+        if (IsNotAllowedToModify())
+        {
+            return;
+        }
+
+        String value = ItemInput.Text;
+        if (value != null && value != "")
+        {
+            ReplicatedStringList.RemoveAll(val => val.EndsWith(value));
+            ItemInput.Text = "";
+            RefreshList();
+        }
+    }
+
+
+    private void OnInsertRangePressed()
+    {
+        if (IsNotAllowedToModify())
+        {
+            return;
+        }
+
+        String value = ItemInput.Text;
+        int[] selection = DisplayList.GetSelectedItems();
+        if (selection.Length > 0 && value != null && value != "")
+        {
+            List<String> RangeAdd = new List<string>();
+            for (int i =0; i < 5; i++)
+            {
+                RangeAdd.Add(value + "0" + i);
+            }
+            ItemInput.Text = "";
+            ReplicatedStringList.InsertRange(selection[0], RangeAdd);
+            RefreshList();
+        }
+    }
+
 
     private void OnClearPressed()
     {
@@ -193,8 +254,6 @@ public class ListActor : Node2D
         RefreshList();
     }
 
-
-    
     private void OnChangeNetworkMasterPressed(int index)
     {
         // We don't need to check who does this since only server is allowed

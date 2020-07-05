@@ -313,10 +313,12 @@ public class MDList<T> : IMDCommandReplicator
     
     public void InsertRange(int index, IEnumerable<T> collection)
     {
-        // This may not be accurate, may have to do this in reverse to get order the same as normal insert range?
+        // Simple way of reversing order
+        int indexOffset = 0;
         foreach (T item in collection)
         {
-            Insert(index, item);
+            Insert(index + indexOffset, item);
+            indexOffset++;
         }
     }
 

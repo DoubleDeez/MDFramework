@@ -35,73 +35,111 @@ __meta__ = {
 "_edit_use_anchors_": false
 }
 
-[node name="BtnAdd" type="Button" parent="CanvasLayer/Controls"]
-margin_top = 34.5755
+[node name="GridContainer" type="GridContainer" parent="CanvasLayer/Controls"]
+margin_top = -4.0
 margin_right = 318.0
-margin_bottom = 54.5755
+margin_bottom = 504.0
+size_flags_horizontal = 3
+size_flags_vertical = 3
+custom_constants/vseparation = 15
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="TxtAddItem" type="TextEdit" parent="CanvasLayer/Controls/GridContainer"]
+margin_right = 320.0
+margin_bottom = 30.0
+rect_min_size = Vector2( 320, 30 )
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="BtnAdd" type="Button" parent="CanvasLayer/Controls/GridContainer"]
+margin_top = 45.0
+margin_right = 320.0
+margin_bottom = 65.0
 text = "Add Item"
 __meta__ = {
 "_edit_use_anchors_": false
 }
 
-[node name="BtnInsert" type="Button" parent="CanvasLayer/Controls"]
-margin_top = 69.7281
-margin_right = 318.0
-margin_bottom = 89.7281
+[node name="BtnAddRange" type="Button" parent="CanvasLayer/Controls/GridContainer"]
+margin_top = 80.0
+margin_right = 320.0
+margin_bottom = 100.0
+text = "Add Range"
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="BtnInsert" type="Button" parent="CanvasLayer/Controls/GridContainer"]
+margin_top = 115.0
+margin_right = 320.0
+margin_bottom = 135.0
 text = "Insert Item Before Selection"
 __meta__ = {
 "_edit_use_anchors_": false
 }
 
-[node name="BtnModify" type="Button" parent="CanvasLayer/Controls"]
-margin_top = 102.876
-margin_right = 318.0
-margin_bottom = 122.876
+[node name="BtnInsertRange" type="Button" parent="CanvasLayer/Controls/GridContainer"]
+margin_top = 150.0
+margin_right = 320.0
+margin_bottom = 170.0
+text = "Insert Range Before Selection"
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="BtnModify" type="Button" parent="CanvasLayer/Controls/GridContainer"]
+margin_top = 185.0
+margin_right = 320.0
+margin_bottom = 205.0
 text = "Modify Selected Item"
 __meta__ = {
 "_edit_use_anchors_": false
 }
 
-[node name="BtnRemove" type="Button" parent="CanvasLayer/Controls"]
-margin_top = 139.315
-margin_right = 318.0
-margin_bottom = 159.315
+[node name="BtnRemove" type="Button" parent="CanvasLayer/Controls/GridContainer"]
+margin_top = 220.0
+margin_right = 320.0
+margin_bottom = 240.0
 text = "Remove Item By Index"
 __meta__ = {
 "_edit_use_anchors_": false
 }
 
-[node name="BtnRemove2" type="Button" parent="CanvasLayer/Controls"]
-margin_top = 173.61
-margin_right = 318.0
-margin_bottom = 193.61
+[node name="BtnRemove2" type="Button" parent="CanvasLayer/Controls/GridContainer"]
+margin_top = 255.0
+margin_right = 320.0
+margin_bottom = 275.0
 text = "Remove Item By Value"
 __meta__ = {
 "_edit_use_anchors_": false
 }
 
-[node name="BtnReverse" type="Button" parent="CanvasLayer/Controls"]
-margin_top = 211.335
-margin_right = 318.0
-margin_bottom = 231.335
+[node name="BtnRemove3" type="Button" parent="CanvasLayer/Controls/GridContainer"]
+margin_top = 290.0
+margin_right = 320.0
+margin_bottom = 310.0
+text = "Remove All That End With <input>"
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="BtnReverse" type="Button" parent="CanvasLayer/Controls/GridContainer"]
+margin_top = 325.0
+margin_right = 320.0
+margin_bottom = 345.0
 text = "Reverse List"
 __meta__ = {
 "_edit_use_anchors_": false
 }
 
-[node name="BtnClear" type="Button" parent="CanvasLayer/Controls"]
-margin_top = 247.345
-margin_right = 318.0
-margin_bottom = 267.345
+[node name="BtnClear" type="Button" parent="CanvasLayer/Controls/GridContainer"]
+margin_top = 360.0
+margin_right = 320.0
+margin_bottom = 380.0
 text = "Clear List"
-__meta__ = {
-"_edit_use_anchors_": false
-}
-
-[node name="TxtAddItem" type="TextEdit" parent="CanvasLayer/Controls"]
-margin_top = -4.0
-margin_right = 318.0
-margin_bottom = 20.0
 __meta__ = {
 "_edit_use_anchors_": false
 }
@@ -115,10 +153,13 @@ flat = false
 __meta__ = {
 "_edit_use_anchors_": false
 }
-[connection signal="pressed" from="CanvasLayer/Controls/BtnAdd" to="." method="OnAddItemPressed"]
-[connection signal="pressed" from="CanvasLayer/Controls/BtnInsert" to="." method="_OnInsertPressed"]
-[connection signal="pressed" from="CanvasLayer/Controls/BtnModify" to="." method="OnModifyPressed"]
-[connection signal="pressed" from="CanvasLayer/Controls/BtnRemove" to="." method="OnRemoveItemPressed"]
-[connection signal="pressed" from="CanvasLayer/Controls/BtnRemove2" to="." method="OnRemoveByValuePressed"]
-[connection signal="pressed" from="CanvasLayer/Controls/BtnReverse" to="." method="OnReversePressed"]
-[connection signal="pressed" from="CanvasLayer/Controls/BtnClear" to="." method="OnClearPressed"]
+[connection signal="pressed" from="CanvasLayer/Controls/GridContainer/BtnAdd" to="." method="OnAddItemPressed"]
+[connection signal="pressed" from="CanvasLayer/Controls/GridContainer/BtnAddRange" to="." method="OnAddRangePressed"]
+[connection signal="pressed" from="CanvasLayer/Controls/GridContainer/BtnInsert" to="." method="_OnInsertPressed"]
+[connection signal="pressed" from="CanvasLayer/Controls/GridContainer/BtnInsertRange" to="." method="OnInsertRangePressed"]
+[connection signal="pressed" from="CanvasLayer/Controls/GridContainer/BtnModify" to="." method="OnModifyPressed"]
+[connection signal="pressed" from="CanvasLayer/Controls/GridContainer/BtnRemove" to="." method="OnRemoveItemPressed"]
+[connection signal="pressed" from="CanvasLayer/Controls/GridContainer/BtnRemove2" to="." method="OnRemoveByValuePressed"]
+[connection signal="pressed" from="CanvasLayer/Controls/GridContainer/BtnRemove3" to="." method="OnRemoveAllPressed"]
+[connection signal="pressed" from="CanvasLayer/Controls/GridContainer/BtnReverse" to="." method="OnReversePressed"]
+[connection signal="pressed" from="CanvasLayer/Controls/GridContainer/BtnClear" to="." method="OnClearPressed"]
