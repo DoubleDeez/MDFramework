@@ -72,7 +72,7 @@ namespace MD
             Timer.Stop();
             if (_enabledProfiles.Contains(LowerProfileName) || MDArguments.HasArg(LOG_ARG))
             {
-                MDLog.Info(LOG_CAT, "Profiling [{0}] took {1}us", ProfileName, GetMicroSeconds());
+                MDLog.Info(LOG_CAT, $"Profiling [{ProfileName}] took {GetMicroSeconds()} us");
             }
         }
     }

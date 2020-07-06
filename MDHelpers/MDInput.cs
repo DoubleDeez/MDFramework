@@ -39,7 +39,7 @@ namespace MD
                     LastInputType = MDInputType.Touch;
                     break;
                 default:
-                    MDLog.Warn(LOG_CAT, "Unknown Input Event Type: {0}", Event.AsText());
+                    MDLog.Warn(LOG_CAT, $"Unknown Input Event Type: {Event.AsText()}");
                     break;
             }
 

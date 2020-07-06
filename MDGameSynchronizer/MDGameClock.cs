@@ -20,7 +20,7 @@ namespace MD
 
         ///<summary>Used to control how much we are allowing to be off by for the tick offset</summary>
         public static readonly int MAX_TICK_DESYNCH = 5;
-        // TODO: This was marked as possible loss of fraction before
+
         protected static readonly float TICK_INTERVAL_MILLISECONDS = 1000f / Engine.IterationsPerSecond;
 
         protected static readonly float TICK_INTERVAL_DELTA = 1f / Engine.IterationsPerSecond;
@@ -99,19 +99,18 @@ namespace MD
             {
                 return;
             }
+
             // Adjust ourselves in synch with server at most once per tick
             if (TickSynchAdjustment > 0)
             {
-                MDLog.Trace(LOG_CAT, "Tick {0}, was skipped because adjustment was {1}", CurrentTick,
-                    TickSynchAdjustment);
+                MDLog.Trace(LOG_CAT, $"Tick {CurrentTick}, was skipped because adjustment was {TickSynchAdjustment}");
                 OnLocalSkippedTick(CurrentTick);
                 CurrentTick++;
                 TickSynchAdjustment--;
             }
             else if (TickSynchAdjustment < 0)
             {
-                MDLog.Trace(LOG_CAT, "Tick {0}, was repeated because adjustment was {1}", CurrentTick,
-                    TickSynchAdjustment);
+                MDLog.Trace(LOG_CAT, $"Tick {CurrentTick}, was repeated because adjustment was {TickSynchAdjustment}");
                 LastTickDuplicated = true;
                 CurrentTick--;
                 TickSynchAdjustment++;
@@ -127,7 +126,7 @@ namespace MD
                 // Allow skipping a single tick per update to catch up
                 if (DeltaTickCounter >= TICK_INTERVAL_DELTA)
                 {
-                    MDLog.Trace(LOG_CAT, "Tick {0}, was skipped because delta was {1}", CurrentTick, delta);
+                    MDLog.Trace(LOG_CAT, $"Tick {CurrentTick}, was skipped because delta was {delta}");
                     OnLocalSkippedTick(CurrentTick);
                     DeltaTickCounter -= TICK_INTERVAL_DELTA;
                     CurrentTick++;
@@ -140,7 +139,7 @@ namespace MD
 
         public void SetCurrentTick(uint Tick)
         {
-            MDLog.Debug(LOG_CAT, "Tick changed by code from {0} to {1}", CurrentTick, Tick);
+            MDLog.Debug(LOG_CAT, $"Tick changed by code from {CurrentTick} to {Tick}");
             CurrentTick = Tick;
             TickSynchAdjustment = 0;
             OnGameTickChanged(CurrentTick);
@@ -188,16 +187,16 @@ namespace MD
 
                 if (CurrentRemoteTickOffsetTarget > CurrentRemoteTickOffset)
                 {
-                    MDLog.Debug(LOG_CAT, "Increasing remote tick offset from {0} to {1}", CurrentRemoteTickOffset,
-                        CurrentRemoteTickOffset + 1);
+                    MDLog.Debug(LOG_CAT,
+                        $"Increasing remote tick offset from {CurrentRemoteTickOffset} to {CurrentRemoteTickOffset + 1}");
                     // Notify that we are skipping this tick
                     OnRemoteSkippedTick(GetRemoteTick());
                     CurrentRemoteTickOffset++;
                 }
                 else
                 {
-                    MDLog.Debug(LOG_CAT, "Decreasing remote tick offset from {0} to {1}", CurrentRemoteTickOffset,
-                        CurrentRemoteTickOffset - 1);
+                    MDLog.Debug(LOG_CAT,
+                        $"Decreasing remote tick offset from {CurrentRemoteTickOffset} to {CurrentRemoteTickOffset - 1}");
                     CurrentRemoteTickOffset--;
                     // We need to mark that last tick was a duplicate
                     LastTickDuplicated = true;
@@ -219,7 +218,7 @@ namespace MD
             // Check if we got a fixed offset
             if (RemoteTickOffset > 0)
             {
-                MDLog.Trace(LOG_CAT, "Ping offset is set to be static at {0}", RemoteTickOffset);
+                MDLog.Trace(LOG_CAT, $"Ping offset is set to be static at {RemoteTickOffset}");
                 CurrentRemoteTickOffsetTarget = RemoteTickOffset + OFFSET_BUFFER;
                 return;
             }
@@ -229,7 +228,7 @@ namespace MD
             if (HighestPing == 0)
             {
                 CurrentRemoteTickOffsetTarget = MINIMUM_OFFSET + OFFSET_BUFFER;
-                MDLog.Trace(LOG_CAT, "We got no ping setting offset to minimum offset of {0}", MINIMUM_OFFSET);
+                MDLog.Trace(LOG_CAT, $"We got no ping setting offset to minimum offset of {MINIMUM_OFFSET}");
                 return;
             }
 
@@ -240,8 +239,7 @@ namespace MD
             if (newOffset <= MINIMUM_OFFSET)
             {
                 CurrentRemoteTickOffsetTarget = MINIMUM_OFFSET + OFFSET_BUFFER;
-                MDLog.Trace(LOG_CAT, "Ping offset of {0} is less than our minimum offset of {1}", newOffset,
-                    MINIMUM_OFFSET);
+                MDLog.Trace(LOG_CAT, $"Ping offset of {newOffset} is less than our minimum offset of {MINIMUM_OFFSET}");
                 return;
             }
 
@@ -252,8 +250,8 @@ namespace MD
             // Is the difference larger than our allowed tolerance?
             if (Mathf.Abs(difference) >= RemoteTickPingTolerance)
             {
-                MDLog.Trace(LOG_CAT, "Ping difference is too large adjust remote tick offset target from {0} to {1}",
-                    CurrentRemoteTickOffsetTarget, newOffset);
+                MDLog.Trace(LOG_CAT,
+                    $"Ping difference is too large adjust remote tick offset target from {CurrentRemoteTickOffsetTarget} to {newOffset}");
                 // We need to adjust the remote tick offset
                 CurrentRemoteTickOffsetTarget = newOffset + OFFSET_BUFFER;
             }
@@ -266,8 +264,8 @@ namespace MD
             if (EstimateTime < currentTime)
             {
                 // This packet was delayed and is already in the past, ignore
-                MDLog.Trace(LOG_CAT, "[{0}] Ignoring tick packet as it was in the past {1} at {2}", currentTime,
-                    EstimatedTick, EstimateTime);
+                MDLog.Trace(LOG_CAT,
+                    $"[{currentTime}] Ignoring tick packet as it was in the past {EstimatedTick} at {EstimateTime}");
                 return;
             }
 
@@ -276,10 +274,10 @@ namespace MD
             long tickOffset = EstimatedTick - localTickAtTime;
             if (Math.Abs(tickOffset) > MAX_TICK_DESYNCH)
             {
-                MDLog.Trace(LOG_CAT, "[{0}] We are out of synch, we should be at tick {1} at {2}", currentTime,
-                    EstimatedTick, EstimateTime);
-                MDLog.Trace(LOG_CAT, "[{0}] We will be at tick {1} which is off by {2}", currentTime, localTickAtTime,
-                    tickOffset);
+                MDLog.Trace(LOG_CAT,
+                    $"[{currentTime}] We are out of synch, we should be at tick {EstimatedTick} at {EstimateTime}");
+                MDLog.Trace(LOG_CAT,
+                    $"[{currentTime}] We will be at tick {localTickAtTime} which is off by {tickOffset}");
                 // We are too far out of synch
                 TickSynchAdjustment = (int) tickOffset;
             }

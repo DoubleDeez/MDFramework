@@ -240,7 +240,7 @@ namespace MD
             {
                 LogFile = new File();
                 LogFile.Open(FullLogFilePath, File.ModeFlags.Write);
-                Log(LOG_CAT, MDLogLevel.Info, "Created log file {0}", FullLogFilePath);
+                Log(LOG_CAT, MDLogLevel.Info, $"Created log file {FullLogFilePath}");
                 LogFile.Close();
             }
             else

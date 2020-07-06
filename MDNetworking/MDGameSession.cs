@@ -90,9 +90,9 @@ namespace MD
 
             Error error = peer.CreateServer(Port, MaxPlayers);
             bool Success = error == Error.Ok;
-            MDLog.CLog(Success, LOG_CAT, MDLogLevel.Info, "Starting server on port {0} with {1} max players.", Port,
-                MaxPlayers);
-            MDLog.CLog(!Success, LOG_CAT, MDLogLevel.Error, "Failed to start server on port {0}", Port);
+            MDLog.CLog(Success, LOG_CAT, MDLogLevel.Info,
+                $"Starting server on port {Port} with {MaxPlayers} max players.");
+            MDLog.CLog(!Success, LOG_CAT, MDLogLevel.Error, $"Failed to start server on port {Port}");
 
             if (Success)
             {
@@ -119,8 +119,8 @@ namespace MD
 
             Error error = peer.CreateClient(Address, Port);
             bool Success = error == Error.Ok;
-            MDLog.CLog(Success, LOG_CAT, MDLogLevel.Info, "Connecting to server at {0}:{1}", Address, Port);
-            MDLog.CLog(!Success, LOG_CAT, MDLogLevel.Error, "Failed to connect to server at {0}:{1}", Address, Port);
+            MDLog.CLog(Success, LOG_CAT, MDLogLevel.Info, $"Connecting to server at {Address}:{Port}");
+            MDLog.CLog(!Success, LOG_CAT, MDLogLevel.Error, $"Failed to connect to server at {Address}:{Port}");
 
             if (Success)
             {
@@ -208,7 +208,7 @@ namespace MD
         // Called on the server when a client connects
         private void ServerOnPeerConnected(int PeerId)
         {
-            MDLog.Info(LOG_CAT, "Peer [ID: {0}] connected", PeerId);
+            MDLog.Info(LOG_CAT, $"Peer [ID: {PeerId}] connected");
             OnPlayerJoined_Internal(PeerId);
             BroadcastNewPlayerJoined(PeerId);
             SendConnectionDataToClient(PeerId);
@@ -218,7 +218,7 @@ namespace MD
         // Called on the server when a client disconnects
         private void ServerOnPeerDisconnected(int PeerId)
         {
-            MDLog.Info(LOG_CAT, "Peer [ID: {0}] disconnected", PeerId);
+            MDLog.Info(LOG_CAT, $"Peer [ID: {PeerId}] disconnected");
             OnPlayerLeft_Internal(PeerId);
             BroadcastPlayerLeft(PeerId);
         }
@@ -234,7 +234,7 @@ namespace MD
         {
             foreach (int PeerId in Players.Keys.Where(PeerId => PeerId != Joiner))
             {
-                MDLog.Debug(LOG_CAT, "Notifying Peer [{0}] that Peer [{1}] exists", Joiner, PeerId);
+                MDLog.Debug(LOG_CAT, $"Notifying Peer [{Joiner}] that Peer [{PeerId}] exists");
                 RpcId(Joiner, nameof(ClientOnPlayerJoined), PeerId);
                 if (PeerId == MDStatics.GetPeerId())
                 {
@@ -264,7 +264,7 @@ namespace MD
                     continue;
                 }
 
-                MDLog.Debug(LOG_CAT, "Notifying Peer [{0}] that Peer [{1}] joined", PeerId, Joiner);
+                MDLog.Debug(LOG_CAT, "Notifying Peer [{PeerId}] that Peer [{Joiner}] joined");
                 RpcId(PeerId, nameof(ClientOnPlayerJoined), Joiner);
             }
         }
@@ -279,7 +279,7 @@ namespace MD
                     continue;
                 }
 
-                MDLog.Debug(LOG_CAT, "Notifying Peer [{0}] that Peer [{1}] left", PeerId, Leaver);
+                MDLog.Debug(LOG_CAT, $"Notifying Peer [{PeerId}] that Peer [{Leaver}] left");
                 RpcId(PeerId, nameof(ClientOnPlayerLeft), Leaver);
             }
         }
@@ -345,7 +345,7 @@ namespace MD
             Type PlayerType = GameInstance.GetPlayerInfoType();
             if (!MDStatics.IsSameOrSubclass(PlayerType, typeof(MDPlayerInfo)))
             {
-                MDLog.Error(LOG_CAT, "Provided player type [{0}] is not a subclass of MDPlayerInfo", PlayerType.Name);
+                MDLog.Error(LOG_CAT, $"Provided player type [{PlayerType.Name}] is not a subclass of MDPlayerInfo");
                 return null;
             }
 
@@ -427,8 +427,8 @@ namespace MD
                 }
                 else
                 {
-                    MDLog.Error(LOG_CAT, "Failed to parse client arg {0}, expecting -{1}=[IPAddress:Port]", ClientArg,
-                        ARG_CLIENT);
+                    MDLog.Error(LOG_CAT,
+                        $"Failed to parse client arg {ClientArg}, expecting -{ARG_CLIENT}=[IPAddress:Port]");
                 }
             }
         }
@@ -476,13 +476,13 @@ namespace MD
 
             if (!MDStatics.IsSameOrSubclass(NodeType, typeof(Node)))
             {
-                MDLog.Error(LOG_CAT, "Provided type [{0}] is not a subclass of Node", NodeType.Name);
+                MDLog.Error(LOG_CAT, $"Provided type [{NodeType.Name}] is not a subclass of Node");
                 return null;
             }
 
             if (!Parent.IsInsideTree())
             {
-                MDLog.Error(LOG_CAT, "Parent [{0}] is not inside the tree", Parent.Name);
+                MDLog.Error(LOG_CAT, $"Parent [{Parent.Name}] is not inside the tree");
                 return null;
             }
 
@@ -530,7 +530,7 @@ namespace MD
 
             if (!Parent.IsInsideTree())
             {
-                MDLog.Error(LOG_CAT, "Parent [{0}] is not inside the tree", Parent.Name);
+                MDLog.Error(LOG_CAT, $"Parent [{Parent.Name}] is not inside the tree");
                 return null;
             }
 
@@ -552,19 +552,19 @@ namespace MD
         private Node SpawnNodeType(string NodeTypeString, string ParentPath, string NodeName, int NetworkMaster,
             Vector3 SpawnPos)
         {
-            MDLog.Log(LOG_CAT, MDLogLevel.Debug, "Spawning Node. Type: {0} ParentPath: {1} Name: {2} Master: {3}",
-                NodeTypeString, ParentPath, NodeName, NetworkMaster);
+            MDLog.Log(LOG_CAT, MDLogLevel.Debug,
+                $"Spawning Node. Type: {NodeTypeString} ParentPath: {ParentPath} Name: {NodeName} Master: {NetworkMaster}");
             Node Parent = GetNodeOrNull(ParentPath);
             if (Parent == null)
             {
-                MDLog.Error(LOG_CAT, "Could not find Parent with path {0}", ParentPath);
+                MDLog.Error(LOG_CAT, $"Could not find Parent with path {ParentPath}");
                 return null;
             }
 
             Type NodeType = Type.GetType(NodeTypeString);
             if (NodeType == null)
             {
-                MDLog.Error(LOG_CAT, "Could not find Type {0}", NodeTypeString);
+                MDLog.Error(LOG_CAT, $"Could not find Type {NodeTypeString}");
                 return null;
             }
 
@@ -594,12 +594,12 @@ namespace MD
         private Node SpawnNodeScene(string ScenePath, string ParentPath, string NodeName, int NetworkMaster,
             Vector3 SpawnPos)
         {
-            MDLog.Log(LOG_CAT, MDLogLevel.Debug, "Spawning Node. Scene: {0} ParentPath: {1} Name: {2} Master: {3}",
-                ScenePath, ParentPath, NodeName, NetworkMaster);
+            MDLog.Log(LOG_CAT, MDLogLevel.Debug,
+                $"Spawning Node. Scene: {ScenePath} ParentPath: {ParentPath} Name: {NodeName} Master: {NetworkMaster}");
             Node Parent = GetNodeOrNull(ParentPath);
             if (Parent == null)
             {
-                MDLog.Error(LOG_CAT, "Could not find Parent with path", ParentPath);
+                MDLog.Error(LOG_CAT, $"Could not find Parent with path: {ParentPath}");
                 return null;
             }
 
@@ -682,7 +682,7 @@ namespace MD
             Node NetworkedNode = GetNodeOrNull(NodePath);
             if (NetworkedNode == null)
             {
-                MDLog.Error(LOG_CAT, "Could not find Node with path {0}", NodePath);
+                MDLog.Error(LOG_CAT, $"Could not find Node with path {NodePath}");
                 return;
             }
 
@@ -737,11 +737,11 @@ namespace MD
         {
             UPNP NewUPNP = new UPNP();
             UPNP.UPNPResult DiscoverResult = (UPNP.UPNPResult) NewUPNP.Discover();
-            MDLog.Info(LOG_CAT, "UPNP Result for Discover is {0}", DiscoverResult);
+            MDLog.Info(LOG_CAT, $"UPNP Result for Discover is {DiscoverResult}");
             UPNP.UPNPResult MappingResult = (UPNP.UPNPResult) NewUPNP.AddPortMapping(Port);
-            MDLog.Info(LOG_CAT, "UPNP Result for Mapping Port {0} is {1}", Port, MappingResult);
+            MDLog.Info(LOG_CAT, $"UPNP Result for Mapping Port {Port} is {MappingResult}");
             ExternalAddress = NewUPNP.QueryExternalAddress();
-            MDLog.Info(LOG_CAT, "UPNP External address found [{0}]", ExternalAddress);
+            MDLog.Info(LOG_CAT, $"UPNP External address found [{ExternalAddress}]");
             return NewUPNP;
         }
 

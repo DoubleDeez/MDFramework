@@ -73,7 +73,7 @@ namespace MD
                 return;
             }
 
-            MDLog.Debug(LOG_CAT, "Registered JIPPlayer with Id", PeerId);
+            MDLog.Debug(LOG_CAT, $"Registered JIPPlayer with Id: {PeerId}");
             JIPPlayers.Enqueue(new NewPlayer(PeerId, OS.GetTicksMsec()));
             if (MDStatics.IsServer())
             {
@@ -117,7 +117,7 @@ namespace MD
 
                 GroupManager.AddReplicatedMember(NodeMember);
 
-                MDLog.Trace(LOG_CAT, "Adding Replicated Node {0} Member {1}", Instance.Name, Member.Name);
+                MDLog.Trace(LOG_CAT, $"Adding Replicated Node {Instance.Name} Member {Member.Name}");
 
                 if (HasRPCModeSet(Member) == false)
                 {
@@ -203,7 +203,7 @@ namespace MD
                 NewPlayer JIPPlayer = JIPPlayers.Peek();
                 if (JIPPlayer.IsReadyForReplication())
                 {
-                    MDLog.Debug(LOG_CAT, "JIP Peer Id {0} ready for MDReplicated", JIPPlayer.PeerId);
+                    MDLog.Debug(LOG_CAT, $"JIP Peer Id {JIPPlayer.PeerId} ready for MDReplicated");
                     return JIPPlayers.Dequeue().PeerId;
                 }
             }
@@ -522,7 +522,7 @@ namespace MD
             Node Target = GetNodeOrNull(NodePath);
             if (Target == null)
             {
-                MDLog.Warn(LOG_CAT, "Could not find target [{0}] for ClockedRpcCall.", NodePath);
+                MDLog.Warn(LOG_CAT, $"Could not find target [{NodePath}] for ClockedRpcCall.");
                 return;
             }
 

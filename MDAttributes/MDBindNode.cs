@@ -49,8 +49,7 @@ namespace MD
                 if (!MDStatics.IsSameOrSubclass(MemberType, typeof(Node)))
                 {
                     MDLog.Error(LOG_CAT,
-                        "Not Node-Type field [{0}] on Node {1} with Type [{2}] was marked with [MDBindNode()]",
-                        Member.Name, Instance.Name, Instance.GetType().Name);
+                        $"Not Node-Type field [{Member.Name}] on Node {Instance.Name} with Type [{Instance.GetType().Name}] was marked with [MDBindNode()]");
                     continue;
                 }
 

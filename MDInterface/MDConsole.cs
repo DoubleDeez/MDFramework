@@ -43,8 +43,12 @@ namespace MD
 
         public override void _Input(InputEvent InEvent)
         {
-            if (!(InEvent is InputEventKey EventKey)) return;
-            if (!EventKey.Pressed || EventKey.Echo) return;
+            if (!(InEvent is InputEventKey EventKey)
+                || !EventKey.Pressed || EventKey.Echo)
+            {
+                return;
+            }
+
             if (EventKey.Scancode == (int) KeyList.Up)
             {
                 if (IsDisplayingHelp && ConsoleInput.Text.Empty() == false)

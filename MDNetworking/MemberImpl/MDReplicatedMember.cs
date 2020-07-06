@@ -76,7 +76,7 @@ namespace MD
         ///<summary>Replicate this value to all clients</summary>
         protected virtual void ReplicateToAll(Node Node, object Value)
         {
-            MDLog.Debug(LOG_CAT, "Replicating {0} with value {1} from {2}", Member.Name, Value, LastValue);
+            MDLog.Debug(LOG_CAT, $"Replicating {Member.Name} with value {Value} from {LastValue}");
             if (Reliable)
             {
                 Node.Rset(Member.Name, Value);
@@ -92,8 +92,7 @@ namespace MD
         ///<summary>Replicate this value to the given peer</summary>
         protected virtual void ReplicateToPeer(Node Node, object Value, int PeerId)
         {
-            MDLog.Debug(LOG_CAT, "Replicating to JIP Peer {0} for member {1} with value {2}", PeerId, Member.Name,
-                Value);
+            MDLog.Debug(LOG_CAT, $"Replicating to JIP Peer {PeerId} for member {Member.Name} with value {Value}");
             if (Reliable)
             {
                 Node.RsetId(PeerId, Member.Name, Value);

@@ -224,7 +224,7 @@ namespace MD
         {
             if (!MDStatics.IsSameOrSubclass(Type, typeof(T)))
             {
-                MDLog.Error(LOG_CAT, "Type [{0}] is not a subclass of [{1}]", Type.Name, typeof(T).Name);
+                MDLog.Error(LOG_CAT, $"Type [{Type.Name}] is not a subclass of [{typeof(T).Name}]");
                 return null;
             }
 

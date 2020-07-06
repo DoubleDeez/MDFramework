@@ -94,7 +94,7 @@ namespace MD
                 return PlayerPing[PeerId];
             }
 
-            MDLog.Warn(LOG_CAT, "Requested ping for peer [{0}] that doesn't exist in list", PeerId);
+            MDLog.Warn(LOG_CAT, $"Requested ping for peer [{PeerId}] that doesn't exist in list");
             return -1;
         }
 
@@ -112,7 +112,7 @@ namespace MD
                 return Convert.ToUInt32(OS.GetTicksMsec() + PlayerTicksMsecOffset[PeerId]);
             }
 
-            MDLog.Warn(LOG_CAT, "Requested OS.GetTicksMsec for peer [{0}] that doesn't exist in list", PeerId);
+            MDLog.Warn(LOG_CAT, $"Requested OS.GetTicksMsec for peer [{PeerId}] that doesn't exist in list");
             return 0;
         }
 
@@ -128,7 +128,7 @@ namespace MD
         [Puppet]
         protected void RpcReceiveNodeCount(int NodeCount)
         {
-            MDLog.Debug(LOG_CAT, "Total nodes that need synch are {0}", NodeCount);
+            MDLog.Debug(LOG_CAT, $"Total nodes that need synch are {NodeCount}");
             this.NodeCount = NodeCount;
             NodeSynchCompleted = false;
             // Start synch timer
@@ -166,7 +166,7 @@ namespace MD
         protected void ClientSynchDone()
         {
             // Great this client is done
-            MDLog.Debug(LOG_CAT, "Peer [{0}] completed synch", Multiplayer.GetRpcSenderId());
+            MDLog.Debug(LOG_CAT, $"Peer [{Multiplayer.GetRpcSenderId()}] completed synch");
             if (!ClientSynchList.Contains(Multiplayer.GetRpcSenderId()))
             {
                 ClientSynchList.Add(Multiplayer.GetRpcSenderId());
@@ -183,8 +183,8 @@ namespace MD
         protected void ClientSynchStatus(int SynchedNodes)
         {
             // Synch in progress
-            MDLog.Debug(LOG_CAT, "Peer [{0}] has synched {1} out of {2} nodes", Multiplayer.GetRpcSenderId(),
-                SynchedNodes, NodeList.Count);
+            MDLog.Debug(LOG_CAT,
+                $"Peer [{Multiplayer.GetRpcSenderId()}] has synched {SynchedNodes} out of {NodeList.Count} nodes");
 
             // Send status update to all players so they can update UI
             UpdateSynchStatusOnAllClients(Multiplayer.GetRpcSenderId(), (float) SynchedNodes / NodeList.Count);
@@ -234,16 +234,16 @@ namespace MD
 
             RpcId(GameSession.GetNetworkMaster(), nameof(ResponseTicksMsec), OS.GetTicksMsec(), ServerTimeOfRequest,
                 RequestNumber);
-            MDLog.Trace(LOG_CAT, "Responded to server request number {0} for OS.GetTicksMsec with [{1}]", RequestNumber,
-                OS.GetTicksMsec());
+            MDLog.Trace(LOG_CAT,
+                $"Responded to server request number {RequestNumber} for OS.GetTicksMsec with [{OS.GetTicksMsec()}]");
         }
 
         ///<summary>Response to our OS.GetTicksMsec() request from the client</summary>
         [Master]
         protected void ResponseTicksMsec(uint ClientTicksMsec, uint ServerTimeOfRequest, int RequestNumber)
         {
-            MDLog.Debug(LOG_CAT, "Msec response number {0} from peer [{1}] is {2} local Msec is {3}", RequestNumber,
-                Multiplayer.GetRpcSenderId(), ClientTicksMsec, OS.GetTicksMsec());
+            MDLog.Debug(LOG_CAT,
+                "Msec response number {RequestNumber} from peer [{Multiplayer.GetRpcSenderId()}] is {ClientTicksMsec} local Msec is {OS.GetTicksMsec()}");
             // Get and record ping
             int ping = (int) (OS.GetTicksMsec() - ServerTimeOfRequest);
             PushPlayerPingToQueue(Multiplayer.GetRpcSenderId(), ping);
@@ -307,7 +307,7 @@ namespace MD
         private void UnpauseAtTickMsec(uint UnpauseTime, uint GameTickToUnpauseAt)
         {
             float waitTime = (UnpauseTime - OS.GetTicksMsec()) / 1000f;
-            MDLog.Trace(LOG_CAT, "Unpausing game in {0}", waitTime);
+            MDLog.Trace(LOG_CAT, $"Unpausing game in {waitTime}");
             Timer timer = CreateUnpausableTimer(RESUME_TIMER_NAME, true, waitTime, true, this,
                 nameof(OnUnpauseTimerTimeout));
             timer.Start();
@@ -322,7 +322,7 @@ namespace MD
         private void NotifyAllNodesSynched()
         {
             // Called from client the first time they complete their node synch
-            MDLog.Trace(LOG_CAT, "Peer [{0}] has completed node synchronization", Multiplayer.GetRpcSenderId());
+            MDLog.Trace(LOG_CAT, $"Peer [{Multiplayer.GetRpcSenderId()}] has completed node synchronization");
             if (!CompletedNodeSyncList.Contains(Multiplayer.GetRpcSenderId()))
             {
                 CompletedNodeSyncList.Add(Multiplayer.GetRpcSenderId());
@@ -340,15 +340,15 @@ namespace MD
         }
 
         ///<summary>Adds the estimated ticks msec to the players list</summary>
-        private void PushPlayerEstimatedTicksMSecToList(int PeerId, int EstimatedTicksMSec)
+        private void PushPlayerEstimatedTicksMSecToList(int PeerId, int EstimatedTicksMsec)
         {
             if (!InternalTicksList.ContainsKey(PeerId))
             {
                 InternalTicksList.Add(PeerId, new List<int>());
             }
 
-            MDLog.Trace(LOG_CAT, "Peer [{0}] recorded a estimated msec of {1}", PeerId, EstimatedTicksMSec);
-            InternalTicksList[PeerId].Add(EstimatedTicksMSec);
+            MDLog.Trace(LOG_CAT, $"Peer [{PeerId}] recorded a estimated msec of {EstimatedTicksMsec}");
+            InternalTicksList[PeerId].Add(EstimatedTicksMsec);
         }
 
         ///<summary>Adds the ping to the players ping list and removes any overflow</summary>
@@ -360,7 +360,7 @@ namespace MD
             }
 
             InternalPingList[PeerId].Enqueue(Ping);
-            MDLog.Trace(LOG_CAT, "Peer [{0}] recorded a ping of {1}", PeerId, Ping);
+            MDLog.Trace(LOG_CAT, $"Peer [{PeerId}] recorded a ping of {Ping}");
             if (InternalPingList[PeerId].Count > GetPingsToKeepForAverage())
             {
                 InternalPingList[PeerId].Dequeue();
@@ -385,8 +385,8 @@ namespace MD
             int totalEstimate = InternalTicksList[PeerId].Sum();
             totalEstimate /= InternalTicksList[PeerId].Count;
             SetPlayerEstimatedOffset(PeerId, totalEstimate);
-            MDLog.Debug(LOG_CAT, "Estimated OS.GetTicksMsec offset for peer [{0}] is {1} based on {2} measurements",
-                PeerId, totalEstimate, InternalTicksList[PeerId].Count);
+            MDLog.Debug(LOG_CAT,
+                $"Estimated OS.GetTicksMsec offset for peer [{PeerId}] is {totalEstimate} based on {InternalTicksList[PeerId].Count} measurements");
         }
 
         ///<summary>Set the estimated offset for the player</summary>
@@ -505,9 +505,9 @@ namespace MD
                 InternalPingList.Add(PeerId, new Queue<int>());
             }
 
-            MDOnScreenDebug.AddOnScreenDebugInfo("Ping(" + PeerId + ")",
+            MDOnScreenDebug.AddOnScreenDebugInfo($"Ping({PeerId})",
                 () => MDStatics.GetGameSynchronizer().GetPlayerPing(PeerId).ToString());
-            Timer timer = CreateUnpausableTimer("PingTimer" + PeerId, false, GetPingInterval(), true, this,
+            Timer timer = CreateUnpausableTimer($"PingTimer{PeerId}", false, GetPingInterval(), true, this,
                 nameof(OnPingTimerTimeout), PeerId);
             timer.Start();
         }
@@ -517,7 +517,7 @@ namespace MD
             // Check if peer is still active
             if (!InternalPingList.ContainsKey(PeerId) || !MDStatics.IsNetworkActive())
             {
-                MDLog.Trace(LOG_CAT, "Peer {0} has disconnected, stopping ping", PeerId);
+                MDLog.Trace(LOG_CAT, $"Peer {PeerId} has disconnected, stopping ping");
                 timer.Stop();
                 timer.RemoveAndFree();
                 return;
@@ -555,7 +555,7 @@ namespace MD
                     continue;
                 }
 
-                MDLog.Trace(LOG_CAT, "Peer [{0}] is not yet fully synched", peerId);
+                MDLog.Trace(LOG_CAT, $"Peer [{peerId}] is not yet fully synched");
                 allClientsSynched = false;
             }
 
@@ -578,7 +578,7 @@ namespace MD
                 }
 
                 waitForTickMsec = true;
-                MDLog.Trace(LOG_CAT, "Still waiting for peer [{0}] to get a more secure TickMsec value", peerId);
+                MDLog.Trace(LOG_CAT, $"Still waiting for peer [{peerId}] to get a more secure TickMsec value");
             }
 
             if (waitForTickMsec)
@@ -592,7 +592,7 @@ namespace MD
             foreach (int peerid in GameSession.GetAllPeerIds())
             {
                 // Get our current game tick
-                uint tickToUnpause = GameClock?.GetTick() ?? 0; // TODO: Is null coalescing is a good thing?
+                uint tickToUnpause = GameClock?.GetTick() != null ? GameClock.GetTick() : 0;
 
                 if (peerid != MDStatics.GetServerId())
                 {
@@ -608,13 +608,13 @@ namespace MD
 
         private void OnNetworkNodeAdded(Node node)
         {
-            MDLog.Trace(LOG_CAT, "Node added: {0}", node.GetPath());
+            MDLog.Trace(LOG_CAT, $"Node removed: {node.GetPath()}");
             NodeList.Add(node);
         }
 
         private void OnNetworkNodeRemoved(Node node)
         {
-            MDLog.Trace(LOG_CAT, "Node removed: {0}", node.GetPath());
+            MDLog.Trace(LOG_CAT, $"Node removed: {node.GetPath()}");
             NodeList.Remove(node);
         }
 
@@ -660,7 +660,7 @@ namespace MD
                 }
 
                 // We are not synched
-                MDLog.Trace(LOG_CAT, "A node is still synching: {0}", node.GetPath());
+                MDLog.Trace(LOG_CAT, $"A node is still synching: {node.GetPath()}");
                 SynchedNodes--;
                 NotSynchedNodes++;
             }
@@ -677,7 +677,6 @@ namespace MD
             else
             {
                 float percentage = (float) SynchedNodes / NodeCount;
-                // TODO: Maybe using this instead of formatting string would be better?
                 MDLog.Debug(LOG_CAT,
                     $"We have {NotSynchedNodes} nodes that are still synching. Current status: {percentage * 100}%");
                 // Notify the server of how many nodes we got synched

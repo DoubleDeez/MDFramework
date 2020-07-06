@@ -19,8 +19,7 @@ namespace MD
                     break;
                 default:
                     MDLog.Error(LOG_CAT,
-                        "Input MemberInfo was of type {0}, it should be of type FieldInfo or PropertyInfo",
-                        member.MemberType.ToString());
+                        $"Input MemberInfo was of type {member.MemberType.ToString()}, it should be of type FieldInfo or PropertyInfo");
                     break;
             }
         }
@@ -39,8 +38,7 @@ namespace MD
                     return ((PropertyInfo) member).PropertyType;
                 default:
                     MDLog.Error(LOG_CAT,
-                        "Input MemberInfo was of type {0}, it should be of type EventInfo, FieldInfo, MethodInfo, or PropertyInfo",
-                        member.MemberType.ToString());
+                        $"Input MemberInfo was of type {member.MemberType.ToString()}, it should be of type EventInfo, FieldInfo, MethodInfo, or PropertyInfo");
                     return null;
             }
         }

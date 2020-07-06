@@ -116,7 +116,7 @@ namespace MD
             string MethodName = Method.Name.ToLower();
             if (_commandMap.ContainsKey(MethodName))
             {
-                MDLog.Warn(LOG_CAT, "Command with name [{0}] is already registered, it will be replaced", Method.Name);
+                MDLog.Warn(LOG_CAT, $"Command with name [{Method.Name}] is already registered, it will be replaced");
             }
 
             CommandInfo NewCommand;
@@ -171,7 +171,7 @@ namespace MD
             string CmdName = Args[0].ToLower();
             if (!_commandMap.ContainsKey(CmdName))
             {
-                MDLog.Error(LOG_CAT, "Command not found: [{0}]", Command);
+                MDLog.Error(LOG_CAT, $"Command not found: [{Command}]");
                 return false;
             }
 

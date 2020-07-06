@@ -1,122 +1,120 @@
 using Godot;
 using System;
+using MD;
 
-namespace MD
+[MDAutoRegister]
+public class ActorSpawner : Node2D
 {
-    [MDAutoRegister]
-    public class ActorSpawner : Node2D
+    private const string LOG_CAT = "LogActorSpawner";
+
+    [Export]
+    public int TotalNodes = 10;
+
+    [Export]
+    public string ActorFileName = "Actor.tscn";
+
+    [MDBindNode("/root/PredictiveExample/CanvasLayer/BtnDisconnect/ButtonRoot")]
+    protected Control ButtonRoot;
+
+    protected MDGameSession GameSession;
+
+    // Called when the node enters the scene tree for the first time.
+    public override void _Ready()
     {
-        private const string LOG_CAT = "LogActorSpawner";
+        GameSession = this.GetGameSession();
+        GameSession.OnSessionStartedEvent += OnSessionStartedEvent;
+        GameSession.OnSessionFailedEvent += OnSessionFailedOrEndedEvent;
+        GameSession.OnSessionEndedEvent += OnSessionFailedOrEndedEvent;
+    }
 
-        [Export]
-        public int TotalNodes = 10;
+    public override void _ExitTree()
+    {
+        GameSession.OnSessionStartedEvent -= OnSessionStartedEvent;
+        GameSession.OnSessionFailedEvent -= OnSessionFailedOrEndedEvent;
+        GameSession.OnSessionEndedEvent -= OnSessionFailedOrEndedEvent;
+    }
 
-        [Export]
-        public string ActorFileName = "Actor.tscn";
+    protected virtual void OnSessionStartedEvent()
+    {
+        ToggleButtonRoot(!this.IsClient());
+        CallDeferred(nameof(SpawnNodes));
+    }
 
-        [MDBindNode("/root/PredictiveExample/CanvasLayer/BtnDisconnect/ButtonRoot")]
-        protected Control ButtonRoot;
-
-        protected MDGameSession GameSession;
-
-        // Called when the node enters the scene tree for the first time.
-        public override void _Ready()
+    protected virtual void OnSessionFailedOrEndedEvent()
+    {
+        foreach (Node n in GetTree().GetNodesInGroup(PredictiveActor.GROUP_ACTORS))
         {
-            GameSession = this.GetGameSession();
-            GameSession.OnSessionStartedEvent += OnSessionStartedEvent;
-            GameSession.OnSessionFailedEvent += OnSessionFailedOrEndedEvent;
-            GameSession.OnSessionEndedEvent += OnSessionFailedOrEndedEvent;
+            n.QueueFree();
+        }
+    }
+
+    private void OnIncreasePressed()
+    {
+        if (this.IsClient())
+        {
+            return;
         }
 
-        public override void _ExitTree()
+        TotalNodes += 20;
+        SpawnNodes();
+    }
+
+
+    private void OnDecreasePressed()
+    {
+        if (this.IsClient())
         {
-            GameSession.OnSessionStartedEvent -= OnSessionStartedEvent;
-            GameSession.OnSessionFailedEvent -= OnSessionFailedOrEndedEvent;
-            GameSession.OnSessionEndedEvent -= OnSessionFailedOrEndedEvent;
+            return;
         }
 
-        protected virtual void OnSessionStartedEvent()
+        TotalNodes -= 20;
+        if (TotalNodes <= 20)
         {
-            ToggleButtonRoot(!this.IsClient());
-            CallDeferred(nameof(SpawnNodes));
+            TotalNodes = 20;
         }
 
-        protected virtual void OnSessionFailedOrEndedEvent()
+        SpawnNodes();
+    }
+
+    private void SpawnNodes()
+    {
+        if (this.IsClient())
         {
-            foreach (Node n in GetTree().GetNodesInGroup(PredictiveActor.GROUP_ACTORS))
-            {
-                n.QueueFree();
-            }
+            return;
         }
 
-        private void OnIncreasePressed()
+        int CurrentNodes = GetTree().GetNodesInGroup(PredictiveActor.GROUP_ACTORS).Count;
+        if (CurrentNodes < TotalNodes)
         {
-            if (this.IsClient())
-            {
-                return;
-            }
-
-            TotalNodes += 20;
-            SpawnNodes();
+            // Add more if needed
+            this.SpawnNetworkedNode(GetActorScene(), "Actor");
+        }
+        else if (CurrentNodes > TotalNodes)
+        {
+            // Remove
+            ((Node) GetTree().GetNodesInGroup(PredictiveActor.GROUP_ACTORS)[0]).QueueFree();
+        }
+        else
+        {
+            return;
         }
 
+        CallDeferred(nameof(SpawnNodes));
+    }
 
-        private void OnDecreasePressed()
+    private String GetActorScene()
+    {
+        // This is to avoid needing references
+        return GetParent().Filename.GetBaseDir() + "/" + ActorFileName;
+    }
+
+    private void ToggleButtonRoot(bool visible)
+    {
+        if (ButtonRoot == null)
         {
-            if (this.IsClient())
-            {
-                return;
-            }
-
-            TotalNodes -= 20;
-            if (TotalNodes <= 20)
-            {
-                TotalNodes = 20;
-            }
-
-            SpawnNodes();
+            return;
         }
 
-        private void SpawnNodes()
-        {
-            if (this.IsClient())
-            {
-                return;
-            }
-
-            int CurrentNodes = GetTree().GetNodesInGroup(PredictiveActor.GROUP_ACTORS).Count;
-            if (CurrentNodes < TotalNodes)
-            {
-                // Add more if needed
-                this.SpawnNetworkedNode(GetActorScene(), "Actor");
-            }
-            else if (CurrentNodes > TotalNodes)
-            {
-                // Remove
-                ((Node) GetTree().GetNodesInGroup(PredictiveActor.GROUP_ACTORS)[0]).QueueFree();
-            }
-            else
-            {
-                return;
-            }
-
-            CallDeferred(nameof(SpawnNodes));
-        }
-
-        private String GetActorScene()
-        {
-            // This is to avoid needing references
-            return GetParent().Filename.GetBaseDir() + "/" + ActorFileName;
-        }
-
-        private void ToggleButtonRoot(bool visible)
-        {
-            if (ButtonRoot == null)
-            {
-                return;
-            }
-
-            ButtonRoot.Visible = visible;
-        }
+        ButtonRoot.Visible = visible;
     }
 }
