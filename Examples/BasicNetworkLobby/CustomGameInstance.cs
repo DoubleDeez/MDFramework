@@ -1,5 +1,4 @@
-using Godot;
-using System;
+using MD;
 
 public class CustomGameInstance : MDGameInstance
 {

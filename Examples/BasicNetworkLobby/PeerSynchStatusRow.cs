@@ -1,5 +1,6 @@
 using Godot;
 using System;
+using MD;
 
 [MDAutoRegister]
 public class PeerSynchStatusRow : ColorRect
@@ -12,12 +13,11 @@ public class PeerSynchStatusRow : ColorRect
     [MDBindNode("GridContainer/ProgressBar")]
     protected ProgressBar ProgressBar;
 
-    public int PeerId {get; set;} = 0;
+    public int PeerId { get; set; } = 0;
 
     // Called when the node enters the scene tree for the first time.
     public override void _Ready()
     {
-        
     }
 
     public void SetPlayerName(String name)
@@ -27,6 +27,7 @@ public class PeerSynchStatusRow : ColorRect
             MDLog.Error(LOG_CAT, "PlayerName label not found");
             return;
         }
+
         PlayerName.Text = name;
     }
 
@@ -38,6 +39,7 @@ public class PeerSynchStatusRow : ColorRect
             MDLog.Error(LOG_CAT, "ProgressBar not found");
             return;
         }
+
         ProgressBar.Value = percentage * 100;
     }
 }

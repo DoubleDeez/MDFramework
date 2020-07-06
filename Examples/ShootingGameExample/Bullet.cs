@@ -1,5 +1,6 @@
 using Godot;
-using System;
+using MD;
+
 
 public class Bullet : KinematicBody2D
 {
@@ -13,7 +14,6 @@ public class Bullet : KinematicBody2D
     // Called when the node enters the scene tree for the first time.
     public override void _Ready()
     {
-        
     }
 
     public override void _PhysicsProcess(float delta)
@@ -41,7 +41,7 @@ public class Bullet : KinematicBody2D
     {
         if (body is Player)
         {
-            Player player = ((Player)body);
+            Player player = ((Player) body);
             if (player.GetNetworkMaster() != OwnerPeerId)
             {
                 player.Hit();

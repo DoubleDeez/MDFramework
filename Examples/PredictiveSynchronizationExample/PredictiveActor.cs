@@ -1,5 +1,5 @@
 using Godot;
-using System;
+using MD;
 
 /*
     A simple predictive actor that always behaves the same if it is synched
@@ -33,6 +33,7 @@ public class PredictiveActor : KinematicBody2D, IMDSynchronizedNode
         {
             return;
         }
+
         Direction = new Vector2(Random.RandfRange(-1f, 1f), Random.RandfRange(-1f, 1f));
         Speed = Random.RandfRange(1f, 4f);
         Direction = Direction.Normalized() * Speed;
@@ -93,6 +94,7 @@ public class PredictiveActor : KinematicBody2D, IMDSynchronizedNode
         {
             DirectionInt = Direction;
         }
+
         KinematicCollision2D col = MoveAndCollide(DirectionInt * Speed);
         if (col != null)
         {
@@ -105,7 +107,7 @@ public class PredictiveActor : KinematicBody2D, IMDSynchronizedNode
         if (Speed == 0f || Direction == Vector2.Zero)
         {
             // Fake that we are taking variable time to synch
-            FinishSynchAt = OS.GetTicksMsec() + (uint)Random.RandiRange(500, 8000);
+            FinishSynchAt = OS.GetTicksMsec() + (uint) Random.RandiRange(500, 8000);
             return false;
         }
 
@@ -116,5 +118,4 @@ public class PredictiveActor : KinematicBody2D, IMDSynchronizedNode
 
         return true;
     }
-
 }

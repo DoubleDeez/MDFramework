@@ -1,5 +1,6 @@
 using Godot;
 using System;
+using MD;
 
 public class GameController : Node2D
 {
@@ -25,6 +26,7 @@ public class GameController : Node2D
         {
             return;
         }
+
         CallDeferred(nameof(SpawnPlayer), PeerId);
     }
 
@@ -48,6 +50,5 @@ public class GameController : Node2D
                 node.RemoveAndFree();
             }
         }
-        
     }
 }

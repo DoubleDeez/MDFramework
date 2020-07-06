@@ -1,5 +1,6 @@
 using Godot;
 using System;
+using MD;
 
 [MDAutoRegister]
 public class ActorSpawner : Node2D
@@ -53,6 +54,7 @@ public class ActorSpawner : Node2D
         {
             return;
         }
+
         TotalNodes += 20;
         SpawnNodes();
     }
@@ -64,11 +66,13 @@ public class ActorSpawner : Node2D
         {
             return;
         }
+
         TotalNodes -= 20;
         if (TotalNodes <= 20)
         {
             TotalNodes = 20;
         }
+
         SpawnNodes();
     }
 
@@ -88,7 +92,7 @@ public class ActorSpawner : Node2D
         else if (CurrentNodes > TotalNodes)
         {
             // Remove
-            ((Node)GetTree().GetNodesInGroup(PredictiveActor.GROUP_ACTORS)[0]).QueueFree();
+            ((Node) GetTree().GetNodesInGroup(PredictiveActor.GROUP_ACTORS)[0]).QueueFree();
         }
         else
         {
@@ -110,7 +114,7 @@ public class ActorSpawner : Node2D
         {
             return;
         }
+
         ButtonRoot.Visible = visible;
     }
-
 }

@@ -1,5 +1,5 @@
 using Godot;
-using System;
+using MD;
 
 [MDAutoRegister]
 public class SyncInterface : CenterContainer
@@ -126,7 +126,7 @@ public class SyncInterface : CenterContainer
     {
         foreach (Control control in Container.GetChildren())
         {
-            if (control is PeerSynchStatusRow && ((PeerSynchStatusRow)control).PeerId == PeerId)
+            if (control is PeerSynchStatusRow && ((PeerSynchStatusRow) control).PeerId == PeerId)
             {
                 return (PeerSynchStatusRow) control;
             }
@@ -140,9 +140,10 @@ public class SyncInterface : CenterContainer
         // This is to avoid needing references
         if (SynchRow == null)
         {
-            SynchRow = (PackedScene)ResourceLoader.Load(Filename.GetBaseDir() + "/PeerSynchStatusRow.tscn");
+            SynchRow = (PackedScene) ResourceLoader.Load(Filename.GetBaseDir() + "/PeerSynchStatusRow.tscn");
         }
-        PeerSynchStatusRow row = (PeerSynchStatusRow)SynchRow.Instance();
+
+        PeerSynchStatusRow row = (PeerSynchStatusRow) SynchRow.Instance();
         Container.AddChild(row);
         row.SetPlayerName(info.GetPlayerName());
         row.PeerId = info.PeerId;

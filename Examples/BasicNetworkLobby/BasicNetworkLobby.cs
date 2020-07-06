@@ -1,5 +1,6 @@
 using Godot;
 using System;
+using MD;
 
 /*
     Very simple example on how you can host / join games
@@ -12,7 +13,7 @@ public class BasicNetworkLobby : Node2D
     private const string TEXT_JOIN_SERVER = "Join Server";
 
     private const string TEXT_CONNECTING = "Connecting...";
-    
+
     [MDBindNode("CanvasLayer/CenterContainer/ParentGrid/CenterContainer/GridContainer/GridContainer/TextAddress")]
     protected TextEdit TextHost;
 
@@ -30,7 +31,7 @@ public class BasicNetworkLobby : Node2D
 
     [MDBindNode("CanvasLayer/BtnDisconnect")]
     protected Button ButtonDisconnect;
-    
+
 
     [MDBindNode("CanvasLayer/CenterContainer")]
     protected Control InterfaceRoot;
@@ -60,7 +61,7 @@ public class BasicNetworkLobby : Node2D
         GameSession.OnSessionEndedEvent += OnSessionFailedOrEndedEvent;
     }
 
-#region USER INPTU
+    #region USER INPTU
 
     protected virtual void OnHostPressed()
     {
@@ -92,9 +93,9 @@ public class BasicNetworkLobby : Node2D
         GameSession.StartStandalone();
     }
 
-#endregion
+    #endregion
 
-#region EVENTS
+    #region EVENTS
 
     protected virtual void OnSessionStartedEvent()
     {
@@ -112,25 +113,26 @@ public class BasicNetworkLobby : Node2D
 
     protected virtual void OnPlayerNameChanged(int PeerId)
     {
-        MDLog.Info(LOG_CAT, "Player changed name to {0}", GameSession.GetPlayerInfo(PeerId).GetPlayerName());
+        MDLog.Info(LOG_CAT, $"Player changed name to {GameSession.GetPlayerInfo(PeerId).GetPlayerName()}");
     }
 
     protected virtual void OnPlayerLeft(int PeerId)
     {
         // TODO: Do cleanup code here
         // Note: You can't access PlayerInfo here, to access that override PreparePlayerInfoForRemoval in GameSession.
-        MDLog.Info(LOG_CAT, "Player left with PeerID {0}", PeerId);
+        MDLog.Info(LOG_CAT, $"Player left with PeerID {PeerId}");
     }
 
     protected virtual void OnPlayerJoined(int PeerId)
     {
         // TODO: Spawn player here, should be done with CallDeferred
-        MDLog.Info(LOG_CAT, "Player joined {0} with PeerID {1}", GameSession.GetPlayerInfo(PeerId).GetPlayerName(), PeerId);
+        MDLog.Info(LOG_CAT,
+            $"Player joined {GameSession.GetPlayerInfo(PeerId).GetPlayerName()} with PeerID {PeerId}");
     }
 
-#endregion
+    #endregion
 
-#region SUPPORT METHODS
+    #region SUPPORT METHODS
 
     protected void SetJoinButtonText(String text)
     {
@@ -139,6 +141,7 @@ public class BasicNetworkLobby : Node2D
             MDLog.Warn(LOG_CAT, "Could not find join button");
             return;
         }
+
         ButtonJoin.Text = text;
     }
 
@@ -149,6 +152,7 @@ public class BasicNetworkLobby : Node2D
             MDLog.Warn(LOG_CAT, "Could not find interface root");
             return;
         }
+
         InterfaceRoot.Visible = visible;
     }
 
@@ -159,9 +163,9 @@ public class BasicNetworkLobby : Node2D
             MDLog.Warn(LOG_CAT, "Could not find disconnect button");
             return;
         }
+
         ButtonDisconnect.Visible = visible;
     }
-
 
 
     private void ToggleButtons(bool Enabled)
@@ -178,6 +182,7 @@ public class BasicNetworkLobby : Node2D
             MDLog.Warn(LOG_CAT, "A button was null");
             return;
         }
+
         Button.Disabled = !Enabled;
     }
 
@@ -203,6 +208,5 @@ public class BasicNetworkLobby : Node2D
         return Int32.Parse(TextPort.Text);
     }
 
-#endregion
-
+    #endregion
 }

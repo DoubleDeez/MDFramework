@@ -1,5 +1,6 @@
 using Godot;
 using System;
+using MD;
 
 [MDAutoRegister]
 public class Player : KinematicBody2D
@@ -8,8 +9,10 @@ public class Player : KinematicBody2D
 
     [Export]
     public float MaxSpeed = 150f;
+
     [Export]
     public float Acceleration = 2000f;
+
     [Export]
     public float WeaponCooldown = 1f;
 
@@ -31,7 +34,7 @@ public class Player : KinematicBody2D
     protected PackedScene BulletScene = null;
 
     protected int HitCounterValue = 0;
-  
+
     [MDReplicated(MDReliability.Unreliable, MDReplicatedType.Interval)]
     [MDReplicatedSetting(MDReplicator.Settings.GroupName, "PlayerPositions")]
     [MDReplicatedSetting(MDReplicator.Settings.ProcessWhilePaused, false)]
@@ -62,7 +65,8 @@ public class Player : KinematicBody2D
         }
         else
         {
-            MDOnScreenDebug.AddOnScreenDebugInfo("RsetTest " + GetNetworkMaster().ToString(), () => {return RsetTest;});
+            MDOnScreenDebug.AddOnScreenDebugInfo("RsetTest " + GetNetworkMaster().ToString(),
+                () => { return RsetTest; });
         }
     }
 
@@ -90,7 +94,7 @@ public class Player : KinematicBody2D
     {
         if (Target != Vector2.Zero)
         {
-            Bullet bullet = (Bullet)GetBulletScene().Instance();
+            Bullet bullet = (Bullet) GetBulletScene().Instance();
             bullet.GlobalPosition = GlobalPosition;
             bullet.SetOwner(GetNetworkMaster());
             GetParent().AddChild(bullet);
@@ -102,8 +106,9 @@ public class Player : KinematicBody2D
     {
         if (BulletScene == null)
         {
-            BulletScene = (PackedScene)ResourceLoader.Load(Filename.GetBaseDir() + "/Bullet.tscn");
+            BulletScene = (PackedScene) ResourceLoader.Load(Filename.GetBaseDir() + "/Bullet.tscn");
         }
+
         return BulletScene;
     }
 
@@ -118,11 +123,11 @@ public class Player : KinematicBody2D
             {
                 // Shoot towards mouse position
                 this.MDRpc(nameof(OnShoot), GetGlobalMousePosition());
-                
+
                 // Call it on local client, could do with RemoteSynch as well but then it won't work in standalone
                 OnShoot(GetGlobalMousePosition());
                 WeaponActiveCooldown = WeaponCooldown;
-            } 
+            }
             else if (Input.IsMouseButtonPressed(2) && RsetActiveCooldown <= 0f)
             {
                 RandomNumberGenerator rnd = new RandomNumberGenerator();
@@ -130,6 +135,7 @@ public class Player : KinematicBody2D
                 this.MDRset(nameof(RsetTest), rnd.RandiRange(0, 100000).ToString());
                 RsetActiveCooldown = 0.1f;
             }
+
             MovementAxis = GetInputAxis();
 
             // Move
@@ -141,6 +147,7 @@ public class Player : KinematicBody2D
             {
                 ApplyMovement(MovementAxis * Acceleration * delta, MaxSpeed);
             }
+
             Motion = MoveAndSlide(Motion);
             NetworkedPosition = Position;
         }
@@ -163,7 +170,7 @@ public class Player : KinematicBody2D
             Motion = Vector2.Zero;
         }
     }
-    
+
     protected Vector2 GetInputAxis()
     {
         Vector2 axis = Vector2.Zero;
@@ -172,12 +179,13 @@ public class Player : KinematicBody2D
         return axis.Normalized();
     }
 
-    protected int IsActionPressed(String Action) 
+    protected int IsActionPressed(String Action)
     {
         if (Input.IsActionPressed(Action))
         {
             return 1;
         }
+
         return 0;
     }
 
