@@ -8,6 +8,7 @@ on:
 
 env:
   GODOT_VERSION: 3.2.2
+  DOTNET_CLI_TELEMETRY_OPTOUT: 1
 
 jobs:
   empty-check:
