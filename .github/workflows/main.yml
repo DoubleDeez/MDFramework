@@ -46,9 +46,10 @@ jobs:
       run: |
         cd ../Examples
         sudo apt-get install pulseaudio
-        pwd
-        ls -al
-        ls -al MDFramework
+        echo "New"
+        cat MDFramework-Examples.csproj
+        echo "Old"
+        cat MDFramework-Examples.csproj.old
         ../Godot_v${GODOT_VERSION}-stable_mono_linux_headless_64/Godot_v${GODOT_VERSION}-stable_mono_linux_headless.64 -e -q -d --build-solutions
         
     - name: Upload Artifacts
