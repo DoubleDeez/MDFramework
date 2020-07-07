@@ -24,3 +24,11 @@ jobs:
         echo "deb https://download.mono-project.com/repo/ubuntu stable-focal main" | sudo tee /etc/apt/sources.list.d/mono-official-stable.list
         sudo apt update
         sudo apt install mono-devel
+    
+    - name: Setup Godot
+      run: |
+        wget -O godot.zip https://downloads.tuxfamily.org/godotengine/3.2.2/mono/Godot_v3.2.2-stable_mono_x11_64.zip
+        sudo apt install unzip
+        unzip godot.zip
+        ls -al
+        ls -al Godot_v3.2.2-stable_mono_x11_64
