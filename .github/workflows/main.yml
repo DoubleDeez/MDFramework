@@ -17,8 +17,8 @@ jobs:
     # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
     - uses: actions/checkout@v2
     
-#     - name: Setup .NET Core SDK
-#       uses: actions/setup-dotnet@v1.5.0
+    - name: Setup .NET Core SDK
+      uses: actions/setup-dotnet@v1.5.0
 
 #     - name: Install Mono SDK
 #       run: |
@@ -45,11 +45,11 @@ jobs:
     - name: Build Examples
       run: |
         cd ../Examples
-        pwd
+        dotnet build
         ../Godot_v${GODOT_VERSION}-stable_mono_linux_headless_64/Godot_v${GODOT_VERSION}-stable_mono_linux_headless.64 -e -q -d --build-solutions
         
     - name: Upload Artifacts
       uses: actions/upload-artifact@v2
       with:
         name: DLLs
-        path: ${GITHUB_WORKSPACE}/../
+        path: /home/runner/work/MDFramework/Examples
