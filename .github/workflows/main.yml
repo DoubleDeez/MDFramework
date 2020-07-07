@@ -45,11 +45,12 @@ jobs:
     - name: Build Examples
       run: |
         cd ../Examples
+        ../Godot_v${GODOT_VERSION}-stable_mono_linux_headless_64/Godot_v${GODOT_VERSION}-stable_mono_linux_headless.64 -e -q -d
         dotnet build
         ../Godot_v${GODOT_VERSION}-stable_mono_linux_headless_64/Godot_v${GODOT_VERSION}-stable_mono_linux_headless.64 -e -q -d --build-solutions
         
     - name: Upload Artifacts
       uses: actions/upload-artifact@v2
       with:
-        name: DLLs
+        name: Built Examples
         path: /home/runner/work/MDFramework/Examples
