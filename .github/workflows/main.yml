@@ -8,7 +8,7 @@ on:
 
 env:
   GODOT_VERSION: 3.2.2
-  GODOT_NAME: Godot_v${GODOT_VERSION}-stable_mono_x11_64
+  GODOT_NAME: Godot_v3.2.2-stable_mono_x11_64
   EXAMPLE_REPO: https://github.com/DoubleDeez/MDFramework-Examples.git
 
 jobs:
