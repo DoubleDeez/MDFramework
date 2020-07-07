@@ -47,8 +47,8 @@ jobs:
         cd ../Examples
         export DOTNET_CLI_TELEMETRY_OPTOUT="true"
         dotnet build -c=Debug
+        ../Godot_v${GODOT_VERSION}-stable_mono_linux_headless_64/Godot_v${GODOT_VERSION}-stable_mono_linux_headless.64 -e -q -v --build-solutions
         dotnet build -c=ExportRelease
-        ../Godot_v${GODOT_VERSION}-stable_mono_linux_headless_64/Godot_v${GODOT_VERSION}-stable_mono_linux_headless.64 -e -q -v -l en --build-solutions
 
   # Checks MDFramework changes against our example projects to check if there's any backwards compatibility issues.
   backwards-check:
@@ -85,5 +85,5 @@ jobs:
         cd ../Examples
         export DOTNET_CLI_TELEMETRY_OPTOUT="true"
         dotnet build -c=Debug
+        ../Godot_v${GODOT_VERSION}-stable_mono_linux_headless_64/Godot_v${GODOT_VERSION}-stable_mono_linux_headless.64 -e -q -v --build-solutions
         dotnet build -c=ExportRelease
-        ../Godot_v${GODOT_VERSION}-stable_mono_linux_headless_64/Godot_v${GODOT_VERSION}-stable_mono_linux_headless.64 -e -q -v -l en --build-solutions
