@@ -38,12 +38,14 @@ jobs:
     
     - name: Clone Examples
       run: |
+        cd ..
         git clone https://github.com/DoubleDeez/MDFramework-Examples.git Examples
         ls -al
         cp -R MDFramework/* Examples/MDFramework
         ls -al Examples
         ls -al Examples/MDFramework
-        cd Examples
         
     - name: Build Examples
-      run: ../Godot_v${GODOT_VERSION}-stable_mono_x11_64/Godot_v${GODOT_VERSION}-stable_mono_x11.64 -e -q --build-solutions
+      run: |
+        cd ../Examples
+        ../Godot_v${GODOT_VERSION}-stable_mono_x11_64/Godot_v${GODOT_VERSION}-stable_mono_x11.64 -e -q --build-solutions
