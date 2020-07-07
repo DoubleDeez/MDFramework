@@ -10,7 +10,8 @@ env:
   GODOT_VERSION: 3.2.2
 
 jobs:
-  build:
+  empty-check:
+    name: Empty Project Check
     runs-on: ubuntu-20.04
 
     steps:
@@ -19,14 +20,45 @@ jobs:
     
     - name: Setup .NET Core SDK
       uses: actions/setup-dotnet@v1.5.0
+    
+    - name: Setup Godot
+      run: |
+        cd ..
+        wget -O godot.zip https://downloads.tuxfamily.org/godotengine/${GODOT_VERSION}/mono/Godot_v${GODOT_VERSION}-stable_mono_linux_headless_64.zip
+        sudo apt install unzip
+        unzip godot.zip
+        chmod +x Godot_v${GODOT_VERSION}-stable_mono_linux_headless_64/Godot_v${GODOT_VERSION}-stable_mono_linux_headless.64
+    
+    - name: Clone Examples
+      run: |
+        cd ..
+        git clone https://github.com/DoubleDeez/MDFramework-Examples.git Examples
+        cp -R MDFramework/* Examples/MDFramework
+        cd Examples
+        git checkout empty
+        
+    - name: Build Examples
+      run: |
+        cd ../Examples
+        ../Godot_v${GODOT_VERSION}-stable_mono_linux_headless_64/Godot_v${GODOT_VERSION}-stable_mono_linux_headless.64 -e -q -d
+        dotnet build -c=Debug
+        dotnet build -c=ExportRelease
+        
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v2
+      with:
+        name: Built Examples
+        path: /home/runner/work/MDFramework/Examples:
+  backwards-check:
+    name: Backwards Compatibility Check
+    runs-on: ubuntu-20.04
 
-#     - name: Install Mono SDK
-#       run: |
-#         sudo apt install gnupg ca-certificates
-#         sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF
-#         echo "deb https://download.mono-project.com/repo/ubuntu stable-focal main" | sudo tee /etc/apt/sources.list.d/mono-official-stable.list
-#         sudo apt update
-#         sudo apt install mono-devel
+    steps:
+    # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+    - uses: actions/checkout@v2
+    
+    - name: Setup .NET Core SDK
+      uses: actions/setup-dotnet@v1.5.0
     
     - name: Setup Godot
       run: |
@@ -46,8 +78,8 @@ jobs:
       run: |
         cd ../Examples
         ../Godot_v${GODOT_VERSION}-stable_mono_linux_headless_64/Godot_v${GODOT_VERSION}-stable_mono_linux_headless.64 -e -q -d
-        dotnet build
-        ../Godot_v${GODOT_VERSION}-stable_mono_linux_headless_64/Godot_v${GODOT_VERSION}-stable_mono_linux_headless.64 -e -q -d --build-solutions
+        dotnet build -c=Debug
+        dotnet build -c=ExportRelease
         
     - name: Upload Artifacts
       uses: actions/upload-artifact@v2
