@@ -8,7 +8,6 @@ on:
 
 env:
   GODOT_VERSION: 3.2.2
-  GODOT_NAME: Godot_v3.2.2-stable_mono_x11_64
   EXAMPLE_REPO: https://github.com/DoubleDeez/MDFramework-Examples.git
 
 jobs:
@@ -32,21 +31,18 @@ jobs:
     
     - name: Setup Godot
       run: |
-        pwd
-        ls -al
-        cd ..
-        ls -al
-        wget -O godot.zip https://downloads.tuxfamily.org/godotengine/${GODOT_VERSION}/mono/${GODOT_NAME}.zip
+        wget -O godot.zip https://downloads.tuxfamily.org/godotengine/${GODOT_VERSION}/mono/Godot_v${GODOT_VERSION}-stable_mono_x11_64.zip
         sudo apt install unzip
         unzip godot.zip
-        chmod +x ${GODOT_NAME}/${GODOT_NAME}
+        chmod +x Godot_v${GODOT_VERSION}-stable_mono_x11_64/Godot_v${GODOT_VERSION}-stable_mono_x11.64
     
     - name: Clone Examples
       run: |
         git clone ${EXAMPLE_REPO} Examples
-        ls -al
+        cp -R MDFramework/ Examples/MDFramework/
         ls -al Examples
+        ls -al Examples/MDFramework
         cd Examples
         
     - name: Build Examples
-      run: ../${GODOT_NAME}/${GODOT_NAME} -e -q --build-solutions
+      run: ../Godot_v${GODOT_VERSION}-stable_mono_x11_64/Godot_v${GODOT_VERSION}-stable_mono_x11.64 -e -q --build-solutions
