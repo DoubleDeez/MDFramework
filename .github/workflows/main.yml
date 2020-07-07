@@ -28,7 +28,6 @@ jobs:
         wget -O godot.zip https://downloads.tuxfamily.org/godotengine/${GODOT_VERSION}/mono/Godot_v${GODOT_VERSION}-stable_mono_linux_headless_64.zip
         sudo apt install unzip
         unzip godot.zip
-        chmod +x Godot_v${GODOT_VERSION}-stable_mono_linux_headless_64/Godot_v${GODOT_VERSION}-stable_mono_linux_headless.64
     
     - name: Clone Examples
       run: |
@@ -47,7 +46,6 @@ jobs:
         cd ../Examples
         export DOTNET_CLI_TELEMETRY_OPTOUT="true"
         dotnet build -c=Debug
-        ../Godot_v${GODOT_VERSION}-stable_mono_linux_headless_64/Godot_v${GODOT_VERSION}-stable_mono_linux_headless.64 -e -q -v --build-solutions
         dotnet build -c=ExportRelease
 
   # Checks MDFramework changes against our example projects to check if there's any backwards compatibility issues.
@@ -68,7 +66,6 @@ jobs:
         wget -O godot.zip https://downloads.tuxfamily.org/godotengine/${GODOT_VERSION}/mono/Godot_v${GODOT_VERSION}-stable_mono_linux_headless_64.zip
         sudo apt install unzip
         unzip godot.zip
-        chmod +x Godot_v${GODOT_VERSION}-stable_mono_linux_headless_64/Godot_v${GODOT_VERSION}-stable_mono_linux_headless.64
     
     - name: Clone Examples
       run: |
@@ -85,5 +82,4 @@ jobs:
         cd ../Examples
         export DOTNET_CLI_TELEMETRY_OPTOUT="true"
         dotnet build -c=Debug
-        ../Godot_v${GODOT_VERSION}-stable_mono_linux_headless_64/Godot_v${GODOT_VERSION}-stable_mono_linux_headless.64 -e -q -v --build-solutions
         dotnet build -c=ExportRelease
