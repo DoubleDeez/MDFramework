@@ -48,7 +48,8 @@ jobs:
       uses: actions/upload-artifact@v2
       with:
         name: Built Examples
-        path: /home/runner/work/MDFramework/Examples:
+        path: /home/runner/work/MDFramework/Examples
+
   backwards-check:
     name: Backwards Compatibility Check
     runs-on: ubuntu-20.04
