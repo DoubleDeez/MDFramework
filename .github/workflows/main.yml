@@ -20,13 +20,13 @@ jobs:
     - name: Setup .NET Core SDK
       uses: actions/setup-dotnet@v1.5.0
 
-#     - name: Install Mono SDK
-#       run: |
-#         sudo apt install gnupg ca-certificates
-#         sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF
-#         echo "deb https://download.mono-project.com/repo/ubuntu stable-focal main" | sudo tee /etc/apt/sources.list.d/mono-official-stable.list
-#         sudo apt update
-#         sudo apt install mono-devel
+    - name: Install Mono SDK
+      run: |
+        sudo apt install gnupg ca-certificates
+        sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF
+        echo "deb https://download.mono-project.com/repo/ubuntu stable-focal main" | sudo tee /etc/apt/sources.list.d/mono-official-stable.list
+        sudo apt update
+        sudo apt install mono-devel
     
     - name: Setup Godot
       run: |
@@ -40,12 +40,11 @@ jobs:
       run: |
         cd ..
         git clone https://github.com/DoubleDeez/MDFramework-Examples.git Examples
-        ls -al
         cp -R MDFramework/* Examples/MDFramework
-        ls -al Examples
-        ls -al Examples/MDFramework
         
     - name: Build Examples
       run: |
         cd ../Examples
+        ls -al
+        ls -al ../Godot_v${GODOT_VERSION}-stable_mono_x11_64/
         ../Godot_v${GODOT_VERSION}-stable_mono_x11_64/Godot_v${GODOT_VERSION}-stable_mono_x11.64 -e -q --build-solutions
