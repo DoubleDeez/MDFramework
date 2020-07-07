@@ -8,7 +8,6 @@ on:
 
 env:
   GODOT_VERSION: 3.2.2
-  DOTNET_CLI_TELEMETRY_OPTOUT: 1
 
 jobs:
   empty-check:
@@ -41,7 +40,8 @@ jobs:
     - name: Build Examples
       run: |
         cd ../Examples
-        ../Godot_v${GODOT_VERSION}-stable_mono_linux_headless_64/Godot_v${GODOT_VERSION}-stable_mono_linux_headless.64 -e -q -d
+        ../Godot_v${GODOT_VERSION}-stable_mono_linux_headless_64/Godot_v${GODOT_VERSION}-stable_mono_linux_headless.64 -e -q
+        export DOTNET_CLI_TELEMETRY_OPTOUT="true"
         dotnet build -c=Debug
         dotnet build -c=ExportRelease
         
@@ -79,7 +79,8 @@ jobs:
     - name: Build Examples
       run: |
         cd ../Examples
-        ../Godot_v${GODOT_VERSION}-stable_mono_linux_headless_64/Godot_v${GODOT_VERSION}-stable_mono_linux_headless.64 -e -q -d
+        ../Godot_v${GODOT_VERSION}-stable_mono_linux_headless_64/Godot_v${GODOT_VERSION}-stable_mono_linux_headless.64 -e -q
+        export DOTNET_CLI_TELEMETRY_OPTOUT="true"
         dotnet build -c=Debug
         dotnet build -c=ExportRelease
         
