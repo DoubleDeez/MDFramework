@@ -87,3 +87,9 @@ jobs:
         dotnet build -c=Debug
         dotnet build -c=ExportRelease
         ../Godot_v${GODOT_VERSION}-stable_mono_linux_headless_64/Godot_v${GODOT_VERSION}-stable_mono_linux_headless.64 -e -q -v -l en --build-solutions
+    
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v2
+      with:
+        name: Built Examples
+        path: /home/runner/work/MDFramework/Examples
