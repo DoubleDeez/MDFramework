@@ -43,14 +43,6 @@ jobs:
         ../Godot_v${GODOT_VERSION}-stable_mono_linux_headless_64/Godot_v${GODOT_VERSION}-stable_mono_linux_headless.64 -e -q
         export DOTNET_CLI_TELEMETRY_OPTOUT="true"
         dotnet build -c=Debug
-        ../Godot_v${GODOT_VERSION}-stable_mono_linux_headless_64/Godot_v${GODOT_VERSION}-stable_mono_linux_headless.64 -e -q --build-solutions
-        dotnet build -c=ExportRelease
-        
-    - name: Upload Artifacts
-      uses: actions/upload-artifact@v2
-      with:
-        name: Built Examples
-        path: /home/runner/work/MDFramework/Examples
 
   backwards-check:
     name: Backwards Compatibility Check
@@ -83,11 +75,3 @@ jobs:
         ../Godot_v${GODOT_VERSION}-stable_mono_linux_headless_64/Godot_v${GODOT_VERSION}-stable_mono_linux_headless.64 -e -q
         export DOTNET_CLI_TELEMETRY_OPTOUT="true"
         dotnet build -c=Debug
-        ../Godot_v${GODOT_VERSION}-stable_mono_linux_headless_64/Godot_v${GODOT_VERSION}-stable_mono_linux_headless.64 -e -q --build-solutions
-        dotnet build -c=ExportRelease
-        
-    - name: Upload Artifacts
-      uses: actions/upload-artifact@v2
-      with:
-        name: Built Examples
-        path: /home/runner/work/MDFramework/Examples
