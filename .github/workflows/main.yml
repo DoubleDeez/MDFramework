@@ -45,5 +45,5 @@ jobs:
     - name: Build Examples
       run: |
         cd ../Examples
-        sudo apt-get install libpulse0:i386
+        sudo apt-get install pulseaudio
         ../Godot_v${GODOT_VERSION}-stable_mono_x11_64/Godot_v${GODOT_VERSION}-stable_mono_x11.64 -e -q --build-solutions
