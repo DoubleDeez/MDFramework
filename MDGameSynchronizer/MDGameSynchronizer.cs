@@ -70,6 +70,7 @@ namespace MD
         protected int NodeCount = -1;
 
         protected bool NodeSynchCompleted = false;
+        private int MaxPing;
 
 
         // Called when the node enters the scene tree for the first time.
@@ -101,7 +102,7 @@ namespace MD
         ///<summary>Returns the highest ping we got to any player</summary>
         public int GetMaxPlayerPing()
         {
-            return PlayerPing.Values.Max();
+            return MDStatics.IsClient() ? MaxPing : PlayerPing.Values.Max();
         }
 
         /// <summary> Returns the estimated OS.GetTicksMsec for the given peer or 0 if the peer does not exist.</summary>
@@ -203,14 +204,17 @@ namespace MD
 
         ///<Summary>Sent by server when requesting ping, also keeping game clock in sync</summary>
         [Puppet]
-        protected void RequestPing(uint ServerTimeOfRequest, uint EstimateTime, uint EstimatedTick)
+        protected void RequestPing(uint ServerTimeOfRequest, uint EstimateTime, uint EstimatedTick, int MaxPing)
         {
+            // Set max player's ping received from server
+            OnPlayerPingUpdatedEvent(MDStatics.GetServerId(), MaxPing);
+            this.MaxPing = MaxPing;
             // Respond
             RequestPing(ServerTimeOfRequest);
             GameClock?.CheckSynch(EstimateTime, EstimatedTick);
         }
 
-        ///<Summary>Sent by client to request ping or when gameclock is inactive</summary>
+        ///<Summary>Sent by server to request ping or when gameclock is inactive</summary>
         [Remote]
         protected void RequestPing(uint ServerTimeOfRequest)
         {
@@ -425,11 +429,9 @@ namespace MD
                 return;
             }
 
-            // Check if we are a client
+            // Check if we are a client and leave
             if (MDStatics.IsClient())
             {
-                // Track ping to other players
-                StartClientPingCycle(PeerId);
                 return;
             }
 
@@ -484,7 +486,11 @@ namespace MD
         {
             if (this.IsClient())
             {
-                StartClientPingCycle(MDStatics.GetServerId());
+                // Add max ping information between this client and any other client
+                // Roundtrip is: client 1 -> server -> client 2 -> server -> client 1.
+                // TODO: Max ping should be not identical for each player we ping
+                MDOnScreenDebug.AddOnScreenDebugInfo($"MaxRoundtripPing: ",
+                    () => MaxPing.ToString());
                 PauseGame();
             }
 
@@ -524,16 +530,11 @@ namespace MD
             }
 
             // Send ping request
-            if (MDStatics.IsClient() || GameClock == null)
-            {
-                RpcId(PeerId, nameof(RequestPing), OS.GetTicksMsec());
-            }
-            else
-            {
-                uint ping = (uint) GetPlayerPing(PeerId);
-                uint estimate = GetPlayerTicksMsec(PeerId) + ping;
-                RpcId(PeerId, nameof(RequestPing), OS.GetTicksMsec(), estimate, GameClock.GetTickAtTimeOffset(ping));
-            }
+            uint ping = (uint) GetPlayerPing(PeerId);
+            int maxPlayerPing = GetMaxPlayerPing() + (int) ping;
+            uint estimate = GetPlayerTicksMsec(PeerId) + ping;
+            RpcId(PeerId, nameof(RequestPing), OS.GetTicksMsec(), estimate, GameClock.GetTickAtTimeOffset(ping),
+                maxPlayerPing);
         }
 
         private void CheckAllClientsSynched(Timer timer)
