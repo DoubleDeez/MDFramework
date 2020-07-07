@@ -45,10 +45,11 @@ jobs:
     - name: Build Examples
       run: |
         cd ../Examples
+        pwd
         ../Godot_v${GODOT_VERSION}-stable_mono_linux_headless_64/Godot_v${GODOT_VERSION}-stable_mono_linux_headless.64 -e -q -d --build-solutions
         
     - name: Upload Artifacts
       uses: actions/upload-artifact@v2
       with:
         name: DLLs
-        path: ${GITHUB_WORKSPACE}/../Examples/.mono/temp/bin/
+        path: ${GITHUB_WORKSPACE}/../
