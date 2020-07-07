@@ -10,6 +10,7 @@ env:
   GODOT_VERSION: 3.2.2
 
 jobs:
+  # Checks MDFramework changes with an empty project to make sure it compiles
   empty-check:
     name: Empty Project Check
     runs-on: ubuntu-20.04
@@ -40,11 +41,12 @@ jobs:
     - name: Build Examples
       run: |
         cd ../Examples
-        ../Godot_v${GODOT_VERSION}-stable_mono_linux_headless_64/Godot_v${GODOT_VERSION}-stable_mono_linux_headless.64 -e -q
+        ../Godot_v${GODOT_VERSION}-stable_mono_linux_headless_64/Godot_v${GODOT_VERSION}-stable_mono_linux_headless.64 -e -q -v
         export DOTNET_CLI_TELEMETRY_OPTOUT="true"
         dotnet build -c=Debug
-        ../Godot_v${GODOT_VERSION}-stable_mono_linux_headless_64/Godot_v${GODOT_VERSION}-stable_mono_linux_headless.64 -e -q --build-solutions
+        ../Godot_v${GODOT_VERSION}-stable_mono_linux_headless_64/Godot_v${GODOT_VERSION}-stable_mono_linux_headless.64 -e -q -v --build-solutions
 
+  # Checks MDFramework changes against our example projects to check if there's any backwards compatibility issues.
   backwards-check:
     name: Backwards Compatibility Check
     runs-on: ubuntu-20.04
