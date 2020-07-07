@@ -40,6 +40,8 @@ namespace MD
             CreateInterfaceManager();
 
             RegisterNodeAndChildren(GetTree().Root);
+
+            this is obviously broken code
         }
 
         public override void _Notification(int NotificationType)
