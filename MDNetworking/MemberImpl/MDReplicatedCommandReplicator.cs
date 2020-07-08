@@ -29,15 +29,20 @@ namespace MD
 
         protected MethodInfo OnValueChangedCallback = null;
 
+        protected SortedDictionary<uint, List<object>> ValueList = new SortedDictionary<uint, List<object>>();
+
         protected MDReplicator Replicator;
 
         protected MDGameSession GameSession;
+
+        protected MDGameClock GameClock;
 
         public MDReplicatedCommandReplicator(MemberInfo Member, bool Reliable, MDReplicatedType ReplicatedType, WeakRef NodeRef, MDReplicatedSetting[] Settings) 
                                         : base(Member, true, ReplicatedType, NodeRef, Settings) 
         {
             GameSession = MDStatics.GetGameSession();
             Replicator = GameSession.Replicator;
+            GameClock = GameSession.GetGameClock();
             Node node = NodeRef.GetRef() as Node;
             IMDCommandReplicator CommandReplicator = InitializeCommandReplicator(Member, node);
             ParseSettings(MDReplicator.ParseParameters(typeof(Settings), Settings));
@@ -61,11 +66,63 @@ namespace MD
 
         public override void SetValues(uint Tick, params object[] Parameters)
         {
-            GetCommandReplicator().MDProcessCommand(Parameters);
-            if (OnValueChangedCallback != null)
+            // If we got no GameClock or the tick this update is for is past the current tick
+            if (GameClock == null || GameClock.GetRemoteTick() >= Tick)
             {
-                Node Instance = NodeRef.GetRef() as Node;
-                OnValueChangedCallback.Invoke(Instance, null);
+                GetCommandReplicator().MDProcessCommand(Parameters);
+                if (OnValueChangedCallback != null)
+                {
+                    Node Instance = NodeRef.GetRef() as Node;
+                    OnValueChangedCallback.Invoke(Instance, null);
+                }
+            }
+            else
+            {
+                if (!ValueList.ContainsKey(Tick))
+                {
+                    ValueList.Add(Tick, new List<object>());
+                }
+
+                ValueList[Tick].Add(Parameters);
+            }
+        }
+
+        public override void CheckForValueUpdate()
+        {
+            // Check if we are the owner of this
+            if (ShouldReplicate() || GameClock == null)
+            {
+                return;
+            }
+
+            uint RemoteTick = GameClock.GetRemoteTick();
+            bool ValueChanged = false;
+
+            // Find the most recent update
+            List<uint> touchedKeys = new List<uint>();
+            foreach (uint key in ValueList.Keys)
+            {
+                if (key > RemoteTick)
+                {
+                    break;
+                }
+
+                ValueList[key].ForEach(parameters => GetCommandReplicator().MDProcessCommand((object[])parameters));
+                ValueChanged = true;
+                touchedKeys.Add(key);
+            }
+
+            if (ValueChanged)
+            {
+                // Remove old
+                touchedKeys.ForEach(k => ValueList.Remove(k));
+
+                // Send event
+                if (OnValueChangedCallback != null)
+                {
+                    Node Instance = NodeRef.GetRef() as Node;
+                    OnValueChangedCallback.Invoke(Instance, null);
+                }
             }
         }
 
@@ -115,7 +172,17 @@ namespace MD
 
         protected void ReplicateCommandToPeer(object[] Command, int PeerId)
         {
-            Replicator.RpcId(PeerId, REPLICATE_METHOD_NAME, Replicator.GetReplicationIdForKey(GetUniqueKey()), 0, Command);
+            Replicator.RpcId(PeerId, REPLICATE_METHOD_NAME, Replicator.GetReplicationIdForKey(GetUniqueKey()), GetGameTick(), Command);
+        }
+
+        protected uint GetGameTick()
+        {
+            if (GameClock != null)
+            {
+                return GameClock.GetTick();
+            }
+
+            return 0;
         }
 
 
