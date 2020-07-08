@@ -44,6 +44,7 @@ git submodule add https://github.com/DoubleDeez/MDFramework.git src/MDFramework
     <Compile Include="src\MDFramework\MDHelpers\MDInput.cs" />
     <Compile Include="src\MDFramework\MDHelpers\MDCommands.cs" />
     <Compile Include="src\MDFramework\MDHelpers\MDLog.cs" />
+    <Compile Include="src\MDFramework\MDHelpers\MDPeerConfigs.cs" />
     <Compile Include="src\MDFramework\MDHelpers\MDProfiler.cs" />
     <Compile Include="src\MDFramework\MDHelpers\MDStatics.cs" />
     <Compile Include="src\MDFramework\MDInterface\MDConsole.cs" />
