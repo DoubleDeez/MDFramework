@@ -70,7 +70,7 @@ namespace MD
         protected int NodeCount = -1;
 
         protected bool NodeSynchCompleted = false;
-        private int MaxPing;
+        protected int MaxPing;
 
 
         // Called when the node enters the scene tree for the first time.
@@ -530,11 +530,18 @@ namespace MD
             }
 
             // Send ping request
-            uint ping = (uint) GetPlayerPing(PeerId);
-            int maxPlayerPing = GetMaxPlayerPing() + (int) ping;
-            uint estimate = GetPlayerTicksMsec(PeerId) + ping;
-            RpcId(PeerId, nameof(RequestPing), OS.GetTicksMsec(), estimate, GameClock.GetTickAtTimeOffset(ping),
-                maxPlayerPing);
+            if (GameClock == null)
+            {
+                RpcId(PeerId, nameof(RequestPing), OS.GetTicksMsec());
+            }
+            else
+            {
+                uint ping = (uint) GetPlayerPing(PeerId);
+                int maxPlayerPing = GetMaxPlayerPing() + (int) ping;
+                uint estimate = GetPlayerTicksMsec(PeerId) + ping;
+                RpcId(PeerId, nameof(RequestPing), OS.GetTicksMsec(), estimate, GameClock.GetTickAtTimeOffset(ping),
+                    maxPlayerPing);
+            }
         }
 
         private void CheckAllClientsSynched(Timer timer)
