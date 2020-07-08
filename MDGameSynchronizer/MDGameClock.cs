@@ -83,9 +83,12 @@ namespace MD
             // TODO: Remove this, only here for debug
             MDOnScreenDebug.AddOnScreenDebugInfo("GameClock Current Tick", () => CurrentTick.ToString());
             MDOnScreenDebug.AddOnScreenDebugInfo("OS GetTickMsec", () => OS.GetTicksMsec().ToString());
-            MDOnScreenDebug.AddOnScreenDebugInfo("GameClock Remote Offset", () => CurrentRemoteTickOffset.ToString());
+            MDOnScreenDebug.AddOnScreenDebugInfo("GameClock Remote Offset",
+                () =>
+                    $"{CurrentRemoteTickOffset} ({(int) (CurrentRemoteTickOffset * TICK_INTERVAL_MILLISECONDS)} Msec)");
             MDOnScreenDebug.AddOnScreenDebugInfo("GameClock Remote Target Offset",
-                () => CurrentRemoteTickOffsetTarget.ToString());
+                () =>
+                    $"{CurrentRemoteTickOffsetTarget} ({(int) (CurrentRemoteTickOffsetTarget * TICK_INTERVAL_MILLISECONDS)} Msec)");
         }
 
         public override void _ExitTree()
