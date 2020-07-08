@@ -1,5 +1,6 @@
 using Godot;
 using System;
+using MD;
 
 [MDAutoRegister]
 public class ReplicatedListExample : Node2D
@@ -41,7 +42,7 @@ public class ReplicatedListExample : Node2D
 
     protected virtual void OnSessionFailedOrEndedEvent()
     {
-        foreach (Node n in GetTree().GetNodesInGroup(PredictiveActor.GROUP_ACTORS))
+        foreach (Node n in GetTree().GetNodesInGroup(ListActor.GROUP_ACTORS))
         {
             n.QueueFree();
         }

@@ -1,132 +1,140 @@
 using Godot;
-using System;
 using System.Reflection;
 using System.Collections.Generic;
 
-public class MDClockedReplicatedMember : MDReplicatedMember
+namespace MD
 {
-    public enum Settings
+    public class MDClockedReplicatedMember : MDReplicatedMember
     {
-        OnValueChangedEvent
-    }
-
-    protected MethodInfo OnValueChangedCallback = null;
-
-    private const String REPLICATE_METHOD_NAME = "ReplicateClockedValue";
-
-    protected SortedDictionary<uint, object> ValueList = new SortedDictionary<uint, object>();
-
-    protected MDGameClock GameClock;
-
-    protected MDReplicator Replicator;
-
-    protected uint LastTickValueWasChanged = 0;
-
-    public MDClockedReplicatedMember(MemberInfo Member, bool Reliable, MDReplicatedType ReplicatedType, WeakRef NodeRef, MDReplicatedSetting[] Settings) 
-                                    : base(Member, Reliable, ReplicatedType, NodeRef, Settings) 
-    {
-        GameClock = MDStatics.GetGameSynchronizer().GameClock;
-        Replicator = MDStatics.GetGameSession().Replicator;
-        ParseSettings(MDReplicator.ParseParameters(typeof(Settings), Settings));
-    }
-
-    protected void ParseSettings(MDReplicatedSetting[] Settings)
-    {
-        foreach (MDReplicatedSetting setting in Settings)
+        public enum Settings
         {
-            switch ((Settings)setting.Key)
+            OnValueChangedEvent
+        }
+
+        protected MethodInfo OnValueChangedCallback = null;
+
+        private const string REPLICATE_METHOD_NAME = "ReplicateClockedValue";
+
+        protected SortedDictionary<uint, object> ValueList = new SortedDictionary<uint, object>();
+
+        protected MDGameClock GameClock;
+
+        protected MDReplicator Replicator;
+
+        protected uint LastTickValueWasChanged = 0;
+
+        public MDClockedReplicatedMember(MemberInfo Member, bool Reliable, MDReplicatedType ReplicatedType,
+            WeakRef NodeRef, MDReplicatedSetting[] Settings)
+            : base(Member, Reliable, ReplicatedType, NodeRef, Settings)
+        {
+            GameClock = MDStatics.GetGameSynchronizer().GameClock;
+            Replicator = MDStatics.GetGameSession().Replicator;
+            ParseSettings(MDReplicator.ParseParameters(typeof(Settings), Settings));
+        }
+
+        protected void ParseSettings(MDReplicatedSetting[] Settings)
+        {
+            foreach (MDReplicatedSetting setting in Settings)
             {
-                case MDClockedReplicatedMember.Settings.OnValueChangedEvent:
-                    Node Node = NodeRef.GetRef() as Node;
-                    OnValueChangedCallback = Node.GetType().GetMethod(setting.Value.ToString(),
-                            BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy | BindingFlags.Instance);
+                switch ((Settings) setting.Key)
+                {
+                    case MDClockedReplicatedMember.Settings.OnValueChangedEvent:
+                        Node Node = NodeRef.GetRef() as Node;
+                        OnValueChangedCallback = Node.GetType().GetMethod(setting.Value.ToString(),
+                            BindingFlags.Public | BindingFlags.NonPublic | 
+                            BindingFlags.FlattenHierarchy | BindingFlags.Instance);
+                        break;
+                }
+            }
+        }
+
+        public override void SetValue(uint Tick, object Value)
+        {
+            // Could be overwritten for a more optional conversion
+            if (!ValueList.ContainsKey(Tick))
+            {
+                ValueList.Add(Tick, Value);
+            }
+        }
+
+        public override void CheckForValueUpdate()
+        {
+            // Check if we are the owner of this
+            if (ShouldReplicate())
+            {
+                return;
+            }
+
+            // Find the most recent update
+            List<uint> touchedKeys = new List<uint>();
+            uint foundKey = 0;
+            foreach (uint key in ValueList.Keys)
+            {
+                if (key > GameClock.GetRemoteTick())
+                {
                     break;
+                }
+
+                touchedKeys.Add(key);
+                foundKey = key;
             }
-        }
-    }
 
-    public override void SetValue(uint Tick, object Value)
-    {
-        // Could be overwritten for a more optional conversion
-        if (!ValueList.ContainsKey(Tick))
-        {
-            ValueList.Add(Tick, Value);
-        }
-    }
-
-    public override void CheckForValueUpdate()
-    {
-        // Check if we are the owner of this
-        if (ShouldReplicate())
-        {
-            return;
-        }
-
-        // Find the most recent update
-        List<uint> touchedKeys = new List<uint>();
-        uint foundKey = 0;
-        foreach (uint key in ValueList.Keys)
-        {
-            if (key > GameClock.GetRemoteTick())
+            // Didn't find any updates
+            if (foundKey == 0)
             {
-                break;
+                return;
             }
-            touchedKeys.Add(key);
-            foundKey = key;
+
+            // Set the value
+            UpdateValue(ValueList[foundKey]);
+
+            // Remove old
+            touchedKeys.ForEach(k => ValueList.Remove(k));
         }
 
-        // Didn't find any updates
-        if (foundKey == 0)
+        protected virtual void UpdateValue(object value)
         {
-            return;
+            Node Instance = NodeRef.GetRef() as Node;
+            Member.SetValue(Instance, value);
+            LastValue = value;
+            if (OnValueChangedCallback != null)
+            {
+                OnValueChangedCallback.Invoke(Instance, null);
+            }
         }
 
-        // Set the value
-        UpdateValue(ValueList[foundKey]);
+        ///<summary>Replicate this value to all clients</summary>
+        protected override void ReplicateToAll(Node Node, object Value)
+        {
+            MDLog.Debug(LOG_CAT, $"Replicating {Member.Name} with value {Value} from {LastValue}");
+            if (IsReliable())
+            {
+                Replicator.Rpc(REPLICATE_METHOD_NAME, Replicator.GetReplicationIdForKey(GetUniqueKey()),
+                    GameClock.GetTick(), Value);
+            }
+            else
+            {
+                Replicator.RpcUnreliable(REPLICATE_METHOD_NAME, Replicator.GetReplicationIdForKey(GetUniqueKey()),
+                    GameClock.GetTick(), Value);
+            }
 
-        // Remove old
-        touchedKeys.ForEach((k) => ValueList.Remove(k));
-    }
+            LastValue = Value;
+        }
 
-    protected virtual void UpdateValue(object value)
-    {
-        Node Instance = NodeRef.GetRef() as Node;
-        Member.SetValue(Instance, value);
-        LastValue = value;
-        if (OnValueChangedCallback != null)
+        ///<summary>Replicate this value to the given peer</summary>
+        protected override void ReplicateToPeer(Node Node, object Value, int PeerId)
         {
-            OnValueChangedCallback.Invoke(Instance, null);
-        }
-    }
-
-    ///<summary>Replicate this value to all clients</summary>
-    protected override void ReplicateToAll(Node Node, object Value)
-    {
-        MDLog.Debug(LOG_CAT, "Replicating {0} with value {1} from {2}", Member.Name, Value, LastValue);
-        if (IsReliable())
-        {
-            Replicator.Rpc(REPLICATE_METHOD_NAME, Replicator.GetReplicationIdForKey(GetUniqueKey()), GameClock.GetTick(), Value);
-        }
-        else
-        {
-            Replicator.RpcUnreliable(REPLICATE_METHOD_NAME, Replicator.GetReplicationIdForKey(GetUniqueKey()), GameClock.GetTick(), Value);
-        }
-        LastValue = Value;
-    }
-
-    ///<summary>Replicate this value to the given peer</summary>
-    protected override void ReplicateToPeer(Node Node, object Value, int PeerId)
-    {
-        MDLog.Debug(LOG_CAT, "Replicating to JIP Peer {0} for member {1} with value {2}", PeerId, Member.Name, Value);
-        if (IsReliable())
-        {
-            Replicator.RpcId(PeerId, REPLICATE_METHOD_NAME, Replicator.GetReplicationIdForKey(GetUniqueKey()), GameClock.GetTick(), Value);
-        }
-        else
-        {
-            Replicator.RpcUnreliableId(PeerId, REPLICATE_METHOD_NAME, Replicator.GetReplicationIdForKey(GetUniqueKey()), GameClock.GetTick(), Value);
+            MDLog.Debug(LOG_CAT, $"Replicating to JIP Peer {PeerId} for member {Member.Name} with value {Value}");
+            if (IsReliable())
+            {
+                Replicator.RpcId(PeerId, REPLICATE_METHOD_NAME, Replicator.GetReplicationIdForKey(GetUniqueKey()),
+                    GameClock.GetTick(), Value);
+            }
+            else
+            {
+                Replicator.RpcUnreliableId(PeerId, REPLICATE_METHOD_NAME,
+                    Replicator.GetReplicationIdForKey(GetUniqueKey()), GameClock.GetTick(), Value);
+            }
         }
     }
-
-
 }

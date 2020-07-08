@@ -1,10 +1,12 @@
 using Godot;
 using System;
 using System.Collections.Generic;
+using MD;
 
 [MDAutoRegister]
 public class ListActor : Node2D
 {
+    public const string GROUP_ACTORS = "LIST_ACTORS";
     [MDReplicated]
     [MDReplicatedSetting(MDReplicatedCommandReplicator.Settings.OnValueChangedEvent, nameof(OnStringListChangedChanged))]
     private MDList<String> ReplicatedStringList;
@@ -23,6 +25,7 @@ public class ListActor : Node2D
     // Called when the node enters the scene tree for the first time.
     public override void _Ready()
     {
+        AddToGroup(GROUP_ACTORS);
         GameSession = MDStatics.GetGameSession();
 
         // setup popup
