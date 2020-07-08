@@ -84,7 +84,7 @@ namespace MD
 
         public MDList()
         {
-            MDLog.AddLogCategoryProperties(LOG_CAT, new MDLogProperties(MDLogLevel.Force));
+            MDLog.AddLogCategoryProperties(LOG_CAT, new MDLogProperties(MDLogLevel.Info));
             this.Replicator = MDStatics.GetReplicator();
         }
 
