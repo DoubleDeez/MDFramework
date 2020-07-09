@@ -153,10 +153,10 @@ namespace MD
             MDListActions Type = (MDListActions)Enum.Parse(typeof(MDListActions), Params[1].ToString());
             object[] Parameters = Params.SubArray(2);
 
-            MDLog.Trace(LOG_CAT, "Recieved command [{0}] {1}", CmdNumber.ToString(), Type.ToString());
+            MDLog.Trace(LOG_CAT, $"Recieved command [{CmdNumber.ToString()}] {Type.ToString()}");
             foreach(object obj in Parameters)
             {
-                MDLog.Trace(LOG_CAT, "Parameter: {0}", obj.ToString());
+                MDLog.Trace(LOG_CAT, $"Parameter: {obj.ToString()}");
             }
 
             if (CmdNumber > CommandCounter)
@@ -167,7 +167,7 @@ namespace MD
             else if (CmdNumber < CommandCounter)
             {
                 // This should not happen
-                MDLog.Error(LOG_CAT, "Recieved a command with number {0} when our internal CommandCounter is {1}", CmdNumber, CommandCounter);
+                MDLog.Error(LOG_CAT, $"Recieved a command with number {CmdNumber} when our internal CommandCounter is {CommandCounter}");
                 return;
             }
 
@@ -271,7 +271,7 @@ namespace MD
                     case MDList.Settings.COMPARATOR:
                         if (!(setting.Value is Type))
                         {
-                            MDLog.Warn(LOG_CAT, "{0} is not a type, use typeof(class) as value when using MDReplicatedSetting of type MDComparators", setting.Value.ToString());
+                            MDLog.Warn(LOG_CAT, $"{setting.Value.ToString()} is not a type, use typeof(class) as value when using MDReplicatedSetting of type MDComparators");
                             continue;
                         }
                         Type settingType = (Type)setting.Value;
@@ -282,7 +282,7 @@ namespace MD
                         }
                         else
                         {
-                            MDLog.Error(LOG_CAT, "{0} is not an IComparer<T>.", settingType.ToString());
+                            MDLog.Error(LOG_CAT, $"{settingType.ToString()} is not an IComparer<T>.");
                         }
                         break;
                     case MDList.Settings.UNSAFE_MODE:
@@ -304,7 +304,7 @@ namespace MD
             IComparer<T> FoundComparator = GetComparatorByType(Comparator.GetType());
             if (FoundComparator != null)
             {
-                MDLog.Warn(LOG_CAT, "Comparator with key {0} has already been registered", Comparator.GetType().ToString());
+                MDLog.Warn(LOG_CAT, $"Comparator with key {Comparator.GetType().ToString()} has already been registered");
                 return;
             }
 
@@ -529,7 +529,7 @@ namespace MD
             IComparer<T> Comparer = GetComparatorByType(ComparatorType);
             if (Comparer == null)
             {
-                MDLog.Error(LOG_CAT, "Attempted to use comparator [{0}] that is not registered for the MDList", ComparatorType.ToString());
+                MDLog.Error(LOG_CAT, $"Attempted to use comparator [{ComparatorType.ToString()}] that is not registered for the MDList");
                 return;
             }
 
@@ -542,7 +542,7 @@ namespace MD
             IComparer<T> Comparer = GetComparatorByType(ComparatorType);
             if (Comparer == null)
             {
-                MDLog.Error(LOG_CAT, "Attempted to use comparator [{0}] that is not registered for the MDList", ComparatorType.ToString());
+                MDLog.Error(LOG_CAT, $"Attempted to use comparator [{ComparatorType.ToString()}] that is not registered for the MDList");
                 return;
             }
 

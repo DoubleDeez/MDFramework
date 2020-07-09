@@ -264,7 +264,7 @@ namespace MD
                     continue;
                 }
 
-                MDLog.Debug(LOG_CAT, "Notifying Peer [{PeerId}] that Peer [{Joiner}] joined");
+                MDLog.Debug(LOG_CAT, $"Notifying Peer [{PeerId}] that Peer [{Joiner}] joined");
                 RpcId(PeerId, nameof(ClientOnPlayerJoined), Joiner);
             }
         }
@@ -774,7 +774,7 @@ namespace MD
                 return false;
             }
             
-            // Only server can change network master, we could also allow server?
+            // Only server can change network master
             if (MDStatics.IsNetworkActive() && MDStatics.IsServer())
             {
                 Node.SetNetworkMaster(NewNetworkMaster);

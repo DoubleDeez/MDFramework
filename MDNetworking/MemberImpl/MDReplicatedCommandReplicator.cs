@@ -138,7 +138,7 @@ namespace MD
 
             if (CommandReplicator == null)
             {
-                MDLog.Error("Command replicator is null for member {0}#{1}", Instance.GetPath(), Member.Name);
+                MDLog.Error(LOG_CAT, $"Command replicator is null for member {Instance.GetPath()}#{Member.Name}");
                 return;
             }
 
