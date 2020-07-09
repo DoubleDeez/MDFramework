@@ -433,5 +433,12 @@ namespace MD
             Instance.AddChild(timer);
             return timer;
         }
+
+        public static void ChangeNetworkMaster(this Node Instance, int NewNetworkMaster)
+        {
+            MDGameSession GameSession = Instance.GetGameSession();
+            GameSession.ChangeNetworkMaster(Instance, NewNetworkMaster);
+
+        }
     }
 }

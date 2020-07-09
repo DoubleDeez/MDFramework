@@ -41,7 +41,8 @@ namespace MD
                     case MDClockedReplicatedMember.Settings.OnValueChangedEvent:
                         Node Node = NodeRef.GetRef() as Node;
                         OnValueChangedCallback = Node.GetType().GetMethod(setting.Value.ToString(),
-                            BindingFlags.NonPublic | BindingFlags.FlattenHierarchy | BindingFlags.Instance);
+                            BindingFlags.Public | BindingFlags.NonPublic | 
+                            BindingFlags.FlattenHierarchy | BindingFlags.Instance);
                         break;
                 }
             }
@@ -106,7 +107,7 @@ namespace MD
         protected override void ReplicateToAll(Node Node, object Value)
         {
             MDLog.Debug(LOG_CAT, $"Replicating {Member.Name} with value {Value} from {LastValue}");
-            if (Reliable)
+            if (IsReliable())
             {
                 Replicator.Rpc(REPLICATE_METHOD_NAME, Replicator.GetReplicationIdForKey(GetUniqueKey()),
                     GameClock.GetTick(), Value);
@@ -124,7 +125,7 @@ namespace MD
         protected override void ReplicateToPeer(Node Node, object Value, int PeerId)
         {
             MDLog.Debug(LOG_CAT, $"Replicating to JIP Peer {PeerId} for member {Member.Name} with value {Value}");
-            if (Reliable)
+            if (IsReliable())
             {
                 Replicator.RpcId(PeerId, REPLICATE_METHOD_NAME, Replicator.GetReplicationIdForKey(GetUniqueKey()),
                     GameClock.GetTick(), Value);
