@@ -264,7 +264,7 @@ namespace MD
                     continue;
                 }
 
-                MDLog.Debug(LOG_CAT, "Notifying Peer [{PeerId}] that Peer [{Joiner}] joined");
+                MDLog.Debug(LOG_CAT, $"Notifying Peer [{PeerId}] that Peer [{Joiner}] joined");
                 RpcId(PeerId, nameof(ClientOnPlayerJoined), Joiner);
             }
         }
@@ -764,6 +764,35 @@ namespace MD
         public void NotifyPlayerNameChanged(int peerId)
         {
             OnPlayerNameChanged(peerId);
+        }
+
+        public bool ChangeNetworkMaster(Node Node, int NewNetworkMaster)
+        {
+            if (!GetAllPeerIds().Contains(NewNetworkMaster))
+            {
+                // Invalid network master
+                return false;
+            }
+            
+            // Only server can change network master
+            if (MDStatics.IsNetworkActive() && MDStatics.IsServer())
+            {
+                Node.SetNetworkMaster(NewNetworkMaster);
+                Rpc(nameof(ChangeNetworkMasterOnClients), Node.GetPath(), NewNetworkMaster);
+                return true;
+            }
+
+            return false;
+        }
+
+        [Puppet]
+        private void ChangeNetworkMasterOnClients(string NodePath, int NewNetworkMaster)
+        {
+            Node Node = GetNodeOrNull(NodePath);
+            if (Node != null)
+            {
+                Node.SetNetworkMaster(NewNetworkMaster);
+            }
         }
     }
 }
