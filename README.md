@@ -26,44 +26,8 @@ git submodule add https://github.com/DoubleDeez/MDFramework.git src/MDFramework
 ```
 
 2. Add the MDFramework files to your `Project.csproj`, inside of `<ItemGroup>`, making sure the path matches where you cloned the repo. 
-
 ```xml
-    <Compile Include="src\MDFramework\MDAttributes\MDAutoRegister.cs" />
-    <Compile Include="src\MDFramework\MDAttributes\MDBindNode.cs" />
-    <Compile Include="src\MDFramework\MDAttributes\MDCommand.cs" />
-    <Compile Include="src\MDFramework\MDAttributes\MDReplicated.cs" />
-    <Compile Include="src\MDFramework\MDAttributes\MDReplicatedSetting.cs" />
-    <Compile Include="src\MDFramework\MDExtensions\MDControlExtensions.cs" />
-    <Compile Include="src\MDFramework\MDExtensions\MDMemberInfoExtensions.cs" />
-    <Compile Include="src\MDFramework\MDExtensions\MDNodeExtensions.cs" />
-    <Compile Include="src\MDFramework\MDExtensions\MDVector2Extensions.cs" />
-    <Compile Include="src\MDFramework\MDExtensions\MDVector3Extensions.cs" />
-    <Compile Include="src\MDFramework\MDGameSynchronizer\MDGameClock.cs" />
-    <Compile Include="src\MDFramework\MDGameSynchronizer\MDGameSynchronizer.cs" />
-    <Compile Include="src\MDFramework\MDHelpers\MDArguments.cs" />
-    <Compile Include="src\MDFramework\MDHelpers\MDInput.cs" />
-    <Compile Include="src\MDFramework\MDHelpers\MDCommands.cs" />
-    <Compile Include="src\MDFramework\MDHelpers\MDLog.cs" />
-    <Compile Include="src\MDFramework\MDHelpers\MDPeerConfigs.cs" />
-    <Compile Include="src\MDFramework\MDHelpers\MDProfiler.cs" />
-    <Compile Include="src\MDFramework\MDHelpers\MDStatics.cs" />
-    <Compile Include="src\MDFramework\MDInterface\MDConsole.cs" />
-    <Compile Include="src\MDFramework\MDInterface\MDInterfaceManager.cs" />
-    <Compile Include="src\MDFramework\MDInterface\MDOnScreenDebug.cs" />
-    <Compile Include="src\MDFramework\MDNetworking\MDGameSession.cs" />
-    <Compile Include="src\MDFramework\MDNetworking\MDPlayerInfo.cs" />
-    <Compile Include="src\MDFramework\MDNetworking\MDReplicator.cs" />
-    <Compile Include="src\MDFramework\MDGameInstance.cs" />
-    <Compile Include="src\MDFramework\MDNetworking\MemberImpl\MDClockedReplicatedMember.cs" />
-    <Compile Include="src\MDFramework\MDNetworking\MemberImpl\MDCRMInterpolatedVector2.cs" />
-    <Compile Include="src\MDFramework\MDNetworking\MemberImpl\MDReplicatedMember.cs" />
-    <Compile Include="src\MDFramework\MDNetworking\Misc\MDReplicatorGroupManager.cs" />
-    <Compile Include="src\MDFramework\MDNetworking\Misc\MDReplicatorNetworkKeyIdMap.cs" />
-    <Compile Include="src\MDFramework\MDTypes.cs" />
-```
-or to include all C# files:
-```xml
-    <Compile Include="**\*.cs" />
+    <Compile Include="src\MDFramework\**\*.cs" />
 ```
 
 3. Setup your `project.godot` to AutoLoad either `MDGameInstance` or your subclass of it:

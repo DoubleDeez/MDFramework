@@ -5,6 +5,29 @@ using System.Collections.ObjectModel;
 
 namespace MD
 {
+    public class MDDisposableList<T> : List<T>, IDisposable
+    {
+        protected MDList<T> MDListRef;
+
+        public MDDisposableList(IEnumerable<T> collection, MDList<T> ListRef) : base(collection)
+        {
+            MDListRef = ListRef;
+        }
+
+        public void Dispose()
+        {
+            MDListRef.DoFullResynch(this);
+        }
+    }
+    public static class MDList
+    {
+        // This class is just here for the enum since you can't reference enums / statics inside a generic class.
+        public enum Settings
+        {
+            COMPARATOR,
+            UNSAFE_MODE
+        }
+    }
     public class MDList<T> : IMDCommandReplicator
     {
         public enum MDListActions
@@ -18,36 +41,46 @@ namespace MD
             REMOVE_RANGE,
             REVERSE_INDEX,
             REVERSE,
-            CLEAR
+            CLEAR,
+            SORT,
+            SORT_INDEX,
+            SORT_COMPARATOR,
+            RESYNCH_START
         }
 
         protected const String LOG_CAT = "LogMDList";
 
-        private class ListCommandRecord
+        protected class ListCommandRecord
         {
-            public ListCommandRecord(uint Number, MDListActions Type, object[] Parameters)
+            public ListCommandRecord(int Number, MDListActions Type, object[] Parameters)
             {
                 this.CommandNumber = Number;
                 this.Type = Type;
                 this.Parameters = Parameters;
             }
 
-            public uint CommandNumber = 0;
+            public int CommandNumber = 0;
             public MDListActions Type = MDListActions.UNKOWN;
             public object[] Parameters;
         }
         
-        private List<T> RealList = new List<T>();
+        protected List<T> RealList = new List<T>();
 
-        private Queue<ListCommandRecord> CommandHistory = new Queue<ListCommandRecord>();
+        protected Queue<ListCommandRecord> CommandHistory = new Queue<ListCommandRecord>();
 
-        private List<ListCommandRecord> CommandQueue = new List<ListCommandRecord>();
+        protected List<ListCommandRecord> CommandQueue = new List<ListCommandRecord>();
 
-        private uint CommandCounter = 0;
+        protected List<IComparer<T>> Comparators = new List<IComparer<T>>();
 
-        private IMDDataConverter DataConverter;
+        protected int CommandCounter = 0;
 
-        private MDReplicator Replicator;
+        protected IMDDataConverter DataConverter;
+
+        protected MDReplicator Replicator;
+
+        protected bool UnsafeMode = false;
+
+        protected bool FullResynch = false;
 
         public MDList()
         {
@@ -59,7 +92,7 @@ namespace MD
 
         public List<object[]> MDGetCommandsForNewPlayer()
         {
-            uint CurrentAction = 0;
+            int CurrentAction = 0;
             ListCommandRecord record = null;
             List<object[]> Commands = new List<object[]>();
 
@@ -82,16 +115,31 @@ namespace MD
         public void MDSetSettings(MDReplicatedSetting[] Settings)
         {
             SetConverter(Settings);
+            LoadSettings(Settings);
         }
 
         ///<summary>Do not call this! This should only be used by the MDReplicator</summary>
         public List<object[]> MDGetCommands()
         {
             List<object[]> Commands = new List<object[]>();
+
+            // Prepare for full resynch
+            if (FullResynch)
+            {
+                RecordAction(MDListActions.RESYNCH_START);
+            }
+
             // For now not much error handling
             while (CommandHistory.Count > 0)
             {
                 Commands.Add(AsObjectArray(CommandHistory.Dequeue()));
+            }
+
+            // Do full resynch
+            if (FullResynch)
+            {
+                FullResynch = false;
+                Commands.AddRange(MDGetCommandsForNewPlayer());
             }
 
             return Commands;
@@ -101,14 +149,14 @@ namespace MD
         public void MDProcessCommand(params object[] Params)
         {
             // Parse input
-            uint CmdNumber = Convert.ToUInt32(Params[0]);
+            int CmdNumber = Convert.ToInt32(Params[0]);
             MDListActions Type = (MDListActions)Enum.Parse(typeof(MDListActions), Params[1].ToString());
             object[] Parameters = Params.SubArray(2);
 
-            MDLog.Trace(LOG_CAT, "Recieved command [{0}] {1}", CmdNumber.ToString(), Type.ToString());
+            MDLog.Trace(LOG_CAT, $"Recieved command [{CmdNumber.ToString()}] {Type.ToString()}");
             foreach(object obj in Parameters)
             {
-                MDLog.Trace(LOG_CAT, "Parameter: {0}", obj.ToString());
+                MDLog.Trace(LOG_CAT, $"Parameter: {obj.ToString()}");
             }
 
             if (CmdNumber > CommandCounter)
@@ -119,7 +167,7 @@ namespace MD
             else if (CmdNumber < CommandCounter)
             {
                 // This should not happen
-                MDLog.Error(LOG_CAT, "Recieved a command with number {0} when our internal CommandCounter is {1}", CmdNumber, CommandCounter);
+                MDLog.Error(LOG_CAT, $"Recieved a command with number {CmdNumber} when our internal CommandCounter is {CommandCounter}");
                 return;
             }
 
@@ -130,7 +178,7 @@ namespace MD
             switch (Type)
             {
                 case MDListActions.SET_CURRENT_COMMAND_ID:
-                    CommandCounter = Convert.ToUInt32(Parameters[0]);
+                    CommandCounter = Convert.ToInt32(Parameters[0]);
                     break;
                 case MDListActions.MODIFICATION:
                     RealList[Convert.ToInt32(Parameters[0])] = ConvertFromObject(Parameters.SubArray(1));
@@ -156,6 +204,20 @@ namespace MD
                 case MDListActions.CLEAR:
                     RealList.Clear();
                     break;
+                case MDListActions.SORT:
+                    RealList.Sort();
+                    break;
+                case MDListActions.SORT_COMPARATOR:
+                    RealList.Sort(GetComparatorByIndex(Convert.ToInt32(Parameters[0])));
+                    break;
+                case MDListActions.SORT_INDEX:
+                    RealList.Sort(Convert.ToInt32(Parameters[0]), Convert.ToInt32(Parameters[1]), 
+                                    GetComparatorByIndex(Convert.ToInt32(Parameters[2])));
+                    break;
+                case MDListActions.RESYNCH_START:
+                    RealList.Clear();
+                    CommandCounter = 0;
+                    break;
 
             }
 
@@ -169,9 +231,87 @@ namespace MD
 
     #endregion
 
-    #region PRIVATE METHODS
+    #region PROTECTED METHODS
 
-        private void SetConverter(MDReplicatedSetting[] Settings)
+        protected IComparer<T> GetComparatorByIndex(int Index)
+        {
+            return Comparators[Index];
+        }
+
+        protected IComparer<T> GetComparatorByType(Type ComparatorType)
+        {
+            foreach (IComparer<T> comparator in Comparators)
+            {
+                if (comparator.GetType() == ComparatorType)
+                {
+                    return comparator;
+                }
+            }
+            return null;
+        }
+
+        protected int GetComparatorIndexFromType(Type ComparatorType)
+        {
+            IComparer<T> comparator = GetComparatorByType(ComparatorType);
+            if (comparator != null)
+            {
+                return Comparators.IndexOf(comparator);
+            }
+
+            return -1;
+        }
+
+        protected void LoadSettings(MDReplicatedSetting[] Settings)
+        {
+            MDReplicatedSetting[] ComparatorList = MDReplicator.ParseParameters(typeof(MDList.Settings), Settings);
+            foreach (MDReplicatedSetting setting in ComparatorList)
+            {
+                switch ((MDList.Settings)setting.Key)
+                {
+                    case MDList.Settings.COMPARATOR:
+                        if (!(setting.Value is Type))
+                        {
+                            MDLog.Warn(LOG_CAT, $"{setting.Value.ToString()} is not a type, use typeof(class) as value when using MDReplicatedSetting of type MDComparators");
+                            continue;
+                        }
+                        Type settingType = (Type)setting.Value;
+                        IComparer<T> comparer = Activator.CreateInstance(settingType) as IComparer<T>;
+                        if (comparer != null)
+                        {
+                            AddComparer(comparer);
+                        }
+                        else
+                        {
+                            MDLog.Error(LOG_CAT, $"{settingType.ToString()} is not an IComparer<T>.");
+                        }
+                        break;
+                    case MDList.Settings.UNSAFE_MODE:
+                        if (setting.Value.GetType() == typeof(Boolean))
+                        {
+                            UnsafeMode = (bool)setting.Value;
+                        }
+                        else
+                        {
+                            UnsafeMode = Boolean.Parse(setting.Value.ToString());
+                        }
+                        break;
+                }
+            }
+        }
+
+        protected void AddComparer(IComparer<T> Comparator)
+        {
+            IComparer<T> FoundComparator = GetComparatorByType(Comparator.GetType());
+            if (FoundComparator != null)
+            {
+                MDLog.Warn(LOG_CAT, $"Comparator with key {Comparator.GetType().ToString()} has already been registered");
+                return;
+            }
+
+            Comparators.Add(Comparator);
+        }
+
+        protected void SetConverter(MDReplicatedSetting[] Settings)
         {
             Type DataConverterType = GetConverterType(MDReplicator.ParseParameters(typeof(MDReplicatedCommandReplicator.Settings), Settings));
             if (DataConverterType != null && DataConverterType.IsAssignableFrom(typeof(IMDDataConverter)))
@@ -184,7 +324,7 @@ namespace MD
             DataConverter = new MDObjectDataConverter();
         }
 
-        private Type GetConverterType(MDReplicatedSetting[] Settings)
+        protected Type GetConverterType(MDReplicatedSetting[] Settings)
         {
             foreach (MDReplicatedSetting setting in Settings)
             {
@@ -200,7 +340,7 @@ namespace MD
             return null;
         }
 
-        private object[] AsObjectArray(ListCommandRecord ActionRecord)
+        protected object[] AsObjectArray(ListCommandRecord ActionRecord)
         {
             List<object> ObjectList = new List<object>();
             ObjectList.Add(ActionRecord.CommandNumber);
@@ -209,7 +349,7 @@ namespace MD
             return ObjectList.ToArray();
         }
 
-        private object[] ParseParameters(ListCommandRecord ActionRecord)
+        protected object[] ParseParameters(ListCommandRecord ActionRecord)
         {
             // Any ListAction that has a T object in it needs to be converted, for anything else just pass along the parameters
             switch (ActionRecord.Type)
@@ -228,19 +368,19 @@ namespace MD
         }
 
         // Just for convenience
-        private object[] ConvertToObject(object item)
+        protected object[] ConvertToObject(object item)
         {
             return DataConverter.ConvertToObjectArray(item);
         }
         
         // Just for convenience
-        private T ConvertFromObject(object[] Parameters)
+        protected T ConvertFromObject(object[] Parameters)
         {
             return (T)DataConverter.ConvertFromObjectArray(Parameters);
         }
 
         // Get the current command from the queue and remove it if it exists
-        private ListCommandRecord GetCurrentCommandFromQueue()
+        protected ListCommandRecord GetCurrentCommandFromQueue()
         {
             ListCommandRecord ActionRecord = null;
             foreach (ListCommandRecord record in CommandQueue)
@@ -260,15 +400,25 @@ namespace MD
             return ActionRecord;
         }
 
-        private void RecordAction(MDListActions Type, params object[] Parameters)
+        protected void RecordAction(MDListActions Type, params object[] Parameters)
         {
             CommandHistory.Enqueue(new ListCommandRecord(GetActionNumber(), Type, Parameters));
         }
 
-        private uint GetActionNumber()
+        protected int GetActionNumber()
         {
             CommandCounter++;
             return CommandCounter-1;
+        }
+
+        protected void CheckIfUnsafeMode()
+        {
+            if (!UnsafeMode)
+            {
+                String message = "Attempted to access MDList.GetRawList() without configuring first, please read the wiki!";
+                MDLog.Error(LOG_CAT, message);
+                throw new AccessViolationException(message);
+            }
         }
 
     #endregion
@@ -366,6 +516,60 @@ namespace MD
         {
             RealList.Reverse();
             RecordAction(MDListActions.REVERSE);
+        }
+
+        public void Sort()
+        {
+            RealList.Sort();
+            RecordAction(MDListActions.SORT);
+        }
+
+        public void Sort(int index, int count, Type ComparatorType)
+        {
+            IComparer<T> Comparer = GetComparatorByType(ComparatorType);
+            if (Comparer == null)
+            {
+                MDLog.Error(LOG_CAT, $"Attempted to use comparator [{ComparatorType.ToString()}] that is not registered for the MDList");
+                return;
+            }
+
+            RealList.Sort(index, count, Comparer);
+            RecordAction(MDListActions.SORT_INDEX, index, count, GetComparatorIndexFromType(ComparatorType));
+        }
+        
+        public void Sort(Type ComparatorType)
+        {
+            IComparer<T> Comparer = GetComparatorByType(ComparatorType);
+            if (Comparer == null)
+            {
+                MDLog.Error(LOG_CAT, $"Attempted to use comparator [{ComparatorType.ToString()}] that is not registered for the MDList");
+                return;
+            }
+
+            RealList.Sort(Comparer);
+            RecordAction(MDListActions.SORT_COMPARATOR, GetComparatorIndexFromType(ComparatorType));
+        }
+
+        /// <summary>
+        /// Get a copy of the list that you can modify as you wish, once the list is Disposed the MDList will update all clients.
+        /// Before using this method please read the wiki.
+        /// </summary>
+        /// <returns>A disposable list</returns>
+        public MDDisposableList<T> GetRawList()
+        {
+            CheckIfUnsafeMode();
+            return new MDDisposableList<T>(RealList, this);
+        }
+
+        /// <summary>
+        /// Do not call this method directly, this is called by MDDisposableList.Dispose()
+        /// </summary>
+        /// <param name="NewList">The new list to replace this list with</param>
+        public void DoFullResynch(List<T> NewList)
+        {
+            CheckIfUnsafeMode();
+            RealList = new List<T>(NewList);
+            FullResynch = true;
         }
 
     #endregion
@@ -536,32 +740,6 @@ namespace MD
         }
 
     #endregion
-
-    #region NOT SUPPORTED METHODS
-
-        public void Sort()
-        {
-            // Passing a comparer over the network is too difficult
-            // Maybe we can record the order before / after but it would be a pain
-            // For now not supported
-            throw new NotSupportedException("Sort is not supported on MDList");
-        }
-
-        public void Sort(int index, int count, IComparer<T> comparer)
-        {
-            Sort();
-        }
-        
-        public void Sort(Comparison<T> comparison)
-        {
-            Sort();
-        }
-        
-        public void Sort(IComparer<T> comparer)
-        {
-            Sort();
-        }
-
-    #endregion
     }
 }
+
