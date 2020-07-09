@@ -342,8 +342,7 @@ namespace MD
             List<Type> Signature = new List<Type>();
             foreach (object obj in Parameters)
             {
-                Type objType = obj.GetType();
-                Signature.Add(objType);
+                Signature.Add(obj.GetType());
             }
             return Signature;
         }
