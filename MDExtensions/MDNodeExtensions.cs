@@ -13,6 +13,10 @@ namespace MD
  */
     public static class MDNodeExtensions
     {
+        private static readonly Dictionary<string, MemberInfo> MemberInfoCache = new Dictionary<string, MemberInfo>();
+
+        private static readonly Dictionary<string, MethodInfo> MethodInfoCache = new Dictionary<string, MethodInfo>();
+
         // Grabs the singleton game instance
         public static MDGameInstance GetGameInstance(this Node Instance)
         {
@@ -379,12 +383,19 @@ namespace MD
 
         public static bool Invoke(this Node Instance, String Method, params object[] Parameters)
         {
-            Type NodeType = Instance.GetType();
-            MethodInfo Info = NodeType.GetMethod(Method,
-                BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-            if (Info != null)
+            Type nodeType = Instance.GetType();
+            String key = $"{nodeType.ToString()}#{Method}";
+            if (!MethodInfoCache.ContainsKey(key))
             {
-                Info.Invoke(Instance, Parameters);
+                MethodInfo newInfo = nodeType.GetMethod(Method,
+                    BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                MethodInfoCache.Add(key, newInfo);
+            }
+
+            MethodInfo info = MethodInfoCache[key];
+            if (info != null)
+            {
+                info.Invoke(Instance, Parameters);
                 return true;
             }
 
@@ -393,7 +404,15 @@ namespace MD
 
         public static bool SetMemberValue(this Node Instance, String Name, object Value)
         {
-            MemberInfo member = MDStatics.GetMemberByName(Instance, Name);
+            Type nodeType = Instance.GetType();
+            String key = $"{nodeType.ToString()}#{Name}";
+            if (!MemberInfoCache.ContainsKey(key))
+            {
+                MemberInfo newMember = MDStatics.GetMemberByName(Instance, Name);
+                MemberInfoCache.Add(key, newMember);
+            }
+            
+            MemberInfo member = MemberInfoCache[key];
             if (member != null)
             {
                 member.SetValue(Instance, Value);
