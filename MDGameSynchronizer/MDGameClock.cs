@@ -13,13 +13,13 @@ namespace MD
         public static readonly string LOG_CAT = "LogGameClock";
 
         ///<summary>If we are calculating offset from ping this is the minimum offset we can have</summary>
-        public static readonly int MINIMUM_OFFSET = 5;
+        public int MinimumOffset = 5;
 
         ///<summary>We add some extra buffer to the offset just in case</summary>
-        public static readonly int OFFSET_BUFFER = 5;
+        public int OffsetBuffer = 5;
 
         ///<summary>Used to control how much we are allowing to be off by for the tick offset</summary>
-        public static readonly int MAX_TICK_DESYNCH = 5;
+        public int MaxTickDesynch = 5;
 
         protected static readonly float TICK_INTERVAL_MILLISECONDS = 1000f / Engine.IterationsPerSecond;
 
@@ -74,10 +74,11 @@ namespace MD
         public override void _Ready()
         {
             MDLog.AddLogCategoryProperties(LOG_CAT, new MDLogProperties(MDLogLevel.Info));
+            LoadConfig();
             GameSynchronizer = this.GetGameSynchronizer();
-            CurrentRemoteTickOffset = MINIMUM_OFFSET;
-            CurrentRemoteTickOffsetTarget = MINIMUM_OFFSET;
-            LastRemoteTickOffset = MINIMUM_OFFSET;
+            CurrentRemoteTickOffset = MinimumOffset;
+            CurrentRemoteTickOffsetTarget = MinimumOffset;
+            LastRemoteTickOffset = MinimumOffset;
             GameSynchronizer.OnPlayerPingUpdatedEvent += OnPlayerPingUpdatedEvent;
 
             // TODO: Remove this, only here for debug
@@ -94,6 +95,14 @@ namespace MD
         public override void _ExitTree()
         {
             GameSynchronizer.OnPlayerPingUpdatedEvent -= OnPlayerPingUpdatedEvent;
+        }
+
+        protected void LoadConfig()
+        {
+            // Since these variables are hit very often we don't want to go to the config every time
+            MinimumOffset = this.GetConfiguration().GetInt(MDConfiguration.ConfiugrationSections.GameClock, "MinimumOffset", MinimumOffset);
+            OffsetBuffer = this.GetConfiguration().GetInt(MDConfiguration.ConfiugrationSections.GameClock, "OffsetBuffer", OffsetBuffer);
+            MaxTickDesynch = this.GetConfiguration().GetInt(MDConfiguration.ConfiugrationSections.GameClock, "MaxTickDesynch", MaxTickDesynch);
         }
 
         public override void _Process(float delta)
@@ -222,7 +231,7 @@ namespace MD
             if (RemoteTickOffset > 0)
             {
                 MDLog.Trace(LOG_CAT, $"Ping offset is set to be static at {RemoteTickOffset}");
-                CurrentRemoteTickOffsetTarget = RemoteTickOffset + OFFSET_BUFFER;
+                CurrentRemoteTickOffsetTarget = RemoteTickOffset + OffsetBuffer;
                 return;
             }
 
@@ -230,8 +239,8 @@ namespace MD
             int HighestPing = (int) Mathf.Ceil(GameSynchronizer.GetMaxPlayerPing() * RemoteTickPingModifier);
             if (HighestPing == 0)
             {
-                CurrentRemoteTickOffsetTarget = MINIMUM_OFFSET + OFFSET_BUFFER;
-                MDLog.Trace(LOG_CAT, $"We got no ping setting offset to minimum offset of {MINIMUM_OFFSET}");
+                CurrentRemoteTickOffsetTarget = MinimumOffset + OffsetBuffer;
+                MDLog.Trace(LOG_CAT, $"We got no ping setting offset to minimum offset of {MinimumOffset}");
                 return;
             }
 
@@ -239,10 +248,10 @@ namespace MD
             int newOffset = (int) Mathf.Ceil(HighestPing / TICK_INTERVAL_MILLISECONDS);
 
             // If it is less than minimum set our target to minimum
-            if (newOffset <= MINIMUM_OFFSET)
+            if (newOffset <= MinimumOffset)
             {
-                CurrentRemoteTickOffsetTarget = MINIMUM_OFFSET + OFFSET_BUFFER;
-                MDLog.Trace(LOG_CAT, $"Ping offset of {newOffset} is less than our minimum offset of {MINIMUM_OFFSET}");
+                CurrentRemoteTickOffsetTarget = MinimumOffset + OffsetBuffer;
+                MDLog.Trace(LOG_CAT, $"Ping offset of {newOffset} is less than our minimum offset of {MinimumOffset}");
                 return;
             }
 
@@ -256,7 +265,7 @@ namespace MD
                 MDLog.Trace(LOG_CAT,
                     $"Ping difference is too large adjust remote tick offset target from {CurrentRemoteTickOffsetTarget} to {newOffset}");
                 // We need to adjust the remote tick offset
-                CurrentRemoteTickOffsetTarget = newOffset + OFFSET_BUFFER;
+                CurrentRemoteTickOffsetTarget = newOffset + OffsetBuffer;
             }
         }
 
@@ -275,7 +284,7 @@ namespace MD
             // Figure out what tick we would be at when the estimated time is hit
             long localTickAtTime = GetTickAtTimeOffset(EstimateTime - currentTime);
             long tickOffset = EstimatedTick - localTickAtTime;
-            if (Math.Abs(tickOffset) > MAX_TICK_DESYNCH)
+            if (Math.Abs(tickOffset) > MaxTickDesynch)
             {
                 MDLog.Trace(LOG_CAT,
                     $"[{currentTime}] We are out of synch, we should be at tick {EstimatedTick} at {EstimateTime}");

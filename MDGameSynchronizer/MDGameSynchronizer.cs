@@ -719,56 +719,50 @@ namespace MD
         /// <summary>Pauses the game for synching on player join (Default: True)</summary>
         protected virtual bool IsPauseOnJoin()
         {
-            return true;
+            return this.GetConfiguration().GetBool(MDConfiguration.ConfiugrationSections.GameSynchronizer, "PauseOnJoin", true);
         }
 
         /// <summary>Delay MDReplicator until all nodes are synched (Default: False)</summary>
         public virtual bool IsDelayReplicatorUntilAllNodesAreSynched()
         {
-            return false;
+            return this.GetConfiguration().GetBool(MDConfiguration.ConfiugrationSections.GameSynchronizer, "DelayReplicatorUntilAllNodesSynched", false);
         }
 
         /// <summary>Unpause countdown duration (Default: 2 seconds)</summary>
         protected virtual uint GetUnpauseCountdownDurationMSec()
         {
-            return 2000;
+            return (uint) this.GetConfiguration().GetInt(MDConfiguration.ConfiugrationSections.GameSynchronizer, "UnpauseCountdownDuration", 2000);
         }
 
         /// <summary>How often do we ping each client (Default: 0.5f)</summary>
         protected virtual float GetPingInterval()
         {
-            return 0.5f;
+            return float.Parse(this.GetConfiguration().GetString(MDConfiguration.ConfiugrationSections.GameSynchronizer, "PingInterval", "0.5"));
         }
 
         /// <summary>Pings to keep for getting average (Default: 10)</summary>
         protected virtual int GetPingsToKeepForAverage()
         {
-            return 10;
+            return this.GetConfiguration().GetInt(MDConfiguration.ConfiugrationSections.GameSynchronizer, "PingsToKeepForAverage", 10);
         }
 
         /// <summary>If set to true we will ping every player continuously. (Default: true)
         /// <para>You can set the interval with <see cref="GetPingInterval"/></para></summary>
         protected virtual bool IsActivePingEnabled()
         {
-            return true;
+            return this.GetConfiguration().GetBool(MDConfiguration.ConfiugrationSections.GameSynchronizer, "ActivePingEnabled", true);
         }
 
         /// <summary>This decides how many times we go back and forth to establish the OS.GetTicksMsec offset for each client (Default: 20)</summary>
         protected virtual int GetInitialMeasurementCount()
         {
-            return 20;
-        }
-
-        /// <summary>Sets if we should use the MDGameClock or not, this requires IsActivePingEnabled to be true. (Default: true)</summary>
-        public virtual bool IsGameClockActive()
-        {
-            return true;
+            return this.GetConfiguration().GetInt(MDConfiguration.ConfiugrationSections.GameSynchronizer, "InitialMeasurementCount", 20);
         }
 
         /// <summary>If IsPauseOnJoin() is enabled we will wait for at least this level of security for TicksMsec before we resume (Default: GetInitialMeasurementCount() / 2)</summary>
         protected virtual int GetMinimumMeasurementCountBeforeResume()
         {
-            return GetInitialMeasurementCount() / 2;
+            return this.GetConfiguration().GetInt(MDConfiguration.ConfiugrationSections.GameSynchronizer, "InitialMeasurementCountBeforeResume", 10);
         }
 
         #endregion

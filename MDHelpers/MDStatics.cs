@@ -87,7 +87,7 @@ namespace MD
 
         public static bool IsGameClockActive()
         {
-            return GetGameSynchronizer() != null && GetGameSynchronizer().IsGameClockActive();
+            return GetGameSynchronizer() != null && GI.IsGameClockActive();
         }
 
         // Is the game session started in non-standalone?

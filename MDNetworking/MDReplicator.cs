@@ -363,7 +363,7 @@ namespace MD
             }
 
             // Check if game clock is active, if so use it
-            if (MDStatics.GetGameSynchronizer() != null && MDStatics.GetGameSynchronizer().IsGameClockActive())
+            if (MDStatics.GetGameSynchronizer() != null && MDStatics.IsGameClockActive())
             {
                 if (Member.GetUnderlyingType() == typeof(Vector2))
                 {
@@ -396,7 +396,7 @@ namespace MD
         /// <summary>Interval replication happens every X physic frames. One physics frame is by default about 16 msec (Default: X=6).</summary>
         protected virtual int GetReplicationFrameInterval()
         {
-            return 6;
+            return this.GetConfiguration().GetInt(MDConfiguration.ConfiugrationSections.Replicator, "FrameInterval", 6);
         }
 
         #endregion

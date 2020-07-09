@@ -26,6 +26,13 @@ namespace MD
             return GI.GameSession;
         }
 
+        /// <summary>Grabs the Configuration from the GameInstance</summary>
+        public static MDConfiguration GetConfiguration(this Node Instance)
+        {
+            MDGameInstance GI = Instance.GetGameInstance();
+            return GI.Configuration;
+        }
+
         /// <summary>Grabs the GameSynchronizer from the GameInstance</summary>
         public static MDGameSynchronizer GetGameSynchronizer(this Node Instance)
         {
