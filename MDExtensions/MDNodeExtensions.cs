@@ -13,10 +13,6 @@ namespace MD
  */
     public static class MDNodeExtensions
     {
-        private static readonly Dictionary<string, MemberInfo> MemberInfoCache = new Dictionary<string, MemberInfo>();
-
-        private static readonly Dictionary<string, MethodInfo> MethodInfoCache = new Dictionary<string, MethodInfo>();
-
         // Grabs the singleton game instance
         public static MDGameInstance GetGameInstance(this Node Instance)
         {
@@ -383,16 +379,7 @@ namespace MD
 
         public static bool Invoke(this Node Instance, String Method, params object[] Parameters)
         {
-            Type nodeType = Instance.GetType();
-            String key = $"{nodeType.ToString()}#{Method}";
-            if (!MethodInfoCache.ContainsKey(key))
-            {
-                MethodInfo newInfo = nodeType.GetMethod(Method,
-                    BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-                MethodInfoCache.Add(key, newInfo);
-            }
-
-            MethodInfo info = MethodInfoCache[key];
+            MethodInfo info = MDStatics.GetMethodInfo(Instance, Method, Parameters);
             if (info != null)
             {
                 info.Invoke(Instance, Parameters);
@@ -404,15 +391,7 @@ namespace MD
 
         public static bool SetMemberValue(this Node Instance, String Name, object Value)
         {
-            Type nodeType = Instance.GetType();
-            String key = $"{nodeType.ToString()}#{Name}";
-            if (!MemberInfoCache.ContainsKey(key))
-            {
-                MemberInfo newMember = MDStatics.GetMemberByName(Instance, Name);
-                MemberInfoCache.Add(key, newMember);
-            }
-            
-            MemberInfo member = MemberInfoCache[key];
+            MemberInfo member = MDStatics.GetMemberInfo(Instance, Name);
             if (member != null)
             {
                 member.SetValue(Instance, Value);
