@@ -3,11 +3,16 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 
 namespace MD
 {
     public static class MDStatics
     {
+        private static readonly Dictionary<string, MemberInfo> MemberInfoCache = new Dictionary<string, MemberInfo>();
+
+        private static readonly Dictionary<string, MethodInfo> MethodInfoCache = new Dictionary<string, MethodInfo>();
+
         public static BindingFlags BindFlagsAllMembers =
             BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance;
 
@@ -187,7 +192,7 @@ namespace MD
             return DeDupedMembers;
         }
 
-        public static MemberInfo GetMemberByName(Node CurNode, string Name)
+        private static MemberInfo GetMemberByName(Node CurNode, string Name)
         {
             Type NodeType = CurNode.GetType();
             MemberInfo Member = NodeType.GetField(Name, BindFlagsAllMembers);
@@ -201,8 +206,7 @@ namespace MD
 
         public static MDRemoteMode GetMemberRpcType(Node Node, string MemberName)
         {
-            Type NodeType = Node.GetType();
-            MemberInfo Info = GetMemberByName(Node, MemberName);
+            MemberInfo Info = GetMemberInfo(Node, MemberName);
 
             if (Info == null)
             {
@@ -242,11 +246,9 @@ namespace MD
             return MDRemoteMode.Unknown;
         }
 
-        public static MDRemoteMode GetMethodRpcType(Node Node, string Method)
+        public static MDRemoteMode GetMethodRpcType(Node Node, string Method, params object[] Parameters)
         {
-            Type NodeType = Node.GetType();
-            MethodInfo Info =
-                NodeType.GetMethod(Method, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+            MethodInfo Info = GetMethodInfo(Node, Method, Parameters);
 
             if (Info == null)
             {
@@ -284,6 +286,65 @@ namespace MD
             }
 
             return MDRemoteMode.Unknown;
+        }
+
+        /// <summary>
+        /// Looks up the MethodInfo in our cache, if it does not exist it is resolved
+        /// </summary>
+        /// <param name="Node">The node to look this up for</param>
+        /// <param name="Method">The name of the method</param>
+        /// <param name="Parameters">The parameters you intend to send to the method</param>
+        /// <returns>The MethodInfo or null if it does not exist</returns>
+        public static MethodInfo GetMethodInfo(Node Node, String Method, params object[] Parameters)
+        {
+            Type nodeType = Node.GetType();
+            List<Type> Signature = MDStatics.GetSignatureFromParameters(Parameters);
+            StringBuilder SignatureString = new StringBuilder();
+            Signature.ForEach(type => SignatureString.Append(type.ToString()));
+
+            String key = $"{nodeType.ToString()}#{Method}#{SignatureString.ToString()}";
+
+            if (!MethodInfoCache.ContainsKey(key))
+            {
+                MethodInfo newInfo = nodeType.GetMethod(Method,
+                    MDStatics.BindFlagsAllMembers, null, Signature.ToArray(), null);
+                MethodInfoCache.Add(key, newInfo);
+            }
+
+            return MethodInfoCache[key];
+        }
+
+        /// <summary>
+        /// Looks up the MemberInfo from our cache, if it does not exist it is resolved
+        /// </summary>
+        /// <param name="Node">The node to look this up for</param>
+        /// <param name="Name">The name of the member</param>
+        /// <returns>The MemberInfo or null if it does not exist</returns>
+        public static MemberInfo GetMemberInfo(Node Node, String Name)
+        {
+            String key = $"{Node.GetType().ToString()}#{Name}";
+            if (!MemberInfoCache.ContainsKey(key))
+            {
+                MemberInfo newMember = MDStatics.GetMemberInfo(Node, Name);
+                MemberInfoCache.Add(key, newMember);
+            }
+            
+            return MemberInfoCache[key];
+        }
+
+        /// <summary>
+        /// Gets a list of parameter types from a parameter array
+        /// </summary>
+        /// <param name="Parameters">Array of parameters</param>
+        /// <returns>A list containing parameter types in order, or empty list if no parameters</returns>
+        public static List<Type> GetSignatureFromParameters(params object[] Parameters)
+        {
+            List<Type> Signature = new List<Type>();
+            foreach (object obj in Parameters)
+            {
+                Signature.Add(obj.GetType());
+            }
+            return Signature;
         }
 
         ///<summary>Converts a size in bytes such as the one from OS.GetStaticMemoryUsage() into a more human readable format</summary>

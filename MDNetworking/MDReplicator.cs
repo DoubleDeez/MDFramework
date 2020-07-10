@@ -416,7 +416,7 @@ namespace MD
         public void SendClockedRpc(int PeerId, MDReliability Reliability, Node Target, string Method,
             params object[] Parameters)
         {
-            MDRemoteMode Mode = MDStatics.GetMethodRpcType(Target, Method);
+            MDRemoteMode Mode = MDStatics.GetMethodRpcType(Target, Method, Parameters);
             switch (Mode)
             {
                 case MDRemoteMode.Master:
