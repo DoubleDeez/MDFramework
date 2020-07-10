@@ -40,9 +40,10 @@ GameInstance="*res://src/MDFramework/MDGameInstance.cs"
 
 4. Checkout the [wiki](https://github.com/DoubleDeez/MDFramework/wiki) for details on how to use MDFramework.
 
-# Contributing
-There are many ways to contribute
-* Report bugs using the GitHub issue tracker
-* Suggest features that would improve the framework using the GitHub issue tracker
-* Submit a pull request that improves documentation or fixes an [issue](https://github.com/DoubleDeez/MDFramework/issues)
-    * When working on a pull request, it's recommended that you create a temporary feature branch in your own fork of MDFramework as it will be squash merged which can mess up the history of the branch you did the work in.
+# Examples
+
+Checkout the [Examples Repo](https://github.com/DoubleDeez/MDFramework-Examples) for examples on how to use various features of MDFramework.
+
+# Help
+
+If you're struggling to get something working or have a question either [log an issue](https://github.com/DoubleDeez/MDFramework/issues) or [reach out on discord](https://discord.gg/UH49eHK).
