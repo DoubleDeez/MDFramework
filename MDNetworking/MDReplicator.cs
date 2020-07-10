@@ -396,7 +396,7 @@ namespace MD
         /// <summary>Interval replication happens every X physic frames. One physics frame is by default about 16 msec (Default: X=6).</summary>
         protected virtual int GetReplicationFrameInterval()
         {
-            return this.GetConfiguration().GetInt(MDConfiguration.ConfiugrationSections.Replicator, "FrameInterval", 6);
+            return this.GetConfiguration().GetInt(MDConfiguration.ConfigurationSections.Replicator, MDConfiguration.FRAME_INTERVAL, 6);
         }
 
         #endregion

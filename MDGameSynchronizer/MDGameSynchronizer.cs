@@ -719,50 +719,50 @@ namespace MD
         /// <summary>Pauses the game for synching on player join (Default: True)</summary>
         protected virtual bool IsPauseOnJoin()
         {
-            return this.GetConfiguration().GetBool(MDConfiguration.ConfiugrationSections.GameSynchronizer, "PauseOnJoin", true);
+            return this.GetConfiguration().GetBool(MDConfiguration.ConfigurationSections.GameSynchronizer, MDConfiguration.PAUSE_ON_JOIN, true);
         }
 
         /// <summary>Delay MDReplicator until all nodes are synched (Default: False)</summary>
         public virtual bool IsDelayReplicatorUntilAllNodesAreSynched()
         {
-            return this.GetConfiguration().GetBool(MDConfiguration.ConfiugrationSections.GameSynchronizer, "DelayReplicatorUntilAllNodesSynched", false);
+            return this.GetConfiguration().GetBool(MDConfiguration.ConfigurationSections.GameSynchronizer, MDConfiguration.DELAY_REPLICATION_UNTIL_ALL_NODES_SYNCHED, false);
         }
 
         /// <summary>Unpause countdown duration (Default: 2 seconds)</summary>
         protected virtual uint GetUnpauseCountdownDurationMSec()
         {
-            return (uint) this.GetConfiguration().GetInt(MDConfiguration.ConfiugrationSections.GameSynchronizer, "UnpauseCountdownDuration", 2000);
+            return (uint) this.GetConfiguration().GetInt(MDConfiguration.ConfigurationSections.GameSynchronizer, MDConfiguration.UNPAUSE_COUNTDOWN_DURATION, 2000);
         }
 
         /// <summary>How often do we ping each client (Default: 0.5f)</summary>
         protected virtual float GetPingInterval()
         {
-            return float.Parse(this.GetConfiguration().GetString(MDConfiguration.ConfiugrationSections.GameSynchronizer, "PingInterval", "0.5"));
+            return float.Parse(this.GetConfiguration().GetString(MDConfiguration.ConfigurationSections.GameSynchronizer, MDConfiguration.PING_INTERVAL, "0.5"));
         }
 
         /// <summary>Pings to keep for getting average (Default: 10)</summary>
         protected virtual int GetPingsToKeepForAverage()
         {
-            return this.GetConfiguration().GetInt(MDConfiguration.ConfiugrationSections.GameSynchronizer, "PingsToKeepForAverage", 10);
+            return this.GetConfiguration().GetInt(MDConfiguration.ConfigurationSections.GameSynchronizer, MDConfiguration.PINGS_TO_KEEP_FOR_AVERAGE, 10);
         }
 
         /// <summary>If set to true we will ping every player continuously. (Default: true)
         /// <para>You can set the interval with <see cref="GetPingInterval"/></para></summary>
         protected virtual bool IsActivePingEnabled()
         {
-            return this.GetConfiguration().GetBool(MDConfiguration.ConfiugrationSections.GameSynchronizer, "ActivePingEnabled", true);
+            return this.GetConfiguration().GetBool(MDConfiguration.ConfigurationSections.GameSynchronizer, MDConfiguration.ACTIVE_PING_ENABLED, true);
         }
 
         /// <summary>This decides how many times we go back and forth to establish the OS.GetTicksMsec offset for each client (Default: 20)</summary>
         protected virtual int GetInitialMeasurementCount()
         {
-            return this.GetConfiguration().GetInt(MDConfiguration.ConfiugrationSections.GameSynchronizer, "InitialMeasurementCount", 20);
+            return this.GetConfiguration().GetInt(MDConfiguration.ConfigurationSections.GameSynchronizer, MDConfiguration.INITIAL_MEASUREMENT_COUNT, 20);
         }
 
         /// <summary>If IsPauseOnJoin() is enabled we will wait for at least this level of security for TicksMsec before we resume (Default: GetInitialMeasurementCount() / 2)</summary>
         protected virtual int GetMinimumMeasurementCountBeforeResume()
         {
-            return this.GetConfiguration().GetInt(MDConfiguration.ConfiugrationSections.GameSynchronizer, "InitialMeasurementCountBeforeResume", 10);
+            return this.GetConfiguration().GetInt(MDConfiguration.ConfigurationSections.GameSynchronizer, MDConfiguration.INITIAL_MEASUREMENT_COUNT_BEFORE_RESUME, 10);
         }
 
         #endregion

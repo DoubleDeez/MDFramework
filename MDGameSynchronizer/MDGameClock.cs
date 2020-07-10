@@ -100,9 +100,9 @@ namespace MD
         protected void LoadConfig()
         {
             // Since these variables are hit very often we don't want to go to the config every time
-            MinimumOffset = this.GetConfiguration().GetInt(MDConfiguration.ConfiugrationSections.GameClock, "MinimumOffset", MinimumOffset);
-            OffsetBuffer = this.GetConfiguration().GetInt(MDConfiguration.ConfiugrationSections.GameClock, "OffsetBuffer", OffsetBuffer);
-            MaxTickDesynch = this.GetConfiguration().GetInt(MDConfiguration.ConfiugrationSections.GameClock, "MaxTickDesynch", MaxTickDesynch);
+            MinimumOffset = this.GetConfiguration().GetInt(MDConfiguration.ConfigurationSections.GameClock, MDConfiguration.MINIMUM_OFFSET, MinimumOffset);
+            OffsetBuffer = this.GetConfiguration().GetInt(MDConfiguration.ConfigurationSections.GameClock, MDConfiguration.OFFSET_BUFFER, OffsetBuffer);
+            MaxTickDesynch = this.GetConfiguration().GetInt(MDConfiguration.ConfigurationSections.GameClock, MDConfiguration.MAX_TICK_DESYNCH, MaxTickDesynch);
         }
 
         public override void _Process(float delta)
