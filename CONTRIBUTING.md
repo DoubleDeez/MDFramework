@@ -75,6 +75,10 @@ String interpolation is prefered over format strings.
 MDLog.Error(LOG_CAT, $"The value {value} was below 0");
 ```
 
+#### Class Order
+The main class for the file should be at the bottom of the file (eg. `MDGameInstance` in `MDGameInstance.cs`).
+The order of appearance otherwise from top to bottom (both inside and outside of the main class) should be: `namespace`, `enum`, `struct`, `class`.
+
 #### Class Member Order
 Field and Properties should come before methods.
 
