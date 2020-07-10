@@ -12,6 +12,7 @@ namespace MD
     {
         private const string LOG_CAT = "LogGameInstance";
         public MDReplicator Replicator { get; private set; }
+        public MDConfiguration Configuration { get; private set; }
 
         public MDGameSession GameSession { get; private set; }
         public MDGameClock GameClock { get; private set; }
@@ -23,6 +24,9 @@ namespace MD
 
         public override void _Ready()
         {
+            // Configuration first
+            CreateConfiguration();
+
             // Init static classes first
             MDStatics.GI = this;
             MDLog.Initialize(GetLogDirectory());
@@ -63,31 +67,37 @@ namespace MD
         /// <summary>Override this to provide the your GameSession subclass type</summary>
         protected virtual Type GetGameSessionType()
         {
-            return typeof(MDGameSession);
+            return Configuration.GetType(MDConfiguration.ConfigurationSections.GameInstance, MDConfiguration.GAME_SESSION_TYPE, typeof(MDGameSession));
         }
 
         /// <summary>Override this to provide the your GameSynchronizer subclass type</summary>
         protected virtual Type GetGameSynchronizerType()
         {
-            return typeof(MDGameSynchronizer);
+            return Configuration.GetType(MDConfiguration.ConfigurationSections.GameInstance, MDConfiguration.GAME_SYNCHRONIZER_TYPE, typeof(MDGameSynchronizer));
         }
 
         /// <summary>Override this to provide the your GameClock subclass type</summary>
         protected virtual Type GetGameClockType()
         {
-            return typeof(MDGameClock);
+            return Configuration.GetType(MDConfiguration.ConfigurationSections.GameInstance, MDConfiguration.GAME_CLOCK_TYPE, typeof(MDGameClock));
         }
 
-        /// <summary>Override this to provide the your Replicator subclass type</summary>
+        /// <summary>Override this to provide your Replicator subclass type</summary>
         protected virtual Type GetReplicatorType()
         {
-            return typeof(MDReplicator);
+            return Configuration.GetType(MDConfiguration.ConfigurationSections.GameInstance, MDConfiguration.REPLICATOR_TYPE, typeof(MDReplicator));
+        }
+
+        /// <summary>Override this to provide your Configuration subclass type</summary>
+        protected virtual Type GetConfigurationType()
+        {
+            return typeof(MDConfiguration);
         }
 
         // Override this to provide your own Player class type
         public virtual Type GetPlayerInfoType()
         {
-            return typeof(MDPlayerInfo);
+            return Configuration.GetType(MDConfiguration.ConfigurationSections.GameInstance, MDConfiguration.PLAYER_INFO_TYPE, typeof(MDPlayerInfo));
         }
 
         // Called whenever a node is added to the scene
@@ -181,6 +191,18 @@ namespace MD
             }
         }
 
+        ///<summary>Ensure Replicator is created</summary>
+        private void CreateConfiguration()
+        {
+            if (Configuration == null)
+            {
+                Configuration = CreateTypeInstance<MDConfiguration>(GetConfigurationType());
+                Configuration.Name = "MDConfiguration";
+                Configuration.LoadConfiguration();
+                this.AddNodeToRoot(Configuration, true);
+            }
+        }
+
         ///<summary>Ensure GameSession is created</summary>
         private void CreateGameSession()
         {
@@ -210,7 +232,7 @@ namespace MD
 
         private void CreateGameClock()
         {
-            if (GameClock == null && GameSynchronizer.IsGameClockActive())
+            if (GameClock == null && IsGameClockActive())
             {
                 GameClock = CreateTypeInstance<MDGameClock>(GetGameClockType());
                 GameClock.Name = "GameClock";
@@ -248,74 +270,68 @@ namespace MD
         /// <summary>Override to change when the console is available (Default: Only in debug mode)</summary>
         public virtual bool IsConsoleAvailable()
         {
-#if DEBUG
-            return true;
-#else
-        return false;
-#endif
+            return Configuration.GetBool(MDConfiguration.ConfigurationSections.GameInstance, MDConfiguration.CONSOLE_ENABLED, false);
         }
 
         /// <summary>Override to change when the on screen debug is available (Default: Only in debug mode)</summary>
         public virtual bool IsOnScreenDebugAvailable()
         {
-#if DEBUG
-            return true;
-#else
-        return false;
-#endif
+            return Configuration.GetBool(MDConfiguration.ConfigurationSections.GameInstance, MDConfiguration.ON_SCREEN_DEBUG_ENABLED, false);
         }
 
         /// <summary>Should basic information like fps and such be added by default (Default: Only in debug mode)</summary>
         public virtual bool IsOnScreenDebugAddBasicInformation()
         {
-#if DEBUG
-            return true;
-#else
-        return false;
-#endif
+            return Configuration.GetBool(MDConfiguration.ConfigurationSections.GameInstance, MDConfiguration.ON_SCREEN_DEBUG_ADD_BASIC_INFO, false);
         }
 
         /// <summary>Override to change when UPNP is used for the server (Default: True)</summary>
         public virtual bool UseUPNP()
         {
-            return true;
+            return Configuration.GetBool(MDConfiguration.ConfigurationSections.GameInstance, MDConfiguration.USE_UPNP, false);
         }
 
         /// <summary>Override to change is MDAutoRegister is required (Default: False)</summary>
         public virtual bool RequireAutoRegister()
         {
-            return false;
+            return Configuration.GetBool(MDConfiguration.ConfigurationSections.GameInstance, MDConfiguration.REQUIRE_AUTO_REGISTER, false);
         }
 
         ///<summary>Get the key used to open the console. (Default: KeyList.QuoteLeft)</summary>
         public virtual int GetConsoleKey()
         {
-            return (int) KeyList.Quoteleft;
+            return Configuration.GetInt(MDConfiguration.ConfigurationSections.GameInstance, MDConfiguration.CONSOLE_KEY, (int) KeyList.Quoteleft);
         }
 
         ///<summary>Get the key used to open the on screen debug. (Default: KeyList.F12)</summary>
         public virtual int GetOnScreenDebugKey()
         {
-            return (int) KeyList.F12;
+            return Configuration.GetInt(MDConfiguration.ConfigurationSections.GameInstance, MDConfiguration.ON_SCREEN_DEBUG_KEY, (int) KeyList.F12);
         }
 
         ///<summary>Decides if the network synchronizer is used or not (Default: True)</summary>
         public virtual bool UseGameSynchronizer()
         {
-            return true;
+            return Configuration.GetBool(MDConfiguration.ConfigurationSections.GameInstance, MDConfiguration.GAME_SYNCHRONIZER_ENABLED, true);
         }
 
         ///<summary>Get the directory for MDLog log files
         ///<para>Official documentation for the user path: https://docs.godotengine.org/en/stable/tutorials/io/data_paths.html</para></summary>
         public virtual string GetLogDirectory()
         {
-            return "user://logs/";
+            return Configuration.GetString(MDConfiguration.ConfigurationSections.GameInstance, MDConfiguration.LOG_DIRECTORY, "user://logs/");
         }
 
         ///<summary>If true we will keep a reference to all loaded scenes around so we don't need to load the resource from disc every time</summary>
         public virtual bool UseSceneBuffer(string NodePath)
         {
-            return true;
+            return Configuration.GetBool(MDConfiguration.ConfigurationSections.GameInstance, MDConfiguration.USE_SCENE_BUFFER, true);
+        }
+
+        /// <summary>Sets if we should use the MDGameClock or not, this requires IsActivePingEnabled to be true. (Default: true)</summary>
+        public virtual bool IsGameClockActive()
+        {
+            return Configuration.GetBool(MDConfiguration.ConfigurationSections.GameInstance, MDConfiguration.GAME_CLOCK_ACTIVE, true);
         }
     }
 }
