@@ -320,8 +320,15 @@ namespace MD
                 return;
             }
             
-            // Default Converter
-            DataConverter = new MDObjectDataConverter();
+            if (typeof(T).GetInterface(nameof(IMDDataConverter)) != null)
+            {
+                DataConverter = Activator.CreateInstance(typeof(T)) as IMDDataConverter;
+            }
+            else
+            {
+                // Set our default converter
+                DataConverter = new MDObjectDataConverter();
+            }
         }
 
         protected Type GetConverterType(MDReplicatedSetting[] Settings)
