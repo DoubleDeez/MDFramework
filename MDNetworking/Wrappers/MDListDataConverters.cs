@@ -118,19 +118,16 @@ namespace MD
             if (CurrentObject != null)
             {
                 // Replace values in existing object
-                GD.Print("We got one");
                 obj = (T)CurrentObject;
             }
             else
             {
                 // Return a new object
-                GD.Print("Replacing");
                 obj = (T)Activator.CreateInstance(typeof(T));
             }
 
             for (int i = 0; i < Parameters.Length; i = i + 2)
             {
-                GD.Print($"Converting back {Members[(int)Parameters[i]].Name} - {Parameters[i+1]}");
                 Members[(int)Parameters[i]].SetValue(obj, Parameters[i+1]);
             }
             return obj;
