@@ -75,6 +75,14 @@ namespace MD
                 {
                     DataConverter = Activator.CreateInstance(Member.GetUnderlyingType()) as IMDDataConverter;
                 }
+                else if (Member.GetUnderlyingType().Namespace != "System" && Member.GetUnderlyingType().Namespace != "Godot"
+                && Member.GetUnderlyingType().Namespace.StartsWith("Godot.") == false
+                && Member.GetUnderlyingType().Namespace.StartsWith("System.") == false)
+                {
+                    // Custom class converter
+                    Type constructedType = typeof(MDCustomClassDataConverter<>).MakeGenericType(Member.GetUnderlyingType());
+                    DataConverter = (IMDDataConverter)Activator.CreateInstance(constructedType);
+                }
                 else
                 {
                     // Set our default converter
