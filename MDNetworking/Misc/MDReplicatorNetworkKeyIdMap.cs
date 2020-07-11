@@ -8,8 +8,8 @@ namespace MD
         private Dictionary<string, uint> KeyToNetworkIdMap = new Dictionary<string, uint>();
 
         // First dictionary uint is the network key, the inner uint is the tick
-        private Dictionary<uint, Dictionary<uint, object>> ClockedValueBuffer =
-            new Dictionary<uint, Dictionary<uint, object>>();
+        private Dictionary<uint, Dictionary<uint, object[]>> ClockedValueBuffer =
+            new Dictionary<uint, Dictionary<uint, object[]>>();
 
         public void AddNetworkKeyIdPair(uint id, string key)
         {
@@ -22,25 +22,19 @@ namespace MD
             return NetworkIDToKeyMap.Keys;
         }
 
-        public Dictionary<uint, object> GetBufferForId(uint ID)
+        public Dictionary<uint, object[]> GetBufferForId(uint ID)
         {
             if (!ClockedValueBuffer.ContainsKey(ID))
             {
-                ClockedValueBuffer.Add(ID, new Dictionary<uint, object>());
+                ClockedValueBuffer.Add(ID, new Dictionary<uint, object[]>());
             }
 
             return ClockedValueBuffer[ID];
         }
 
-        public void AddToBuffer(uint ID, uint Tick, object Value)
-        {
-            Dictionary<uint, object> buffer = GetBufferForId(ID);
-            buffer.Add(Tick, Value);
-        }
-
         public void AddToBuffer(uint ID, uint Tick, params object[] Parameters)
         {
-            Dictionary<uint, object> buffer = GetBufferForId(ID);
+            Dictionary<uint, object[]> buffer = GetBufferForId(ID);
             buffer.Add(Tick, Parameters);
         }
 
@@ -50,18 +44,11 @@ namespace MD
             {
                 return;
             }
-            Dictionary<uint, object> buffer = GetBufferForId(ID);
+            Dictionary<uint, object[]> buffer = GetBufferForId(ID);
             foreach (uint tick in buffer.Keys)
             {
-                object value = buffer[tick];
-                if (value.GetType().IsArray)
-                {
-                    Member.SetValues(tick, value);
-                }
-                else
-                {
-                    Member.SetValue(tick, value);
-                }
+                object[] value = buffer[tick];
+                Member.SetValues(tick, value);
             }
 
             buffer.Clear();

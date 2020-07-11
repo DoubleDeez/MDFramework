@@ -24,6 +24,22 @@ namespace MD
             }
         }
 
+        public static object GetValue(this MemberInfo member, object Instance)
+        {
+            switch (member.MemberType)
+            {
+                case MemberTypes.Field:
+                    return ((FieldInfo) member).GetValue(Instance);
+                case MemberTypes.Property:
+                    return ((PropertyInfo) member).GetValue(Instance);
+                default:
+                    MDLog.Error(LOG_CAT,
+                        $"Input MemberInfo was of type {member.MemberType.ToString()}, it should be of type FieldInfo or PropertyInfo");
+                    break;
+            }
+            return null;
+        }
+
         public static Type GetUnderlyingType(this MemberInfo member)
         {
             switch (member.MemberType)

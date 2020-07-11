@@ -4,9 +4,10 @@ using System.Reflection;
 
 namespace MD
 {
-    public class MDCRMInterpolatedVector2 : MDClockedReplicatedMember
+    public class MDCRMInterpolatedVector2 : MDReplicatedMember
     {
         protected KeyValuePair<uint, Vector2> LastClockedValue = new KeyValuePair<uint, Vector2>(0, Vector2.Zero);
+        protected uint LastTickValueWasChanged = 0;
 
         public MDCRMInterpolatedVector2(MemberInfo Member, bool Reliable, MDReplicatedType ReplicatedType,
             WeakRef NodeRef, MDReplicatedSetting[] Settings)
@@ -38,9 +39,11 @@ namespace MD
             // Nothing to interpolate yet
             if (LastClockedValue.Key == 0)
             {
-                if (GetValue() != ValueList[NextValue])
+                Vector2 Val = GetValueForTick(NextValue);
+                Node node = NodeRef.GetRef() as Node;
+                if ((Vector2)Member.GetValue(node) != Val)
                 {
-                    UpdateValue((Vector2) ValueList[NextValue]);
+                    UpdateValue(Val);
                 }
 
                 return;
@@ -51,9 +54,15 @@ namespace MD
             float TicksBetweenUpdates = NextValue - LastClockedValue.Key;
 
             // Set the value
-            UpdateValue(LastClockedValue.Value.LinearInterpolate((Vector2) ValueList[NextValue],
+            Vector2 Value = GetValueForTick(NextValue);
+            UpdateValue(LastClockedValue.Value.LinearInterpolate(Value,
                 TicksSinceLastValue / TicksBetweenUpdates));
             LastTickValueWasChanged = GameClock.GetTick();
+        }
+
+        protected Vector2 GetValueForTick(uint Tick)
+        {
+            return (Vector2)ConvertFromObject(null, (object[])ValueList[Tick][0]);
         }
 
         ///<summary>Finds the next value that is in the future and removes old values from the list</summary>
@@ -73,7 +82,7 @@ namespace MD
                 }
 
                 oldKeys.Add(key);
-                LastClockedValue = new KeyValuePair<uint, Vector2>(key, (Vector2) ValueList[key]);
+                LastClockedValue = new KeyValuePair<uint, Vector2>(key, GetValueForTick(key));
             }
 
             // Remove old

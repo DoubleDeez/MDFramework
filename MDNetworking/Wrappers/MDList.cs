@@ -82,6 +82,8 @@ namespace MD
 
         protected bool FullResynch = false;
 
+        protected bool CompleteMode = false;
+
         public MDList()
         {
             MDLog.AddLogCategoryProperties(LOG_CAT, new MDLogProperties(MDLogLevel.Info));
@@ -96,6 +98,9 @@ namespace MD
             ListCommandRecord record = null;
             List<object[]> Commands = new List<object[]>();
 
+            // Enable complete replication mode
+            CompleteMode = true;
+
             // Add all items to the command list
             foreach (T item in RealList)
             {
@@ -103,6 +108,8 @@ namespace MD
                 Commands.Add(AsObjectArray(record));
                 CurrentAction++;
             }
+
+            CompleteMode = false;
 
             // Add current command we are at
             record = new ListCommandRecord(CurrentAction, MDListActions.SET_CURRENT_COMMAND_ID, new object[] {CommandCounter});
@@ -181,13 +188,14 @@ namespace MD
                     CommandCounter = Convert.ToInt32(Parameters[0]);
                     break;
                 case MDListActions.MODIFICATION:
-                    RealList[Convert.ToInt32(Parameters[0])] = ConvertFromObject(Parameters.SubArray(1));
+                    int index = Convert.ToInt32(Parameters[0]);
+                    RealList[index] = ConvertFromObject(RealList[index], Parameters.SubArray(1));
                     break;
                 case MDListActions.ADD:
-                    RealList.Add(ConvertFromObject(Parameters));
+                    RealList.Add(ConvertFromObject(null, Parameters));
                     break;
                 case MDListActions.INSERT:
-                    RealList.Insert(Convert.ToInt32(Parameters[0]), ConvertFromObject(Parameters.SubArray(1)));
+                    RealList.Insert(Convert.ToInt32(Parameters[0]), ConvertFromObject(null, Parameters.SubArray(1)));
                     break;
                 case MDListActions.REMOVE_AT:
                     RealList.RemoveAt(Convert.ToInt32(Parameters[0]));
@@ -320,8 +328,24 @@ namespace MD
                 return;
             }
             
-            // Default Converter
-            DataConverter = new MDObjectDataConverter();
+            String NameSpace = typeof(T).Namespace;
+            Type MemberType = typeof(T);
+            if (MemberType.GetInterface(nameof(IMDDataConverter)) != null)
+            {
+                DataConverter = Activator.CreateInstance(MemberType) as IMDDataConverter;
+            }
+            else if (NameSpace == null || (NameSpace != "System" && NameSpace != "Godot"
+                    && NameSpace.StartsWith("Godot.") == false && NameSpace.StartsWith("System.") == false))
+            {
+                // Custom class converter
+                Type constructedType = typeof(MDCustomClassDataConverter<>).MakeGenericType(MemberType);
+                DataConverter = (IMDDataConverter)Activator.CreateInstance(constructedType);
+            }
+            else
+            {
+                // Set our default converter
+                DataConverter = new MDObjectDataConverter();
+            }
         }
 
         protected Type GetConverterType(MDReplicatedSetting[] Settings)
@@ -368,15 +392,15 @@ namespace MD
         }
 
         // Just for convenience
-        protected object[] ConvertToObject(object item)
+        protected object[] ConvertToObject(object Item)
         {
-            return DataConverter.ConvertToObjectArray(item);
+            return DataConverter.ConvertForSending(Item, CompleteMode);
         }
         
         // Just for convenience
-        protected T ConvertFromObject(object[] Parameters)
+        protected T ConvertFromObject(object CurrentObject, object[] Parameters)
         {
-            return (T)DataConverter.ConvertFromObjectArray(Parameters);
+            return (T)DataConverter.CovertBackToObject(CurrentObject, Parameters);
         }
 
         // Get the current command from the queue and remove it if it exists

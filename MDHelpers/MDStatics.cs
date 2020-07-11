@@ -164,16 +164,20 @@ namespace MD
             return null;
         }
 
+        public static List<MemberInfo> GetTypeMemberInfos(object Object)
+        {
+            return GetTypeMemberInfos(Object.GetType());
+        }
+
         // Returns a list of all the unique members for a Node, including the hierarchy
-        public static List<MemberInfo> GetTypeMemberInfos(Node CurNode)
+        public static List<MemberInfo> GetTypeMemberInfos(Type ObjectType)
         {
             List<MemberInfo> Members = new List<MemberInfo>();
-            Type NodeType = CurNode.GetType();
-            while (NodeType != null && NodeType != typeof(Node))
+            while (ObjectType != null && ObjectType != typeof(Node))
             {
-                Members.AddRange(NodeType.GetFields(BindFlagsAllMembers));
-                Members.AddRange(NodeType.GetProperties(BindFlagsAllMembers));
-                NodeType = NodeType.BaseType;
+                Members.AddRange(ObjectType.GetFields(BindFlagsAllMembers));
+                Members.AddRange(ObjectType.GetProperties(BindFlagsAllMembers));
+                ObjectType = ObjectType.BaseType;
             }
 
             List<MemberInfo> DeDupedMembers = new List<MemberInfo>();
@@ -325,7 +329,7 @@ namespace MD
             String key = $"{Node.GetType().ToString()}#{Name}";
             if (!MemberInfoCache.ContainsKey(key))
             {
-                MemberInfo newMember = MDStatics.GetMemberInfo(Node, Name);
+                MemberInfo newMember = MDStatics.GetMemberByName(Node, Name);
                 MemberInfoCache.Add(key, newMember);
             }
             

@@ -19,24 +19,6 @@ namespace MD
 
     public class MDReplicatedCommandReplicator : MDReplicatedMember
     {
-        private const String REPLICATE_METHOD_NAME = "ReplicateClockedValues";
-
-        public enum Settings
-        {
-            Converter,
-            OnValueChangedEvent
-        }
-
-        protected MethodInfo OnValueChangedCallback = null;
-
-        protected SortedDictionary<uint, List<object>> ValueList = new SortedDictionary<uint, List<object>>();
-
-        protected MDReplicator Replicator;
-
-        protected MDGameSession GameSession;
-
-        protected MDGameClock GameClock;
-
         public MDReplicatedCommandReplicator(MemberInfo Member, bool Reliable, MDReplicatedType ReplicatedType, WeakRef NodeRef, MDReplicatedSetting[] Settings) 
                                         : base(Member, true, ReplicatedType, NodeRef, Settings) 
         {
@@ -45,23 +27,7 @@ namespace MD
             GameClock = GameSession.GetGameClock();
             Node node = NodeRef.GetRef() as Node;
             IMDCommandReplicator CommandReplicator = InitializeCommandReplicator(Member, node);
-            ParseSettings(MDReplicator.ParseParameters(typeof(Settings), Settings));
             CommandReplicator.MDSetSettings(Settings);
-        }
-
-        protected void ParseSettings(MDReplicatedSetting[] Settings)
-        {
-            foreach (MDReplicatedSetting setting in Settings)
-            {
-                switch ((Settings)setting.Key)
-                {
-                    case MDReplicatedCommandReplicator.Settings.OnValueChangedEvent:
-                        Node Node = NodeRef.GetRef() as Node;
-                        OnValueChangedCallback = Node.GetType().GetMethod(setting.Value.ToString(),
-                                BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy | BindingFlags.Instance);
-                        break;
-                }
-            }
         }
 
         public override void SetValues(uint Tick, params object[] Parameters)
@@ -128,7 +94,8 @@ namespace MD
 
         private IMDCommandReplicator GetCommandReplicator()
         {
-            return (IMDCommandReplicator)GetValue();
+            Node node = NodeRef.GetRef() as Node;
+            return (IMDCommandReplicator)Member.GetValue(node);
         }
 
         public override void Replicate(int JoinInProgressPeerId, bool IsIntervalReplicationTime)
@@ -172,23 +139,12 @@ namespace MD
 
         protected void ReplicateCommandToPeer(object[] Command, int PeerId)
         {
-            Replicator.RpcId(PeerId, REPLICATE_METHOD_NAME, Replicator.GetReplicationIdForKey(GetUniqueKey()), GetGameTick(), Command);
+            Replicator.RpcId(PeerId, MDReplicator.REPLICATE_METHOD_NAME, Replicator.GetReplicationIdForKey(GetUniqueKey()), GetGameTick(), Command);
         }
-
-        protected uint GetGameTick()
-        {
-            if (GameClock != null)
-            {
-                return GameClock.GetTick();
-            }
-
-            return 0;
-        }
-
 
         private IMDCommandReplicator InitializeCommandReplicator(MemberInfo Member, Node Node)
         {
-            if (GetValue() != null)
+            if (Member.GetValue(Node) != null)
             {
                 return GetCommandReplicator();
             }

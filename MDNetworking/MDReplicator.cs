@@ -16,6 +16,8 @@ namespace MD
             ReplicatedMemberType
         }
 
+        public const String REPLICATE_METHOD_NAME = nameof(ReplicateClockedValues);
+
         private List<ReplicatedNode> NodeList = new List<ReplicatedNode>();
         private Queue<NewPlayer> JIPPlayers = new Queue<NewPlayer>();
 
@@ -307,20 +309,6 @@ namespace MD
         }
 
         [Remote]
-        public void ReplicateClockedValue(uint ID, uint Tick, object Value)
-        {
-            string key = NetworkIdKeyMap.GetValue(ID);
-            if (key == null || !KeyToMemberMap.ContainsKey(key))
-            {
-                // We got no key so add it to our buffer
-                NetworkIdKeyMap.AddToBuffer(ID, Tick, Value);
-                return;
-            }
-
-            KeyToMemberMap[key].SetValue(Tick, Value);
-        }
-
-        [Remote]
         public void ReplicateClockedValues(uint ID, uint Tick, params object[] Parameters)
         {
             string key = NetworkIdKeyMap.GetValue(ID);
@@ -370,9 +358,6 @@ namespace MD
                     return new MDCRMInterpolatedVector2(Member, RepAttribute.Reliability == MDReliability.Reliable,
                         RepAttribute.ReplicatedType, WeakRef(Instance), Settings);
                 }
-
-                return new MDClockedReplicatedMember(Member, RepAttribute.Reliability == MDReliability.Reliable,
-                    RepAttribute.ReplicatedType, WeakRef(Instance), Settings);
             }
 
             return new MDReplicatedMember(Member, RepAttribute.Reliability == MDReliability.Reliable,
