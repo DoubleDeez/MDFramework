@@ -71,13 +71,13 @@ namespace MD
             // We got no data converter setting
             if (DataConverter == null)
             {
+                String NameSpace = Member.GetUnderlyingType().Namespace;
                 if (Member.GetUnderlyingType().GetInterface(nameof(IMDDataConverter)) != null)
                 {
                     DataConverter = Activator.CreateInstance(Member.GetUnderlyingType()) as IMDDataConverter;
                 }
-                else if (Member.GetUnderlyingType().Namespace != "System" && Member.GetUnderlyingType().Namespace != "Godot"
-                && Member.GetUnderlyingType().Namespace.StartsWith("Godot.") == false
-                && Member.GetUnderlyingType().Namespace.StartsWith("System.") == false)
+                else if (NameSpace == null || (NameSpace != "System" && NameSpace != "Godot"
+                && NameSpace.StartsWith("Godot.") == false && NameSpace.StartsWith("System.") == false))
                 {
                     // Custom class converter
                     Type constructedType = typeof(MDCustomClassDataConverter<>).MakeGenericType(Member.GetUnderlyingType());
@@ -122,12 +122,12 @@ namespace MD
             if (IsReliable())
             {
                 Replicator.Rpc(REPLICATE_METHOD_NAME, Replicator.GetReplicationIdForKey(GetUniqueKey()),
-                                GetGameTick(), ConvertToObject(Value));
+                                GetGameTick(), ConvertToObject(Value, false));
             }
             else
             {
                 Replicator.RpcUnreliable(REPLICATE_METHOD_NAME, Replicator.GetReplicationIdForKey(GetUniqueKey()),
-                                GetGameTick(), ConvertToObject(Value));
+                                GetGameTick(), ConvertToObject(Value, false));
             }
 
             LastValue = Value;
@@ -140,12 +140,12 @@ namespace MD
             if (IsReliable())
             {
                 Replicator.RpcId(PeerId, REPLICATE_METHOD_NAME, Replicator.GetReplicationIdForKey(GetUniqueKey()),
-                                GetGameTick(), ConvertToObject(Value));
+                                GetGameTick(), ConvertToObject(Value, true));
             }
             else
             {
                 Replicator.RpcUnreliableId(PeerId, REPLICATE_METHOD_NAME, Replicator.GetReplicationIdForKey(GetUniqueKey()),
-                                GetGameTick(), ConvertToObject(Value));
+                                GetGameTick(), ConvertToObject(Value, true));
             }
         }
 
@@ -256,9 +256,9 @@ namespace MD
         }
 
         // Just for convenience
-        protected object[] ConvertToObject(object item)
+        protected object[] ConvertToObject(object Item, bool Complete)
         {
-            return DataConverter.ConvertForSending(item);
+            return DataConverter.ConvertForSending(Item, Complete);
         }
         
         // Just for convenience

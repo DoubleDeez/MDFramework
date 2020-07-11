@@ -10,9 +10,10 @@ namespace MD
         /// <summary>
         /// Convert this object into an object array that can be converted back later
         /// </summary>
-        /// <param name="item">The item to be converted</param>
+        /// <param name="Item">The item to be converted</param>
+        /// <param name="Complete">If you support partial replication then do full replication if complete is true</param>
         /// <returns>An array of objects to be sent over the network</returns>
-        object[] ConvertForSending(object item);
+        object[] ConvertForSending(object Item, bool Complete);
 
         /// <summary>
         /// The list of parameters may be longer than the amount of parameters the conversion consumes
@@ -38,9 +39,9 @@ namespace MD
     ///<summary> This default implementation should work on any godot base type that can be sent with rpc calls</summary>
     public class MDObjectDataConverter : IMDDataConverter
     {
-        public object[] ConvertForSending(object item)
+        public object[] ConvertForSending(object Item, bool Complete)
         {
-            return new object[] { item };
+            return new object[] { Item };
         }
 
         public object CovertBackToObject(object CurrentObject, object[] Parameters)
@@ -83,7 +84,7 @@ namespace MD
             }
         }
 
-        public object[] ConvertForSending(object Item)
+        public object[] ConvertForSending(object Item, bool Complete)
         {
             ExtractMembers();
             if (Item == null)
@@ -92,40 +93,45 @@ namespace MD
             }
 
             List<object> ObjectArray = new List<object>();
+            List<object> newLastValues = new List<object>();
 
-            LastValues.Clear();
-            foreach (MemberInfo info in Members)
+            for (int i = 0; i < Members.Count; i++)
             {
-                object value = info.GetValue(Item);
-                LastValues.Add(value);
-                ObjectArray.Add(value);
+                object value = Members[i].GetValue(Item);
+                if (Complete || LastValues.Count == 0 || Equals(LastValues[i], value) == false)
+                {
+                    ObjectArray.Add(i);
+                    ObjectArray.Add(value);
+                }
+                newLastValues.Add(value);
             }
+
+            LastValues = newLastValues;
             return ObjectArray.ToArray();
         }
 
         public object CovertBackToObject(object CurrentObject, object[] Parameters)
         {
             ExtractMembers();
-            if (Parameters.Length < Members.Count)
-            {
-                return null;
-            }
 
             T obj;
             if (CurrentObject != null)
             {
                 // Replace values in existing object
+                GD.Print("We got one");
                 obj = (T)CurrentObject;
             }
             else
             {
                 // Return a new object
+                GD.Print("Replacing");
                 obj = (T)Activator.CreateInstance(typeof(T));
             }
 
-            for (int i = 0; i < Members.Count; i++)
+            for (int i = 0; i < Parameters.Length; i = i + 2)
             {
-                Members[i].SetValue(obj, Parameters[i]);
+                GD.Print($"Converting back {Members[(int)Parameters[i]].Name} - {Parameters[i+1]}");
+                Members[(int)Parameters[i]].SetValue(obj, Parameters[i+1]);
             }
             return obj;
         }

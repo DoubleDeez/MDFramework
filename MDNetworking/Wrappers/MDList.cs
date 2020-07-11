@@ -82,6 +82,8 @@ namespace MD
 
         protected bool FullResynch = false;
 
+        protected bool CompleteMode = false;
+
         public MDList()
         {
             MDLog.AddLogCategoryProperties(LOG_CAT, new MDLogProperties(MDLogLevel.Info));
@@ -96,6 +98,9 @@ namespace MD
             ListCommandRecord record = null;
             List<object[]> Commands = new List<object[]>();
 
+            // Enable complete replication mode
+            CompleteMode = true;
+
             // Add all items to the command list
             foreach (T item in RealList)
             {
@@ -103,6 +108,8 @@ namespace MD
                 Commands.Add(AsObjectArray(record));
                 CurrentAction++;
             }
+
+            CompleteMode = false;
 
             // Add current command we are at
             record = new ListCommandRecord(CurrentAction, MDListActions.SET_CURRENT_COMMAND_ID, new object[] {CommandCounter});
@@ -376,9 +383,9 @@ namespace MD
         }
 
         // Just for convenience
-        protected object[] ConvertToObject(object item)
+        protected object[] ConvertToObject(object Item)
         {
-            return DataConverter.ConvertForSending(item);
+            return DataConverter.ConvertForSending(Item, CompleteMode);
         }
         
         // Just for convenience
