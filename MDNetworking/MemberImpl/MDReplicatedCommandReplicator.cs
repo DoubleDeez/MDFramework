@@ -139,7 +139,7 @@ namespace MD
 
         protected void ReplicateCommandToPeer(object[] Command, int PeerId)
         {
-            Replicator.RpcId(PeerId, REPLICATE_METHOD_NAME, Replicator.GetReplicationIdForKey(GetUniqueKey()), GetGameTick(), Command);
+            Replicator.RpcId(PeerId, MDReplicator.REPLICATE_METHOD_NAME, Replicator.GetReplicationIdForKey(GetUniqueKey()), GetGameTick(), Command);
         }
 
         private IMDCommandReplicator InitializeCommandReplicator(MemberInfo Member, Node Node)

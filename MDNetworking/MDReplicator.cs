@@ -16,6 +16,8 @@ namespace MD
             ReplicatedMemberType
         }
 
+        public const String REPLICATE_METHOD_NAME = nameof(ReplicateClockedValues);
+
         private List<ReplicatedNode> NodeList = new List<ReplicatedNode>();
         private Queue<NewPlayer> JIPPlayers = new Queue<NewPlayer>();
 

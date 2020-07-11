@@ -335,7 +335,7 @@ namespace MD
                 DataConverter = Activator.CreateInstance(MemberType) as IMDDataConverter;
             }
             else if (NameSpace == null || (NameSpace != "System" && NameSpace != "Godot"
-            && NameSpace.StartsWith("Godot.") == false && NameSpace.StartsWith("System.") == false))
+                    && NameSpace.StartsWith("Godot.") == false && NameSpace.StartsWith("System.") == false))
             {
                 // Custom class converter
                 Type constructedType = typeof(MDCustomClassDataConverter<>).MakeGenericType(MemberType);

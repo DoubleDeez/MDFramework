@@ -12,7 +12,7 @@ namespace MD
             OnValueChangedEvent,
             Converter
         }
-        protected const String REPLICATE_METHOD_NAME = "ReplicateClockedValues";
+
         protected const string LOG_CAT = "LogReplicatedMember";
 
         public bool ProcessWhilePaused { get; set; } = true;
@@ -77,7 +77,7 @@ namespace MD
                     DataConverter = Activator.CreateInstance(Member.GetUnderlyingType()) as IMDDataConverter;
                 }
                 else if (NameSpace == null || (NameSpace != "System" && NameSpace != "Godot"
-                && NameSpace.StartsWith("Godot.") == false && NameSpace.StartsWith("System.") == false))
+                        && NameSpace.StartsWith("Godot.") == false && NameSpace.StartsWith("System.") == false))
                 {
                     // Custom class converter
                     Type constructedType = typeof(MDCustomClassDataConverter<>).MakeGenericType(Member.GetUnderlyingType());
@@ -121,12 +121,12 @@ namespace MD
             MDLog.Debug(LOG_CAT, $"Replicating {Member.Name} with value {Value} from {LastValue}");
             if (IsReliable())
             {
-                Replicator.Rpc(REPLICATE_METHOD_NAME, Replicator.GetReplicationIdForKey(GetUniqueKey()),
+                Replicator.Rpc(MDReplicator.REPLICATE_METHOD_NAME, Replicator.GetReplicationIdForKey(GetUniqueKey()),
                                 GetGameTick(), ConvertToObject(Value, false));
             }
             else
             {
-                Replicator.RpcUnreliable(REPLICATE_METHOD_NAME, Replicator.GetReplicationIdForKey(GetUniqueKey()),
+                Replicator.RpcUnreliable(MDReplicator.REPLICATE_METHOD_NAME, Replicator.GetReplicationIdForKey(GetUniqueKey()),
                                 GetGameTick(), ConvertToObject(Value, false));
             }
 
@@ -139,12 +139,12 @@ namespace MD
             MDLog.Debug(LOG_CAT, $"Replicating to JIP Peer {PeerId} for member {Member.Name} with value {Value}");
             if (IsReliable())
             {
-                Replicator.RpcId(PeerId, REPLICATE_METHOD_NAME, Replicator.GetReplicationIdForKey(GetUniqueKey()),
+                Replicator.RpcId(PeerId, MDReplicator.REPLICATE_METHOD_NAME, Replicator.GetReplicationIdForKey(GetUniqueKey()),
                                 GetGameTick(), ConvertToObject(Value, true));
             }
             else
             {
-                Replicator.RpcUnreliableId(PeerId, REPLICATE_METHOD_NAME, Replicator.GetReplicationIdForKey(GetUniqueKey()),
+                Replicator.RpcUnreliableId(PeerId, MDReplicator.REPLICATE_METHOD_NAME, Replicator.GetReplicationIdForKey(GetUniqueKey()),
                                 GetGameTick(), ConvertToObject(Value, true));
             }
         }
