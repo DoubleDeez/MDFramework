@@ -328,9 +328,18 @@ namespace MD
                 return;
             }
             
-            if (typeof(T).GetInterface(nameof(IMDDataConverter)) != null)
+            String NameSpace = typeof(T).Namespace;
+            Type MemberType = typeof(T);
+            if (MemberType.GetInterface(nameof(IMDDataConverter)) != null)
             {
-                DataConverter = Activator.CreateInstance(typeof(T)) as IMDDataConverter;
+                DataConverter = Activator.CreateInstance(MemberType) as IMDDataConverter;
+            }
+            else if (NameSpace == null || (NameSpace != "System" && NameSpace != "Godot"
+            && NameSpace.StartsWith("Godot.") == false && NameSpace.StartsWith("System.") == false))
+            {
+                // Custom class converter
+                Type constructedType = typeof(MDCustomClassDataConverter<>).MakeGenericType(MemberType);
+                DataConverter = (IMDDataConverter)Activator.CreateInstance(constructedType);
             }
             else
             {
