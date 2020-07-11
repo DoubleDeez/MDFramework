@@ -363,7 +363,7 @@ namespace MD
             }
 
             // Check if game clock is active, if so use it
-            if (MDStatics.GetGameSynchronizer() != null && MDStatics.GetGameSynchronizer().IsGameClockActive())
+            if (MDStatics.GetGameSynchronizer() != null && MDStatics.IsGameClockActive())
             {
                 if (Member.GetUnderlyingType() == typeof(Vector2))
                 {
@@ -396,7 +396,7 @@ namespace MD
         /// <summary>Interval replication happens every X physic frames. One physics frame is by default about 16 msec (Default: X=6).</summary>
         protected virtual int GetReplicationFrameInterval()
         {
-            return 6;
+            return this.GetConfiguration().GetInt(MDConfiguration.ConfigurationSections.Replicator, MDConfiguration.FRAME_INTERVAL, 6);
         }
 
         #endregion
@@ -416,7 +416,7 @@ namespace MD
         public void SendClockedRpc(int PeerId, MDReliability Reliability, Node Target, string Method,
             params object[] Parameters)
         {
-            MDRemoteMode Mode = MDStatics.GetMethodRpcType(Target, Method);
+            MDRemoteMode Mode = MDStatics.GetMethodRpcType(Target, Method, Parameters);
             switch (Mode)
             {
                 case MDRemoteMode.Master:

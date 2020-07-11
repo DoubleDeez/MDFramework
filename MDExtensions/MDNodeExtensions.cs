@@ -26,6 +26,13 @@ namespace MD
             return GI.GameSession;
         }
 
+        /// <summary>Grabs the Configuration from the GameInstance</summary>
+        public static MDConfiguration GetConfiguration(this Node Instance)
+        {
+            MDGameInstance GI = Instance.GetGameInstance();
+            return GI.Configuration;
+        }
+
         /// <summary>Grabs the GameSynchronizer from the GameInstance</summary>
         public static MDGameSynchronizer GetGameSynchronizer(this Node Instance)
         {
@@ -379,9 +386,7 @@ namespace MD
 
         public static bool Invoke(this Node Instance, String Method, params object[] Parameters)
         {
-            Type NodeType = Instance.GetType();
-            MethodInfo Info = NodeType.GetMethod(Method,
-                BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+            MethodInfo Info = MDStatics.GetMethodInfo(Instance, Method, Parameters);
             if (Info != null)
             {
                 Info.Invoke(Instance, Parameters);
@@ -393,10 +398,10 @@ namespace MD
 
         public static bool SetMemberValue(this Node Instance, String Name, object Value)
         {
-            MemberInfo member = MDStatics.GetMemberByName(Instance, Name);
-            if (member != null)
+            MemberInfo Member = MDStatics.GetMemberInfo(Instance, Name);
+            if (Member != null)
             {
-                member.SetValue(Instance, Value);
+                Member.SetValue(Instance, Value);
                 return true;
             }
 
