@@ -1,30 +1,49 @@
 using Godot;
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 
 namespace MD
 {
     public interface IMDDataConverter
     {
-        ///<summary>Convert this object into an object array that can be converted back later</summary>
-        object[] ConvertToObjectArray(object item);
+        /// <summary>
+        /// Convert this object into an object array that can be converted back later
+        /// </summary>
+        /// <param name="item">The item to be converted</param>
+        /// <returns>An array of objects to be sent over the network</returns>
+        object[] ConvertForSending(object item);
 
-        ///<summary>The list of parameters may be longer than the amount of parameters the conversion consumes</summary>
-        object ConvertFromObjectArray(object[] Parameters);
+        /// <summary>
+        /// The list of parameters may be longer than the amount of parameters the conversion consumes
+        /// </summary>
+        /// <param name="CurrentObject">The object that we are about to replace</param>
+        /// <param name="Parameters">The parameters for conversion</param>
+        /// <returns>The new object</returns>
+        object CovertBackToObject(object CurrentObject, object[] Parameters);
 
         ///<Summary>Return how many parameters were used by the last ConvertFromObject call</summary>
         int GetParametersConsumedByLastConversion();
+
+        /// <summary>
+        /// Check if the object has changed. If your object is a class or struct you need to track when you change it yourself.
+        /// You should reset the changed status each time this method is called
+        /// </summary>
+        /// <param name="LastValue">The last value of the object</param>
+        /// <param name="CurrentValue">The new value of the object</param>
+        /// <returns></returns>
+        bool ShouldObjectBeReplicated(object LastValue, object CurrentValue);
     }
 
     ///<summary> This default implementation should work on any godot base type that can be sent with rpc calls</summary>
     public class MDObjectDataConverter : IMDDataConverter
     {
-        public object[] ConvertToObjectArray(object item)
+        public object[] ConvertForSending(object item)
         {
             return new object[] { item };
         }
 
-        public object ConvertFromObjectArray(object[] Parameters)
+        public object CovertBackToObject(object CurrentObject, object[] Parameters)
         {
             return Parameters[0];
         }
@@ -33,93 +52,116 @@ namespace MD
         {
             return 1;
         }
+
+        public bool ShouldObjectBeReplicated(object LastValue, object CurrentValue)
+        {
+            return Equals(LastValue, CurrentValue) == false;
+        }
     }
 
-    /// <summary>This data converter a list of something using another data converter</summary>
-    /*
-        You have to implement this class yourself if you wish to use it.
-
-        For example you could do something like:
-
-            public class MyListConverter : MDListDataConverter<String>
-            {
-                public MyListConverter() : base(new MDObjectDataConverter())
-                {
-                    
-                }
-            }
-
-        This would allow you to use MyListConverter for an MDList that contains List<String>
-
-            [MDReplicated]
-            [MDReplicatedSetting(MDReplicatedCommandReplicator.Settings.Converter, typeof(MyListConverter))]
-            protected MDList<List<String>> MyMDList;
-
-        Now you can wrap this even further if you want a List<List<String>> then you add another converter
-
-            public class MyListListConverter : MDListDataConverter<List<String>>
-            {
-                public MyListListConverter() : base(new MyListConverter())
-                {
-                    
-                }
-            }
-
-        This will allow you now to have a MDList<List<List<String>>, so in theory you can wrap as many of these as you want.
-
-            [MDReplicated]
-            [MDReplicatedSetting(MDReplicatedCommandReplicator.Settings.Converter, typeof(MyListListConverter))]
-            protected MDList<List<List<String>>> MyMDList;
-
-        Just beware that wrapping a list inside an MDList will cause every value in the list to be sent whenever any value of the list is changed.
-        In other words, it is not recommended.
-
-    */
-    public abstract class MDListDataConverter<T> : IMDDataConverter
+    public class MDCustomClassDataConverter<T> : IMDDataConverter
     {
-        protected IMDDataConverter Converter;
+        private List<MemberInfo> Members = null;
 
-        protected int ConsumedByLastCall = 0;
+        private List<object> LastValues = new List<object>();
 
-        public MDListDataConverter(IMDDataConverter Converter)
+        private void ExtractMembers()
         {
-            this.Converter = Converter;
-        }
-
-        public object[] ConvertToObjectArray(object item)
-        {
-            List<object> ReturnList = new List<object>();
-            List<T> list = (List<T>)item;
-            foreach (T listItem in list)
+            if (Members == null)
             {
-                ReturnList.AddRange(Converter.ConvertToObjectArray(listItem));
-            }
-            return ReturnList.ToArray();
-        }
-
-        public object ConvertFromObjectArray(object[] Parameters)
-        {
-            List<object> ConversionList = new List<object>(Parameters);
-            List<T> NewList = new List<T>();
-
-            // We are going to consume all the parameters
-            ConsumedByLastCall = Parameters.Length;
-
-            while (ConversionList.Count > 0)
-            {
-                T item = (T)Converter.ConvertFromObjectArray(ConversionList.ToArray());
-                NewList.Add(item);
-                for (int i=0; i < Converter.GetParametersConsumedByLastConversion(); i++)
+                Members = new List<MemberInfo>();
+                List<MemberInfo> MemberInfos = MDStatics.GetTypeMemberInfos(typeof(T));
+                foreach (MemberInfo Member in MemberInfos)
                 {
-                    ConversionList.RemoveAt(0);
+                    MDReplicated RepAttribute = Member.GetCustomAttribute(typeof(MDReplicated)) as MDReplicated;
+                    if (RepAttribute == null)
+                    {
+                        continue;
+                    }
+                    Members.Add(Member);
                 }
             }
-            return NewList;
+        }
+
+        public object[] ConvertForSending(object Item)
+        {
+            ExtractMembers();
+            if (Item == null)
+            {
+                return null;
+            }
+
+            List<object> ObjectArray = new List<object>();
+
+            LastValues.Clear();
+            foreach (MemberInfo info in Members)
+            {
+                object value = info.GetValue(Item);
+                LastValues.Add(value);
+                ObjectArray.Add(value);
+            }
+            return ObjectArray.ToArray();
+        }
+
+        public object CovertBackToObject(object CurrentObject, object[] Parameters)
+        {
+            ExtractMembers();
+            if (Parameters.Length < Members.Count)
+            {
+                return null;
+            }
+
+            T obj;
+            if (CurrentObject != null)
+            {
+                // Replace values in existing object
+                obj = (T)CurrentObject;
+            }
+            else
+            {
+                // Return a new object
+                obj = (T)Activator.CreateInstance(typeof(T));
+            }
+
+            for (int i = 0; i < Members.Count; i++)
+            {
+                Members[i].SetValue(obj, Parameters[i]);
+            }
+            return obj;
         }
 
         public int GetParametersConsumedByLastConversion()
         {
-            return ConsumedByLastCall;
+            ExtractMembers();
+            return Members.Count;
+        }
+
+        public bool ShouldObjectBeReplicated(object LastValue, object CurrentValue)
+        {
+            ExtractMembers();
+            if (LastValues.Count == 0 && CurrentValue != null)
+            {
+                return true;
+            } 
+            else if (CurrentValue != LastValue)
+            {
+                return true;
+            }
+            else if (LastValue == null && CurrentValue == null)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < Members.Count; i++)
+            {
+                object value = Members[i].GetValue(CurrentValue);
+                if (Equals(LastValues[i], value) == false)
+                {
+                    return true;
+                }
+            }
+            
+            return false;
         }
     }
 }

@@ -40,7 +40,8 @@ namespace MD
             if (LastClockedValue.Key == 0)
             {
                 Vector2 Val = GetValueForTick(NextValue);
-                if ((Vector2)GetValue() != Val)
+                Node node = NodeRef.GetRef() as Node;
+                if ((Vector2)Member.GetValue(node) != Val)
                 {
                     UpdateValue(Val);
                 }
@@ -61,7 +62,7 @@ namespace MD
 
         protected Vector2 GetValueForTick(uint Tick)
         {
-            return (Vector2)ConvertFromObject((object[])ValueList[Tick][0]);
+            return (Vector2)ConvertFromObject(null, (object[])ValueList[Tick][0]);
         }
 
         ///<summary>Finds the next value that is in the future and removes old values from the list</summary>

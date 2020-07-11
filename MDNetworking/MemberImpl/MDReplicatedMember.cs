@@ -90,28 +90,14 @@ namespace MD
             return Node?.GetPath() + "#" + Member.Name;
         }
 
-        protected virtual object GetValue()
-        {
-            Node Instance = NodeRef.GetRef() as Node;
-            FieldInfo Field = Member as FieldInfo;
-
-            if (Field != null)
-            {
-                return Field.GetValue(Instance);
-            }
-
-            PropertyInfo Property = Member as PropertyInfo;
-            return Property != null ? Property.GetValue(Instance) : null;
-        }
-
         ///<summary>It is better to implement ReplicateToAll and ReplicateToPeer instead of this method</summary>
         public virtual void Replicate(int JoinInProgressPeerId, bool IsIntervalReplicationTime)
         {
-            object CurrentValue = GetValue();
             Node Instance = NodeRef.GetRef() as Node;
+            object CurrentValue = Member.GetValue(Instance);
 
             if (GetReplicatedType() == MDReplicatedType.Interval && IsIntervalReplicationTime ||
-                GetReplicatedType() == MDReplicatedType.OnChange && Equals(LastValue, CurrentValue) == false)
+                GetReplicatedType() == MDReplicatedType.OnChange && DataConverter.ShouldObjectBeReplicated(LastValue, CurrentValue))
             {
                 ReplicateToAll(Instance, CurrentValue);
             }
@@ -207,8 +193,9 @@ namespace MD
 
         protected virtual void UpdateValue(params object[] Parameters)
         {
-            object value = ConvertFromObject(Parameters);
             Node Instance = NodeRef.GetRef() as Node;
+            object CurrentValue = Member.GetValue(Instance);
+            object value = ConvertFromObject(CurrentValue, Parameters);
             Member.SetValue(Instance, value);
             LastValue = value;
             if (OnValueChangedCallback != null)
@@ -263,13 +250,13 @@ namespace MD
         // Just for convenience
         protected object[] ConvertToObject(object item)
         {
-            return DataConverter.ConvertToObjectArray(item);
+            return DataConverter.ConvertForSending(item);
         }
         
         // Just for convenience
-        protected object ConvertFromObject(object[] Parameters)
+        protected object ConvertFromObject(object CurrentObject, object[] Parameters)
         {
-            return DataConverter.ConvertFromObjectArray(Parameters);
+            return DataConverter.CovertBackToObject(CurrentObject, (object[])Parameters);
         }
     }
 }

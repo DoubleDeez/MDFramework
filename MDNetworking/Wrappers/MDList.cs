@@ -181,13 +181,14 @@ namespace MD
                     CommandCounter = Convert.ToInt32(Parameters[0]);
                     break;
                 case MDListActions.MODIFICATION:
-                    RealList[Convert.ToInt32(Parameters[0])] = ConvertFromObject(Parameters.SubArray(1));
+                    int index = Convert.ToInt32(Parameters[0]);
+                    RealList[index] = ConvertFromObject(RealList[index], Parameters.SubArray(1));
                     break;
                 case MDListActions.ADD:
-                    RealList.Add(ConvertFromObject(Parameters));
+                    RealList.Add(ConvertFromObject(null, Parameters));
                     break;
                 case MDListActions.INSERT:
-                    RealList.Insert(Convert.ToInt32(Parameters[0]), ConvertFromObject(Parameters.SubArray(1)));
+                    RealList.Insert(Convert.ToInt32(Parameters[0]), ConvertFromObject(null, Parameters.SubArray(1)));
                     break;
                 case MDListActions.REMOVE_AT:
                     RealList.RemoveAt(Convert.ToInt32(Parameters[0]));
@@ -377,13 +378,13 @@ namespace MD
         // Just for convenience
         protected object[] ConvertToObject(object item)
         {
-            return DataConverter.ConvertToObjectArray(item);
+            return DataConverter.ConvertForSending(item);
         }
         
         // Just for convenience
-        protected T ConvertFromObject(object[] Parameters)
+        protected T ConvertFromObject(object CurrentObject, object[] Parameters)
         {
-            return (T)DataConverter.ConvertFromObjectArray(Parameters);
+            return (T)DataConverter.CovertBackToObject(CurrentObject, Parameters);
         }
 
         // Get the current command from the queue and remove it if it exists

@@ -94,7 +94,8 @@ namespace MD
 
         private IMDCommandReplicator GetCommandReplicator()
         {
-            return (IMDCommandReplicator)GetValue();
+            Node node = NodeRef.GetRef() as Node;
+            return (IMDCommandReplicator)Member.GetValue(node);
         }
 
         public override void Replicate(int JoinInProgressPeerId, bool IsIntervalReplicationTime)
@@ -143,7 +144,7 @@ namespace MD
 
         private IMDCommandReplicator InitializeCommandReplicator(MemberInfo Member, Node Node)
         {
-            if (GetValue() != null)
+            if (Member.GetValue(Node) != null)
             {
                 return GetCommandReplicator();
             }
