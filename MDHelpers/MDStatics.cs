@@ -22,6 +22,14 @@ namespace MD
         // Useful to return instead of null
         public static byte[] EmptyByteArray { get; } = new byte[0];
 
+        /// <summary>
+        /// Allows retrieving the game instance without relying on the tree
+        /// </summary>
+        public static MDGameInstance GetGameInstance()
+        {
+            return GI;
+        }
+
         ///<summary>Get the global game session from the game instance</summary>
         public static MDGameSession GetGameSession()
         {

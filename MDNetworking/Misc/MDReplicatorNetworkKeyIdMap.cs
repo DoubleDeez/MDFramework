@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System;
 
 namespace MD
 {
@@ -13,8 +14,11 @@ namespace MD
 
         public void AddNetworkKeyIdPair(uint id, string key)
         {
-            NetworkIDToKeyMap.Add(id, key);
-            KeyToNetworkIdMap.Add(key, id);
+            if (NetworkIDToKeyMap.ContainsKey(id) == false)
+            {
+                NetworkIDToKeyMap.Add(id, key);
+                KeyToNetworkIdMap.Add(key, id);
+            }
         }
 
         public IEnumerable<uint> GetKeys()
@@ -35,7 +39,10 @@ namespace MD
         public void AddToBuffer(uint ID, uint Tick, params object[] Parameters)
         {
             Dictionary<uint, object[]> buffer = GetBufferForId(ID);
-            buffer.Add(Tick, Parameters);
+            if (buffer.ContainsKey(Tick) == false)
+            {
+                buffer.Add(Tick, Parameters);
+            }
         }
 
         public void CheckBuffer(uint ID, MDReplicatedMember Member)

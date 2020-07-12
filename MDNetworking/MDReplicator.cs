@@ -36,7 +36,17 @@ namespace MD
 
         private MDGameClock GameClock;
 
-        public override void _Ready()
+        public override void _ExitTree()
+        {
+            this.GetGameSession().OnSessionStartedEvent -= OnSessionStarted;
+            this.GetGameSession().OnPlayerJoinedEvent -= OnPlayerJoined;
+        }
+
+        public override void _PhysicsProcess(float delta)
+        {
+            TickReplication();
+        }
+        public void Initialize()
         {
             MDLog.AddLogCategoryProperties(LOG_CAT, new MDLogProperties(MDLogLevel.Info));
             MDOnScreenDebug.AddOnScreenDebugInfo("KeyToMemberMap Size", () => KeyToMemberMap.Count.ToString());
@@ -48,17 +58,6 @@ namespace MD
             GroupManager = new MDReplicatorGroupManager(GetReplicationFrameInterval());
 
             GameClock = this.GetGameClock();
-        }
-
-        public override void _ExitTree()
-        {
-            this.GetGameSession().OnSessionStartedEvent -= OnSessionStarted;
-            this.GetGameSession().OnPlayerJoinedEvent -= OnPlayerJoined;
-        }
-
-        public override void _PhysicsProcess(float delta)
-        {
-            TickReplication();
         }
 
         private void OnSessionStarted()
