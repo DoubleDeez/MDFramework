@@ -218,10 +218,20 @@ namespace MD
             LogProperties[CategoryName] = new MDLogProperties(LogLevel);
         }
 
+        private static bool ShouldLogToGDPrint()
+        {
+            return MDStatics.GetGameInstance().GetConfiguration().GetBool(MDConfiguration.ConfigurationSections.GameInstance, MDConfiguration.LOG_CONSOLE_TO_GD_PRINT, true);
+        }
+
         // Prints the message to the console
         private static void LogToConsole(string Message)
         {
             Console.WriteLine(Message);
+
+            if (ShouldLogToGDPrint())
+            {
+                Godot.GD.Print(Message);
+            }
         }
 
         // Writes the message to the log file

@@ -23,6 +23,7 @@ namespace MD
         public const string GAME_CLOCK_TYPE = "GameClockType";
         public const string REPLICATOR_TYPE = "ReplicatorType";
         public const string PLAYER_INFO_TYPE = "PlayerInfoType";
+        public const string LOG_CONSOLE_TO_GD_PRINT = "LogConsoleToGDPrint";
 
         // GAME SYNCHRONIZER
         public const string PING_INTERVAL = "PingInterval";
