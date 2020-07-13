@@ -1,10 +1,10 @@
 using System.Collections.Generic;
-using System;
 
 namespace MD
 {
     class MDReplicatorNetworkKeyIdMap
     {
+        private const string LOG_CAT = "LogReplicatorNetworkKeyIdMap";
         private Dictionary<uint, string> NetworkIDToKeyMap = new Dictionary<uint, string>();
         private Dictionary<string, uint> KeyToNetworkIdMap = new Dictionary<string, uint>();
 
@@ -18,6 +18,10 @@ namespace MD
             {
                 NetworkIDToKeyMap.Add(id, key);
                 KeyToNetworkIdMap.Add(key, id);
+            }
+            else
+            {
+                MDLog.Warn(LOG_CAT, $"Tried to add key {key} for id {id} but it already has key {NetworkIDToKeyMap[id]}");
             }
         }
 

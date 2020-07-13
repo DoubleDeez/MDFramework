@@ -39,6 +39,7 @@ namespace MD
         public override void _ExitTree()
         {
             this.GetGameSession().OnSessionStartedEvent -= OnSessionStarted;
+            this.GetGameSession().OnSessionEndedEvent -= OnSessionEnded;
             this.GetGameSession().OnPlayerJoinedEvent -= OnPlayerJoined;
         }
 
@@ -52,6 +53,7 @@ namespace MD
             MDOnScreenDebug.AddOnScreenDebugInfo("KeyToMemberMap Size", () => KeyToMemberMap.Count.ToString());
             MDOnScreenDebug.AddOnScreenDebugInfo("NetworkIDToKeyMap Size", () => NetworkIdKeyMap.GetCount().ToString());
             this.GetGameSession().OnSessionStartedEvent += OnSessionStarted;
+            this.GetGameSession().OnSessionEndedEvent += OnSessionEnded;
             this.GetGameSession().OnPlayerJoinedEvent += OnPlayerJoined;
             PauseMode = PauseModeEnum.Process;
 
@@ -64,6 +66,11 @@ namespace MD
         {
             // Reset the NetworkKeyIdMap on new session started
             NetworkIdKeyMap = new MDReplicatorNetworkKeyIdMap();
+        }
+
+        private void OnSessionEnded()
+        {
+            KeyToMemberMap = new Dictionary<string, MDReplicatedMember>();
         }
 
         public void OnPlayerJoined(int PeerId)
