@@ -19,6 +19,11 @@ namespace MD
     [MDAutoRegister]
     public class MDGameSynchronizer : Node
     {
+        public enum SynchronizationStates
+        {
+            SYNCHRONIZING_IN_PROGRESS,
+            SYNCRHONIZED
+        }
         public const string METHOD_REQUEST_TICKS_MSEC = nameof(RequestTicksMsec);
         public const string METHOD_ON_PING_TIMER_TIMEOUT = nameof(OnPingTimerTimeout);
         public const string METHOD_REQUEST_PING = nameof(RequestPing);
@@ -64,6 +69,8 @@ namespace MD
         
         protected int MaxPing;
 
+        public SynchronizationStates SynchronizationState { get; private set;}
+
 
         // Called when the node enters the scene tree for the first time.
         public override void _Ready()
@@ -75,6 +82,7 @@ namespace MD
             GameSession.OnNetworkNodeAdded += OnNetworkNodeAdded;
             GameSession.OnNetworkNodeRemoved += OnNetworkNodeRemoved;
             GameSession.OnSessionStartedEvent += OnSessionStartedEvent;
+            SynchronizationState = SynchronizationStates.SYNCHRONIZING_IN_PROGRESS;
         }
 
         #region PUBLIC METHODS
@@ -372,6 +380,11 @@ namespace MD
                 MDOnScreenDebug.AddOnScreenDebugInfo($"MaxRoundtripPing: ",
                     () => MaxPing.ToString());
                 PauseGame();
+                SynchronizationState = SynchronizationStates.SYNCHRONIZING_IN_PROGRESS;
+            }
+            else
+            {
+                SynchronizationState = SynchronizationStates.SYNCRHONIZED;
             }
 
             // Reset to tick 0 at start of session
@@ -482,6 +495,7 @@ namespace MD
             if (SynchedNodes == NodeCount)
             {
                 // We are done synching
+                SynchronizationState = SynchronizationStates.SYNCRHONIZED;
                 RpcId(MDStatics.GetServerId(), nameof(ClientSynchDone));
                 MDLog.Debug(LOG_CAT, "We are done synching notifying server");
                 // Set ourselves to done
