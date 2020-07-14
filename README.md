@@ -36,7 +36,6 @@ git submodule add https://github.com/DoubleDeez/MDFramework.git src/MDFramework
 [autoload]
 GameInstance="*res://src/MDFramework/MDGameInstance.cs"
 ```
-**Note:** It **must** be called `GameInstance` for the framework to work.
 
 4. Checkout the [wiki](https://github.com/DoubleDeez/MDFramework/wiki) for details on how to use MDFramework.
 

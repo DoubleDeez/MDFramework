@@ -4,6 +4,7 @@ namespace MD
 {
     class MDReplicatorNetworkKeyIdMap
     {
+        private const string LOG_CAT = "LogReplicatorNetworkKeyIdMap";
         private Dictionary<uint, string> NetworkIDToKeyMap = new Dictionary<uint, string>();
         private Dictionary<string, uint> KeyToNetworkIdMap = new Dictionary<string, uint>();
 
@@ -13,8 +14,15 @@ namespace MD
 
         public void AddNetworkKeyIdPair(uint id, string key)
         {
-            NetworkIDToKeyMap.Add(id, key);
-            KeyToNetworkIdMap.Add(key, id);
+            if (NetworkIDToKeyMap.ContainsKey(id) == false)
+            {
+                NetworkIDToKeyMap.Add(id, key);
+                KeyToNetworkIdMap.Add(key, id);
+            }
+            else
+            {
+                MDLog.Warn(LOG_CAT, $"Tried to add key {key} for id {id} but it already has key {NetworkIDToKeyMap[id]}");
+            }
         }
 
         public IEnumerable<uint> GetKeys()
@@ -35,7 +43,10 @@ namespace MD
         public void AddToBuffer(uint ID, uint Tick, params object[] Parameters)
         {
             Dictionary<uint, object[]> buffer = GetBufferForId(ID);
-            buffer.Add(Tick, Parameters);
+            if (buffer.ContainsKey(Tick) == false)
+            {
+                buffer.Add(Tick, Parameters);
+            }
         }
 
         public void CheckBuffer(uint ID, MDReplicatedMember Member)
