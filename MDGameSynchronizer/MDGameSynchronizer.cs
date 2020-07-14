@@ -68,7 +68,7 @@ namespace MD
         // Called when the node enters the scene tree for the first time.
         public override void _Ready()
         {
-            MDLog.AddLogCategoryProperties(LOG_CAT, new MDLogProperties(MDLogLevel.Force));
+            MDLog.AddLogCategoryProperties(LOG_CAT, new MDLogProperties(MDLogLevel.Info));
             GameSession = GameInstance.GetGameSession();
             GameSession.OnPlayerJoinedEvent += OnPlayerJoinedEvent;
             GameSession.OnPlayerLeftEvent += OnPlayerLeftEvent;

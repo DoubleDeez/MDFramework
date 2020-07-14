@@ -41,7 +41,7 @@ namespace MD
 
         public MDGameSynchPeerInfo(MDGameSynchronizer GameSynchronizer, int PeerId)
         {
-            MDLog.AddLogCategoryProperties(LOG_CAT, new MDLogProperties(MDLogLevel.Force));
+            MDLog.AddLogCategoryProperties(LOG_CAT, new MDLogProperties(MDLogLevel.Info));
             MDLog.Info(LOG_CAT, $"Creating MDGameSynchPeerInfo for Peer [ID: {PeerId}]");
             this.GameSynchronizer = GameSynchronizer;
             this.PeerId = PeerId;
