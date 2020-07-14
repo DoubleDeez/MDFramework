@@ -108,6 +108,9 @@ namespace MD
             }
         }
 
+        /// <summary>
+        /// Called when the ping timer times out, sends a ping request to the given client.
+        /// </summary>
         public void OnPingTimerTimeout()
         {
             // Check if network is still active
