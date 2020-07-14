@@ -13,10 +13,12 @@ namespace MD
  */
     public static class MDNodeExtensions
     {
-        // Grabs the singleton game instance
+        /// <summary>
+        /// Grabs the singleton game instance, doesn't rely on being in the tree
+        /// </summary>
         public static MDGameInstance GetGameInstance(this Node Instance)
         {
-            return Instance.GetNode("/root/GameInstance") as MDGameInstance;
+            return MDStatics.GetGameInstance();
         }
 
         /// <summary>Grabs the GameSession from the GameInstance</summary>
