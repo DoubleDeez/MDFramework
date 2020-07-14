@@ -38,9 +38,9 @@ namespace MD
             GetTree().Connect("node_removed", this, nameof(OnNodeRemoved_Internal));
 
             // Init instances
-            CreateReplicator();
             CreateGameSession();
             CreateGameSynchronizer();
+            CreateReplicator();
             CreateInterfaceManager();
 
             RegisterNodeAndChildren(GetTree().Root);
@@ -188,6 +188,8 @@ namespace MD
                 Replicator = CreateTypeInstance<MDReplicator>(GetReplicatorType());
                 Replicator.Name = "Replicator";
                 this.AddNodeToRoot(Replicator, true);
+                Replicator.Initialize();
+                GameSession.Replicator = Replicator;
             }
         }
 
@@ -211,7 +213,6 @@ namespace MD
                 GameSession = CreateTypeInstance<MDGameSession>(GetGameSessionType());
                 GameSession.Name = "GameSession";
                 GameSession.GameInstance = this;
-                GameSession.Replicator = Replicator;
                 this.AddNodeToRoot(GameSession, true);
             }
         }
