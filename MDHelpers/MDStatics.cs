@@ -13,6 +13,8 @@ namespace MD
 
         private static readonly Dictionary<string, MethodInfo> MethodInfoCache = new Dictionary<string, MethodInfo>();
 
+        private static readonly Dictionary<Type, IMDDataConverter> DataConverterCache = new Dictionary<Type, IMDDataConverter>();
+
         public static BindingFlags BindFlagsAllMembers =
             BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance;
 
@@ -371,6 +373,46 @@ namespace MD
             }
 
             return string.Format("{0:0.##} {1}", len, sizes[order]);
+        }
+
+        /// <summary>
+        /// Get the data converter for the given type
+        /// </summary>
+        /// <param name="Type">The type to get the data converter for</param>
+        /// <returns>The default data converter for this type</returns>
+        public static IMDDataConverter GetConverterForType(Type Type)
+        {
+            if (!DataConverterCache.ContainsKey(Type))
+            {
+                DataConverterCache.Add(Type, IntGetConverterForType(Type));
+            }
+            return DataConverterCache[Type];
+        }
+
+        private static IMDDataConverter IntGetConverterForType(Type Type)
+        {
+            String NameSpace = Type.Namespace;
+            if (Type.GetInterface(nameof(IMDDataConverter)) != null)
+            {
+                return Activator.CreateInstance(Type) as IMDDataConverter;
+            }
+            else if (Type.IsEnum)
+            {
+                Type constructedType = typeof(MDEnumDataConverter<>).MakeGenericType(Type);
+                return (IMDDataConverter)Activator.CreateInstance(constructedType);
+            }
+            else if (NameSpace == null || (NameSpace != "System" && NameSpace != "Godot"
+                    && NameSpace.StartsWith("Godot.") == false && NameSpace.StartsWith("System.") == false))
+            {
+                // Custom class converter
+                Type constructedType = typeof(MDCustomClassDataConverter<>).MakeGenericType(Type);
+                return (IMDDataConverter)Activator.CreateInstance(constructedType);
+            }
+            else
+            {
+                // Set our default converter
+                return new MDObjectDataConverter();
+            }
         }
     }
 }
