@@ -78,6 +78,11 @@ namespace MD
                 {
                     DataConverter = Activator.CreateInstance(Member.GetUnderlyingType()) as IMDDataConverter;
                 }
+                else if (Member.GetUnderlyingType().IsEnum)
+                {
+                    Type constructedType = typeof(MDEnumDataConverter<>).MakeGenericType(Member.GetUnderlyingType());
+                    DataConverter = (IMDDataConverter)Activator.CreateInstance(constructedType);
+                }
                 else if (NameSpace == null || (NameSpace != "System" && NameSpace != "Godot"
                         && NameSpace.StartsWith("Godot.") == false && NameSpace.StartsWith("System.") == false))
                 {

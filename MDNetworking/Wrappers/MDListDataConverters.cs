@@ -60,6 +60,38 @@ namespace MD
         }
     }
 
+    ///<summary> Data converter for enums</summary>
+    public class MDEnumDataConverter<T> : IMDDataConverter where T : Enum
+    {
+        public object[] ConvertForSending(object Item, bool Complete)
+        {
+            return new object[] { (int)Item };
+        }
+
+        public object CovertBackToObject(object CurrentObject, object[] Parameters)
+        {
+            return (T)Parameters[0];
+        }
+
+        public int GetParametersConsumedByLastConversion()
+        {
+            return 1;
+        }
+
+        public bool ShouldObjectBeReplicated(object LastValue, object CurrentValue)
+        {
+            if (LastValue == null && CurrentValue == null)
+            {
+                return false;
+            }
+            else if (LastValue == null || CurrentValue == null)
+            {
+                return true;
+            }
+            return Equals((int)LastValue, (int)CurrentValue) == false;
+        }
+    }
+
     public class MDCustomClassDataConverter<T> : IMDDataConverter
     {
         private List<MemberInfo> Members = null;
