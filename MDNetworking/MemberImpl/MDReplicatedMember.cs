@@ -70,31 +70,10 @@ namespace MD
                 }
             }
 
-            // We got no data converter setting
+            // We got no data converter, get default one
             if (DataConverter == null)
             {
-                String NameSpace = Member.GetUnderlyingType().Namespace;
-                if (Member.GetUnderlyingType().GetInterface(nameof(IMDDataConverter)) != null)
-                {
-                    DataConverter = Activator.CreateInstance(Member.GetUnderlyingType()) as IMDDataConverter;
-                }
-                else if (Member.GetUnderlyingType().IsEnum)
-                {
-                    Type constructedType = typeof(MDEnumDataConverter<>).MakeGenericType(Member.GetUnderlyingType());
-                    DataConverter = (IMDDataConverter)Activator.CreateInstance(constructedType);
-                }
-                else if (NameSpace == null || (NameSpace != "System" && NameSpace != "Godot"
-                        && NameSpace.StartsWith("Godot.") == false && NameSpace.StartsWith("System.") == false))
-                {
-                    // Custom class converter
-                    Type constructedType = typeof(MDCustomClassDataConverter<>).MakeGenericType(Member.GetUnderlyingType());
-                    DataConverter = (IMDDataConverter)Activator.CreateInstance(constructedType);
-                }
-                else
-                {
-                    // Set our default converter
-                    DataConverter = new MDObjectDataConverter();
-                }
+                DataConverter = MDStatics.GetConverterForType(Member.GetUnderlyingType());
             }
         }
 
