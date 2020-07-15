@@ -419,6 +419,7 @@ namespace MD
         /// <param name="ConnectionTarget">The object to attach the timeout method to</param>
         /// <param name="MethodName">The name of the timeout method</param>
         /// <param name="Parameters">Array of parameters to pass to the timeout function</param>
+        /// <returns>The new timer</returns>
         public static Timer CreateTimer(this Node Instance, String Name, bool OneShot, float WaitTime,
             bool TimerAsFirstArgument, Godot.Object ConnectionTarget, String MethodName, params object[] Parameters)
         {
@@ -438,6 +439,27 @@ namespace MD
 
             timer.Connect("timeout", ConnectionTarget, MethodName, new Godot.Collections.Array(parameters));
             Instance.AddChild(timer);
+            return timer;
+        }
+
+        /// <summary>
+        /// Creates a timer that still runs while game is paused
+        /// </summary>
+        /// <param name="Instance">The Instance from where this function called</param>
+        /// <param name="Name">The name of the timer</param>
+        /// <param name="OneShot">Is this a one shot timer</param>
+        /// <param name="WaitTime">Duration of the timer</param>
+        /// <param name="TimerAsFirstArgument">Should we pass the timer as the first argument to the timeout method?</param>
+        /// <param name="ConnectionTarget">The object to attach the timeout method to</param>
+        /// <param name="MethodName">The name of the timeout method</param>
+        /// <param name="Parameters">Array of parameters to pass to the timeout function</param>
+        /// <returns>The new timer</returns>
+        public static Timer CreateUnpausableTimer(this Node Instance, string TimerName, bool OneShot, float WaitTime, bool TimerAsFirstArgument,
+            Godot.Object ConnectionTarget, string MethodName, params object[] Parameters)
+        {
+            Timer timer = Instance.CreateTimer(TimerName, OneShot, WaitTime, 
+                                                TimerAsFirstArgument, ConnectionTarget, MethodName, Parameters);
+            timer.PauseMode = Node.PauseModeEnum.Process;
             return timer;
         }
 

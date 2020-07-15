@@ -33,7 +33,7 @@ namespace MD
         public override void SetValues(uint Tick, params object[] Parameters)
         {
             // If we got no GameClock or the tick this update is for is past the current tick
-            if (GameClock == null || GameClock.GetRemoteTick() >= Tick)
+            if (GameClock == null || GameClock.GetRemoteTick() >= Tick || IsSynchInProgress())
             {
                 GetCommandReplicator().MDProcessCommand(Parameters);
                 if (OnValueChangedCallback != null)

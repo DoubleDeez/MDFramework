@@ -26,6 +26,7 @@ namespace MD
         protected bool IsShouldReplicate = false;
         protected MDReplicator Replicator;
         protected MDGameSession GameSession;
+        protected MDGameSynchronizer GameSynchronizer;
         protected MDGameClock GameClock;
         protected IMDDataConverter DataConverter = null;
         protected MethodInfo OnValueChangedCallback = null;
@@ -37,6 +38,7 @@ namespace MD
             GameSession = MDStatics.GetGameSession();
             Replicator = GameSession.Replicator;
             GameClock = GameSession.GetGameClock();
+            GameSynchronizer = GameSession.GetGameSynchronizer();
 
             this.Member = Member;
             this.Reliable = Reliable;
@@ -152,7 +154,8 @@ namespace MD
         public virtual void SetValues(uint Tick, params object[] Parameters)
         {
             // If we got no GameClock or the tick this update is for is past the current tick
-            if (GameClock == null || GameClock.GetRemoteTick() >= Tick)
+            // Or if we are currently synching
+            if (GameClock == null || GameClock.GetRemoteTick() >= Tick || IsSynchInProgress())
             {
                 UpdateValue(Parameters);
             }
@@ -265,6 +268,16 @@ namespace MD
         protected object ConvertFromObject(object CurrentObject, object[] Parameters)
         {
             return DataConverter.CovertBackToObject(CurrentObject, (object[])Parameters);
+        }
+
+        protected bool IsSynchInProgress()
+        {
+            if (GameSynchronizer == null || GameSynchronizer.SynchronizationState == MDGameSynchronizer.SynchronizationStates.SYNCRHONIZED)
+            {
+                return false;
+            } 
+
+            return true;
         }
     }
 }
