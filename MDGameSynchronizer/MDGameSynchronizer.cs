@@ -19,6 +19,15 @@ namespace MD
     [MDAutoRegister]
     public class MDGameSynchronizer : Node
     {
+        public enum SynchronizationStates
+        {
+            SYNCHRONIZING_IN_PROGRESS,
+            SYNCRHONIZED
+        }
+        public const string METHOD_REQUEST_TICKS_MSEC = nameof(RequestTicksMsec);
+        public const string METHOD_ON_PING_TIMER_TIMEOUT = nameof(OnPingTimerTimeout);
+        public const string METHOD_REQUEST_PING = nameof(RequestPing);
+        
         private const string LOG_CAT = "LogGameSynchronizer";
 
         private const string RESUME_TIMER_NAME = "ResumeTimer";
@@ -49,28 +58,18 @@ namespace MD
 
         public MDGameSession GameSession = null;
 
-        ///<Summary>Stores the latest ping response times for each player</summary>
-        protected Dictionary<int, Queue<int>> InternalPingList = new Dictionary<int, Queue<int>>();
-
-        ///<Summary>Stores all the estimated GetTicksMsec offsets for all players</summary>
-        protected Dictionary<int, List<int>> InternalTicksList = new Dictionary<int, List<int>>();
-
-        ///<Summary>This contains what we think is the GetTicksMsec offset for each player</summary>
-        protected Dictionary<int, int> PlayerTicksMsecOffset = new Dictionary<int, int>();
-
-        ///<Summary>This contains what we think is the ping for each player</summary>
-        protected Dictionary<int, int> PlayerPing = new Dictionary<int, int>();
+        ///<Summary>List containing synch information per peer</summary>
+        protected Dictionary<int, MDGameSynchPeerInfo> PeerSynchInfo = new Dictionary<int, MDGameSynchPeerInfo>();
 
         protected List<Node> NodeList = new List<Node>();
-
-        protected List<int> ClientSynchList = new List<int>();
-
-        protected List<int> CompletedNodeSyncList = new List<int>();
 
         protected int NodeCount = -1;
 
         protected bool NodeSynchCompleted = false;
+        
         protected int MaxPing;
+
+        public SynchronizationStates SynchronizationState { get; private set;}
 
 
         // Called when the node enters the scene tree for the first time.
@@ -83,6 +82,7 @@ namespace MD
             GameSession.OnNetworkNodeAdded += OnNetworkNodeAdded;
             GameSession.OnNetworkNodeRemoved += OnNetworkNodeRemoved;
             GameSession.OnSessionStartedEvent += OnSessionStartedEvent;
+            SynchronizationState = SynchronizationStates.SYNCHRONIZING_IN_PROGRESS;
         }
 
         #region PUBLIC METHODS
@@ -90,9 +90,9 @@ namespace MD
         /// <summary> Returns the ping for the given peer or -1 if the peer does not exist.</summary>
         public int GetPlayerPing(int PeerId)
         {
-            if (PlayerPing.ContainsKey(PeerId))
+            if (PeerSynchInfo.ContainsKey(PeerId))
             {
-                return PlayerPing[PeerId];
+                return PeerSynchInfo[PeerId].Ping;
             }
 
             MDLog.Warn(LOG_CAT, $"Requested ping for peer [{PeerId}] that doesn't exist in list");
@@ -102,15 +102,15 @@ namespace MD
         ///<summary>Returns the highest ping we got to any player</summary>
         public int GetMaxPlayerPing()
         {
-            return MDStatics.IsClient() ? MaxPing : PlayerPing.Values.Max();
+            return MDStatics.IsClient() ? MaxPing : PeerSynchInfo.Select(p => p.Value.Ping).Max();
         }
 
         /// <summary> Returns the estimated OS.GetTicksMsec for the given peer or 0 if the peer does not exist.</summary>
         public uint GetPlayerTicksMsec(int PeerId)
         {
-            if (PlayerTicksMsecOffset.ContainsKey(PeerId))
+            if (PeerSynchInfo.ContainsKey(PeerId))
             {
-                return Convert.ToUInt32(OS.GetTicksMsec() + PlayerTicksMsecOffset[PeerId]);
+                return Convert.ToUInt32(OS.GetTicksMsec() + PeerSynchInfo[PeerId].TickMSecOffset);
             }
 
             MDLog.Warn(LOG_CAT, $"Requested OS.GetTicksMsec for peer [{PeerId}] that doesn't exist in list");
@@ -119,7 +119,11 @@ namespace MD
 
         public bool HasPeerCompletedNodeSynch(int PeerId)
         {
-            return CompletedNodeSyncList.Contains(PeerId);
+            if (!PeerSynchInfo.ContainsKey(PeerId))
+            {
+                return false;
+            }
+            return PeerSynchInfo[PeerId].CompletedNodeSynch;
         }
 
         #endregion
@@ -133,7 +137,7 @@ namespace MD
             this.NodeCount = NodeCount;
             NodeSynchCompleted = false;
             // Start synch timer
-            Timer timer = CreateUnpausableTimer("SynchTimer", false, SYNCH_TIMER_CHECK_INTERVAL, true, this,
+            Timer timer = this.CreateUnpausableTimer("SynchTimer", false, SYNCH_TIMER_CHECK_INTERVAL, true, this,
                 nameof(CheckSynchStatus));
             timer.Start();
 
@@ -168,9 +172,9 @@ namespace MD
         {
             // Great this client is done
             MDLog.Debug(LOG_CAT, $"Peer [{Multiplayer.GetRpcSenderId()}] completed synch");
-            if (!ClientSynchList.Contains(Multiplayer.GetRpcSenderId()))
+            if (PeerSynchInfo.ContainsKey(Multiplayer.GetRpcSenderId()))
             {
-                ClientSynchList.Add(Multiplayer.GetRpcSenderId());
+                PeerSynchInfo[Multiplayer.GetRpcSenderId()].CompletedSynch = true;
             }
 
             // Send status update to all players so they can update UI
@@ -227,7 +231,7 @@ namespace MD
         protected void PingResponse(uint ServerTimeOfRequest)
         {
             int ping = (int) (OS.GetTicksMsec() - ServerTimeOfRequest);
-            PushPlayerPingToQueue(Multiplayer.GetRpcSenderId(), ping);
+            PeerSynchInfo[Multiplayer.GetRpcSenderId()].PushPlayerPingToQueue(ping);
         }
 
         ///<summary>Requests the OS.GetTicksMsec() from the client</summary>
@@ -235,7 +239,6 @@ namespace MD
         protected void RequestTicksMsec(int RequestNumber, uint ServerTimeOfRequest)
         {
             // Respond
-
             RpcId(GameSession.GetNetworkMaster(), nameof(ResponseTicksMsec), OS.GetTicksMsec(), ServerTimeOfRequest,
                 RequestNumber);
             MDLog.Trace(LOG_CAT,
@@ -247,40 +250,8 @@ namespace MD
         protected void ResponseTicksMsec(uint ClientTicksMsec, uint ServerTimeOfRequest, int RequestNumber)
         {
             MDLog.Debug(LOG_CAT,
-                "Msec response number {RequestNumber} from peer [{Multiplayer.GetRpcSenderId()}] is {ClientTicksMsec} local Msec is {OS.GetTicksMsec()}");
-            // Get and record ping
-            int ping = (int) (OS.GetTicksMsec() - ServerTimeOfRequest);
-            PushPlayerPingToQueue(Multiplayer.GetRpcSenderId(), ping);
-
-            // Calculate ping for one way trip (Ping / 2)
-            long pingOneWay = (long) (Mathf.Floor(ping) / 2f);
-
-            /* Estimation is <Client TickMsec> - <Server TickMsec> + <Ping Half Time> = <Estimated Current Offset To Client>
-                Example:
-                ClientTime when request was recieved = 3000
-                ServerTime when response came = 5000
-                Ping for rountrip = 500.
-                    If we assume the packet took the same time back and forth it means 
-                    the client is half of the ping time ahead of it's answer when we get the answer (ie. should now be 3000 + 250 = 3250).
-                
-                3000 - 5000 + 250 = -1750 is the estimated offset
-                5000 - 1750 = 3250 which we think the time is at this moment at the client.
-    
-                Of course this is a best guess estimate, by doing multiple measurements and taking the average we can close in on the truth.
-            */
-            int estimatedGetTicksOffset = (int) (ClientTicksMsec - OS.GetTicksMsec() + pingOneWay);
-            PushPlayerEstimatedTicksMSecToList(Multiplayer.GetRpcSenderId(), estimatedGetTicksOffset);
-            CalculatePlayerEstimatedTicksMSecOffset(Multiplayer.GetRpcSenderId());
-
-            // Check if we are done with the initial request burst
-            if (RequestNumber < GetInitialMeasurementCount())
-            {
-                SendRequestToPlayer(Multiplayer.GetRpcSenderId(), ++RequestNumber);
-            }
-            else
-            {
-                StartClientPingCycle(Multiplayer.GetRpcSenderId());
-            }
+                $"Msec response number {RequestNumber} from peer [{Multiplayer.GetRpcSenderId()}] is {ClientTicksMsec} local Msec is {OS.GetTicksMsec()}");
+            PeerSynchInfo[Multiplayer.GetRpcSenderId()].ProcessMSecResponse(ClientTicksMsec, ServerTimeOfRequest, RequestNumber);
         }
 
         [Puppet]
@@ -303,7 +274,10 @@ namespace MD
             else
             {
                 // Only clear the list if synching isn't already in progress
-                ClientSynchList.Clear();
+                foreach (MDGameSynchPeerInfo peerInfo in PeerSynchInfo.Values)
+                {
+                    peerInfo.CompletedSynch = false;
+                }
             }
         }
 
@@ -312,7 +286,7 @@ namespace MD
         {
             float waitTime = (UnpauseTime - OS.GetTicksMsec()) / 1000f;
             MDLog.Trace(LOG_CAT, $"Unpausing game in {waitTime}");
-            Timer timer = CreateUnpausableTimer(RESUME_TIMER_NAME, true, waitTime, true, this,
+            Timer timer = this.CreateUnpausableTimer(RESUME_TIMER_NAME, true, waitTime, true, this,
                 nameof(OnUnpauseTimerTimeout));
             timer.Start();
             OnSynchCompleteEvent(waitTime);
@@ -327,9 +301,9 @@ namespace MD
         {
             // Called from client the first time they complete their node synch
             MDLog.Trace(LOG_CAT, $"Peer [{Multiplayer.GetRpcSenderId()}] has completed node synchronization");
-            if (!CompletedNodeSyncList.Contains(Multiplayer.GetRpcSenderId()))
+            if (!PeerSynchInfo.ContainsKey(Multiplayer.GetRpcSenderId()))
             {
-                CompletedNodeSyncList.Add(Multiplayer.GetRpcSenderId());
+                PeerSynchInfo[Multiplayer.GetRpcSenderId()].CompletedNodeSynch = true;
             }
         }
 
@@ -337,87 +311,9 @@ namespace MD
 
         #region SUPPORTING METHODS
 
-        ///<summary>Sends a request to the given player for the OS.GetTicksMsec time</summary>
-        private void SendRequestToPlayer(int PeerId, int RequestNumber)
-        {
-            RpcId(PeerId, nameof(RequestTicksMsec), RequestNumber, OS.GetTicksMsec());
-        }
-
-        ///<summary>Adds the estimated ticks msec to the players list</summary>
-        private void PushPlayerEstimatedTicksMSecToList(int PeerId, int EstimatedTicksMsec)
-        {
-            if (!InternalTicksList.ContainsKey(PeerId))
-            {
-                InternalTicksList.Add(PeerId, new List<int>());
-            }
-
-            MDLog.Trace(LOG_CAT, $"Peer [{PeerId}] recorded a estimated msec of {EstimatedTicksMsec}");
-            InternalTicksList[PeerId].Add(EstimatedTicksMsec);
-        }
-
-        ///<summary>Adds the ping to the players ping list and removes any overflow</summary>
-        private void PushPlayerPingToQueue(int PeerId, int Ping)
-        {
-            if (!InternalPingList.ContainsKey(PeerId))
-            {
-                InternalPingList.Add(PeerId, new Queue<int>());
-            }
-
-            InternalPingList[PeerId].Enqueue(Ping);
-            MDLog.Trace(LOG_CAT, $"Peer [{PeerId}] recorded a ping of {Ping}");
-            if (InternalPingList[PeerId].Count > GetPingsToKeepForAverage())
-            {
-                InternalPingList[PeerId].Dequeue();
-            }
-
-            CalculatePlayerPing(PeerId);
-        }
-
-        ///<summary>Calculate the player average ping</summary>
-        private void CalculatePlayerPing(int PeerId)
-        {
-            int estimate = InternalPingList[PeerId].Sum();
-
-            estimate /= InternalPingList[PeerId].Count;
-            SetPlayerPing(PeerId, estimate);
-        }
-
-
-        ///<summary>Calculate the player estimated offset for OS.GetTicksMSec</summary>
-        private void CalculatePlayerEstimatedTicksMSecOffset(int PeerId)
-        {
-            int totalEstimate = InternalTicksList[PeerId].Sum();
-            totalEstimate /= InternalTicksList[PeerId].Count;
-            SetPlayerEstimatedOffset(PeerId, totalEstimate);
-            MDLog.Debug(LOG_CAT,
-                $"Estimated OS.GetTicksMsec offset for peer [{PeerId}] is {totalEstimate} based on {InternalTicksList[PeerId].Count} measurements");
-        }
-
-        ///<summary>Set the estimated offset for the player</summary>
-        private void SetPlayerEstimatedOffset(int PeerId, int Estimate)
-        {
-            if (!PlayerTicksMsecOffset.ContainsKey(PeerId))
-            {
-                PlayerTicksMsecOffset.Add(PeerId, Estimate);
-            }
-            else
-            {
-                PlayerTicksMsecOffset[PeerId] = Estimate;
-            }
-        }
-
         ///<summary>Set the ping for the player</summary>
-        private void SetPlayerPing(int PeerId, int Ping)
+        public void SendPlayerPingEvent(int PeerId, int Ping)
         {
-            if (!PlayerPing.ContainsKey(PeerId))
-            {
-                PlayerPing.Add(PeerId, Ping);
-            }
-            else
-            {
-                PlayerPing[PeerId] = Ping;
-            }
-
             OnPlayerPingUpdatedEvent(PeerId, Ping);
         }
 
@@ -435,27 +331,21 @@ namespace MD
                 return;
             }
 
-            // Send our first request and start timer
-            if (GetInitialMeasurementCount() > 0)
-            {
-                SendRequestToPlayer(PeerId, 1);
-            }
+            MDGameSynchPeerInfo PeerInfo = new MDGameSynchPeerInfo(this, PeerId);
+            PeerSynchInfo.Add(PeerId, PeerInfo);
 
-            if (PeerId != MDStatics.GetServerId())
+            PauseGame();
+            OnSynchStartedEvent(IsPauseOnJoin());
+            foreach (int peerid in GameSession.GetAllPeerIds().Where(peerid => peerid != MDStatics.GetServerId()))
             {
-                PauseGame();
-                OnSynchStartedEvent(IsPauseOnJoin());
-                foreach (int peerid in GameSession.GetAllPeerIds().Where(peerid => peerid != MDStatics.GetServerId()))
+                // Synch just started so set everyone to 0%
+                OnPlayerSynchStatusUpdateEvent(peerid, 0f);
+
+                // Don't do this for the connecting peer or the server
+                if (PeerId != peerid)
                 {
-                    // Synch just started so set everyone to 0%
-                    OnPlayerSynchStatusUpdateEvent(peerid, 0f);
-
-                    // Don't do this for the connecting peer or the server
-                    if (PeerId != peerid)
-                    {
-                        RpcId(peerid, nameof(PauseGame));
-                        RpcId(peerid, nameof(RpcReceiveNodeCount), NodeList.Count);
-                    }
+                    RpcId(peerid, nameof(PauseGame));
+                    RpcId(peerid, nameof(RpcReceiveNodeCount), NodeList.Count);
                 }
             }
 
@@ -465,7 +355,7 @@ namespace MD
             Timer timer = (Timer) GetNodeOrNull(ALL_PLAYERS_SYNCHED_TIMER_NAME);
             if (timer == null)
             {
-                timer = CreateUnpausableTimer(ALL_PLAYERS_SYNCHED_TIMER_NAME, false, SYNCH_TIMER_CHECK_INTERVAL, true,
+                timer = this.CreateUnpausableTimer(ALL_PLAYERS_SYNCHED_TIMER_NAME, false, SYNCH_TIMER_CHECK_INTERVAL, true,
                     this, nameof(CheckAllClientsSynched));
                 timer.Start();
             }
@@ -473,13 +363,11 @@ namespace MD
 
         private void OnPlayerLeftEvent(int PeerId)
         {
-            InternalPingList.Remove(PeerId);
-            InternalTicksList.Remove(PeerId);
-            PlayerTicksMsecOffset.Remove(PeerId);
-            PlayerPing.Remove(PeerId);
-            CompletedNodeSyncList.Remove(PeerId);
-            ClientSynchList.Remove(PeerId);
-            MDOnScreenDebug.RemoveOnScreenDebugInfo("Ping(" + PeerId + ")");
+            if (PeerSynchInfo.ContainsKey(PeerId))
+            {
+                PeerSynchInfo[PeerId].Dispose();
+                PeerSynchInfo.Remove(PeerId);
+            }
         }
 
         private void OnSessionStartedEvent()
@@ -492,104 +380,35 @@ namespace MD
                 MDOnScreenDebug.AddOnScreenDebugInfo($"MaxRoundtripPing: ",
                     () => MaxPing.ToString());
                 PauseGame();
+                SynchronizationState = SynchronizationStates.SYNCHRONIZING_IN_PROGRESS;
+            }
+            else
+            {
+                SynchronizationState = SynchronizationStates.SYNCRHONIZED;
             }
 
             // Reset to tick 0 at start of session
             GameClock?.SetCurrentTick(0);
         }
 
-        ///<summary>Starts the player ping request cycle</summary>
-        private void StartClientPingCycle(int PeerId)
+        private void OnPingTimerTimeout(int PeerId)
         {
-            if (!IsActivePingEnabled())
+            if (PeerSynchInfo.ContainsKey(PeerId))
             {
-                return;
-            }
-
-            if (!InternalPingList.ContainsKey(PeerId))
-            {
-                InternalPingList.Add(PeerId, new Queue<int>());
-            }
-
-            MDOnScreenDebug.AddOnScreenDebugInfo($"Ping({PeerId})",
-                () => MDStatics.GetGameSynchronizer().GetPlayerPing(PeerId).ToString());
-            Timer timer = CreateUnpausableTimer($"PingTimer{PeerId}", false, GetPingInterval(), true, this,
-                nameof(OnPingTimerTimeout), PeerId);
-            timer.Start();
-        }
-
-        private void OnPingTimerTimeout(Timer timer, int PeerId)
-        {
-            // Check if peer is still active
-            if (!InternalPingList.ContainsKey(PeerId) || !MDStatics.IsNetworkActive())
-            {
-                MDLog.Trace(LOG_CAT, $"Peer {PeerId} has disconnected, stopping ping");
-                timer.Stop();
-                timer.RemoveAndFree();
-                return;
-            }
-
-            // Send ping request
-            if (GameClock == null)
-            {
-                RpcId(PeerId, nameof(RequestPing), OS.GetTicksMsec());
-            }
-            else
-            {
-                uint ping = (uint) GetPlayerPing(PeerId);
-                int maxPlayerPing = GetMaxPlayerPing() + (int) ping;
-                uint estimate = GetPlayerTicksMsec(PeerId) + ping;
-                RpcId(PeerId, nameof(RequestPing), OS.GetTicksMsec(), estimate, GameClock.GetTickAtTimeOffset(ping),
-                    maxPlayerPing);
+                PeerSynchInfo[PeerId].OnPingTimerTimeout();
             }
         }
 
         private void CheckAllClientsSynched(Timer timer)
         {
-            if (ClientSynchList.Count < GameSession.GetAllPlayerInfos().Count - 1)
+            if (PeerSynchInfo.Values.Where(peerInfo => peerInfo.CompletedSynch == false).ToList().Count > 0)
             {
                 MDLog.Debug(LOG_CAT, "All clients are not synched yet");
                 return;
             }
 
-            // Double check each client, if another client left while we were synching
-            // We could believe we are synched while we really are not
-            bool allClientsSynched = true;
-            foreach (int peerId in GameSession.GetAllPeerIds())
-            {
-                if (peerId == MDStatics.GetServerId()
-                    || ClientSynchList.Contains(peerId) && PlayerTicksMsecOffset.ContainsKey(peerId))
-                {
-                    continue;
-                }
-
-                MDLog.Trace(LOG_CAT, $"Peer [{peerId}] is not yet fully synched");
-                allClientsSynched = false;
-            }
-
-            if (!allClientsSynched)
-            {
-                MDLog.Debug(LOG_CAT, "All peers are not synched yet");
-                return;
-            }
-
-            bool waitForTickMsec = false;
-
             // Check if we still need to wait for a better confidence on the TickMsec value
-            foreach (int peerId in GameSession.GetAllPeerIds())
-            {
-                if (peerId == MDStatics.GetServerId()
-                    || InternalTicksList.ContainsKey(peerId) &&
-                    InternalTicksList[peerId].Count >= GetMinimumMeasurementCountBeforeResume())
-                {
-                    continue;
-                }
-
-                waitForTickMsec = true;
-                MDLog.Trace(LOG_CAT, $"Still waiting for peer [{peerId}] to get a more secure TickMsec value");
-            }
-
-            if (waitForTickMsec)
+            if (PeerSynchInfo.Values.Where(peerInfo => peerInfo.IsClientMSecConfident() == false).ToList().Count > 0)
             {
                 MDLog.Debug(LOG_CAT, "Still waiting for a more secure msec value");
                 return;
@@ -610,7 +429,7 @@ namespace MD
             }
 
             UnpauseAtTickMsec(OS.GetTicksMsec() + GetUnpauseCountdownDurationMSec(), 0);
-            ClientSynchList.Clear();
+            PeerSynchInfo.Values.ToList().ForEach(value => value.CompletedSynch = false);
             timer.RemoveAndFree();
         }
 
@@ -676,6 +495,7 @@ namespace MD
             if (SynchedNodes == NodeCount)
             {
                 // We are done synching
+                SynchronizationState = SynchronizationStates.SYNCRHONIZED;
                 RpcId(MDStatics.GetServerId(), nameof(ClientSynchDone));
                 MDLog.Debug(LOG_CAT, "We are done synching notifying server");
                 // Set ourselves to done
@@ -702,16 +522,6 @@ namespace MD
             GetTree().Paused = false;
         }
 
-        private Timer CreateUnpausableTimer(string TimerName, bool OneShot, float WaitTime, bool TimerAsFirstArgument,
-            Godot.Object ConnectionTarget, string MethodName, params object[] Parameters)
-        {
-            Timer timer = this.CreateTimer(TimerName, OneShot, WaitTime, TimerAsFirstArgument, ConnectionTarget,
-                MethodName,
-                Parameters);
-            timer.PauseMode = PauseModeEnum.Process;
-            return timer;
-        }
-
         #endregion
 
         #region VIRTUAL METHODS
@@ -735,32 +545,32 @@ namespace MD
         }
 
         /// <summary>How often do we ping each client (Default: 0.5f)</summary>
-        protected virtual float GetPingInterval()
+        public virtual float GetPingInterval()
         {
             return float.Parse(this.GetConfiguration().GetString(MDConfiguration.ConfigurationSections.GameSynchronizer, MDConfiguration.PING_INTERVAL, "0.5"));
         }
 
         /// <summary>Pings to keep for getting average (Default: 10)</summary>
-        protected virtual int GetPingsToKeepForAverage()
+        public virtual int GetPingsToKeepForAverage()
         {
             return this.GetConfiguration().GetInt(MDConfiguration.ConfigurationSections.GameSynchronizer, MDConfiguration.PINGS_TO_KEEP_FOR_AVERAGE, 10);
         }
 
         /// <summary>If set to true we will ping every player continuously. (Default: true)
         /// <para>You can set the interval with <see cref="GetPingInterval"/></para></summary>
-        protected virtual bool IsActivePingEnabled()
+        public virtual bool IsActivePingEnabled()
         {
             return this.GetConfiguration().GetBool(MDConfiguration.ConfigurationSections.GameSynchronizer, MDConfiguration.ACTIVE_PING_ENABLED, true);
         }
 
         /// <summary>This decides how many times we go back and forth to establish the OS.GetTicksMsec offset for each client (Default: 20)</summary>
-        protected virtual int GetInitialMeasurementCount()
+        public virtual int GetInitialMeasurementCount()
         {
             return this.GetConfiguration().GetInt(MDConfiguration.ConfigurationSections.GameSynchronizer, MDConfiguration.INITIAL_MEASUREMENT_COUNT, 20);
         }
 
         /// <summary>If IsPauseOnJoin() is enabled we will wait for at least this level of security for TicksMsec before we resume (Default: GetInitialMeasurementCount() / 2)</summary>
-        protected virtual int GetMinimumMeasurementCountBeforeResume()
+        public virtual int GetMinimumMeasurementCountBeforeResume()
         {
             return this.GetConfiguration().GetInt(MDConfiguration.ConfigurationSections.GameSynchronizer, MDConfiguration.INITIAL_MEASUREMENT_COUNT_BEFORE_RESUME, 10);
         }
