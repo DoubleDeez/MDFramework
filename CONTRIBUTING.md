@@ -85,3 +85,6 @@ Field and Properties should come before methods.
 
 #### MD Namespace
 All aspects of MDFramework should be in the `MD` namespace.
+
+#### Internal Functions
+Functions that are marked internal to a class/struct should have the `_Internal` suffix.
