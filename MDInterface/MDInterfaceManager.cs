@@ -3,11 +3,9 @@ using System;
 
 namespace MD
 {
-/*
- * MDInterfaceManager
- *
- * Class that manages all our UI.
- */
+    /// <summary>
+    /// Class that manages all our UI.
+    /// </summary>
     public class MDInterfaceManager : CanvasLayer
     {
         private const string ConsoleName = "Console";

@@ -10,7 +10,9 @@ namespace MD
         Touch
     }
 
-// Helper class that holds input state and delegates
+    /// <summary>
+    /// Helper class that holds input state and delegates
+    /// </summary>
     public class MDInput
     {
         private const string LOG_CAT = "MDInput";
@@ -21,6 +23,10 @@ namespace MD
 
         public MDInputType LastInputType { get; private set; } = MDInputType.MouseAndKeyboard;
 
+        /// <summary>
+        /// Called when an input event happens
+        /// </summary>
+        /// <param name="Event">The event</param>
         public void OnInputEvent(InputEvent Event)
         {
             MDInputType OldInputType = LastInputType;

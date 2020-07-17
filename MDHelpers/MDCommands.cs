@@ -9,11 +9,9 @@ using static Godot.StringExtensions;
 
 namespace MD
 {
-/*
- * MDCommands
- *
- * Class allow functions to be registered as commands to be accessed via an MDConsole instance
- */
+    /// <summary>
+    /// Class that allows functions to be registered as commands to be accessed via an MDConsole instance
+    /// </summary>
     public static class MDCommands
     {
         // Small struct containing the info to call a command
@@ -35,19 +33,29 @@ namespace MD
 
         private static Dictionary<string, CommandInfo> _commandMap;
 
-        // Registers all the methods marked with an MDCommand
+        /// <summary>
+        /// Registers all the methods marked with an MDCommand
+        /// </summary>
+        /// <param name="Instance">The object to register for</param>
         public static void RegisterCommandAttributes(object Instance)
         {
             RegisterCommandAttributes(Instance.GetType(), Instance);
         }
 
-        // Unregisters all the methods marked with an MDCommand
+        /// <summary>
+        /// Unregisters all the methods marked with an MDCommand
+        /// </summary>
+        /// <param name="Instance">The object to unregister for</param>
         public static void UnregisterCommandAttributes(object Instance)
         {
             UnregisterCommandAttributes(Instance.GetType(), Instance);
         }
 
-        // Registers all the methods marked with an MDCommand
+        /// <summary>
+        /// Registers all the methods marked with an MDCommand of the given type
+        /// </summary>
+        /// <param name="ObjType">The type</param>
+        /// <param name="Instance">The object to register for</param>
         public static void RegisterCommandAttributes(Type ObjType, object Instance = null)
         {
             MethodInfo[] Methods = ObjType.GetMethods();
@@ -61,7 +69,11 @@ namespace MD
             }
         }
 
-        // Unregisters all the methods marked with an MDCommand
+        /// <summary>
+        /// Unregisters all the methods marked with an MDCommand of the given type
+        /// </summary>
+        /// <param name="ObjType">The type</param>
+        /// <param name="Instance">The object to unregister for</param>
         public static void UnregisterCommandAttributes(Type ObjType, object Instance = null)
         {
             MethodInfo[] Methods = ObjType.GetMethods();
@@ -75,7 +87,12 @@ namespace MD
             }
         }
 
-        // Register a method as a command
+        /// <summary>
+        /// Register a method as a command
+        /// </summary>
+        /// <param name="Instance">The instance to register for</param>
+        /// <param name="Method">The method</param>
+        /// <param name="DefaultParams">Default parameters</param>
         public static void RegisterCommand(object Instance, MethodInfo Method, object[] DefaultParams = null)
         {
             if (Method == null)
@@ -99,7 +116,13 @@ namespace MD
             RegisterCommand(Instance, Method, HelpText, DefaultParams);
         }
 
-        // Register a command, with custom help text that can be displayed in the console
+        /// <summary>
+        /// Register a command, with custom help text that can be displayed in the console
+        /// </summary>
+        /// <param name="Instance">The instance to register for</param>
+        /// <param name="Method">The method to register</param>
+        /// <param name="HelpText">Help text to show in console</param>
+        /// <param name="DefaultParams">Default parameters</param>
         public static void RegisterCommand(object Instance, MethodInfo Method, string HelpText,
             object[] DefaultParams = null)
         {
@@ -128,7 +151,11 @@ namespace MD
             _commandMap[MethodName] = NewCommand;
         }
 
-        // Unregister a command
+        /// <summary>
+        /// Unregister a command
+        /// </summary>
+        /// <param name="Instance">The instance to unregister for</param>
+        /// <param name="Method">The method to unregister</param>
         public static void UnregisterCommand(object Instance, MethodInfo Method)
         {
             if (Method == null)
@@ -155,7 +182,11 @@ namespace MD
             }
         }
 
-        // Call a registered command via its name
+        /// <summary>
+        /// Call a registered command via its name
+        /// </summary>
+        /// <param name="Command">The command to call</param>
+        /// <returns>True if executed, false if not</returns>
         public static bool InvokeCommand(string Command)
         {
             string[] Args = Command.Split(" ", false);
@@ -218,6 +249,10 @@ namespace MD
             return true;
         }
 
+        /// <summary>
+        /// Get history of commands executed
+        /// </summary>
+        /// <returns>List of commands executed</returns>
         public static List<string> GetCommandHistory()
         {
             File CmdFile = GetHistoryFile();
@@ -235,7 +270,7 @@ namespace MD
             return CommandHistory;
         }
 
-        public static void AddCommandToHistory(string Command)
+        private static void AddCommandToHistory(string Command)
         {
             List<string> History = GetCommandHistory();
             if (History.Count > 0 && History[0].Equals(Command))
@@ -255,11 +290,20 @@ namespace MD
             CmdFile.Close();
         }
 
+        /// <summary>
+        /// Get the list of valid commands
+        /// </summary>
+        /// <returns>The list of commands</returns>
         public static List<string> GetCommandList()
         {
             return _commandMap.Keys.ToList();
         }
 
+        /// <summary>
+        /// Get the help text of a command
+        /// </summary>
+        /// <param name="Command">The command to get the help text for</param>
+        /// <returns>The help text if found</returns>
         public static string GetHelpText(string Command)
         {
             return _commandMap.ContainsKey(Command) ? _commandMap[Command].HelpText : "";

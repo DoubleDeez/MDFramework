@@ -39,12 +39,10 @@ namespace MD
         }
     }
 
-/*
- * MDLog
- *
- * Provides methods of logging different categories at different levels.
- * If no log properties are added for a category, logs for that category will show in console and be written to file.
- */
+    /// <summary>
+    /// Provides methods of logging different categories at different levels.
+    /// If no log properties are added for a category, logs for that category will show in console and be written to file.
+    /// </summary>
     public static class MDLog
     {
         private const string EXT_LOG = ".log";
@@ -54,7 +52,10 @@ namespace MD
         private static File LogFile;
         private static Dictionary<string, MDLogProperties> LogProperties;
 
-        // Initialize internal data and set the directory to store log files
+        /// <summary>
+        /// Initialize internal data and set the directory to store log files
+        /// </summary>
+        /// <param name="LogDir">The log directory to use</param>
         public static void Initialize(string LogDir)
         {
             LogProperties = new Dictionary<string, MDLogProperties>();
@@ -62,7 +63,13 @@ namespace MD
             MDCommands.RegisterCommandAttributes(typeof(MDLog));
         }
 
-        // Logs the message (supports formatting) in accordance with the LogProperties set for the specified log category
+        /// <summary>
+        /// Logs the message (supports formatting) in accordance with the LogProperties set for the specified log category
+        /// </summary>
+        /// <param name="CategoryName">The category to log in</param>
+        /// <param name="LogLevel">The log level</param>
+        /// <param name="Message">The message</param>
+        /// <param name="Args">Arguments</param>
         public static void Log(string CategoryName, MDLogLevel LogLevel, string Message, params object[] Args)
         {
             // TODO - Get calling method's name automatically: https://stackoverflow.com/a/5443690
@@ -112,91 +119,175 @@ namespace MD
             }
         }
 
-        // Calls Log with level == force
+        /// <summary>
+        /// Calls Log with level == force
+        /// </summary>
+        /// <param name="CategoryName">The category to log in</param>
+        /// <param name="Message">The message</param>
+        /// <param name="Args">Arguments</param>
         public static void Force(string CategoryName, string Message, params object[] Args)
         {
             Log(CategoryName, MDLogLevel.Force, Message, Args);
         }
 
-        // Calls Log with level == fatal
+        /// <summary>
+        /// Calls Log with level == fatal
+        /// </summary>
+        /// <param name="CategoryName">The category to log in</param>
+        /// <param name="Message">The message</param>
+        /// <param name="Args">Arguments</param>
         public static void Fatal(string CategoryName, string Message, params object[] Args)
         {
             Log(CategoryName, MDLogLevel.Fatal, Message, Args);
         }
 
-        // Calls Log with level == error
+        /// <summary>
+        /// Calls Log with level == error
+        /// </summary>
+        /// <param name="CategoryName">The category to log in</param>
+        /// <param name="Message">The message</param>
+        /// <param name="Args">Arguments</param>
         public static void Error(string CategoryName, string Message, params object[] Args)
         {
             Log(CategoryName, MDLogLevel.Error, Message, Args);
         }
 
-        // Calls Log with level == warn
+        /// <summary>
+        /// Calls Log with level == warn
+        /// </summary>
+        /// <param name="CategoryName">The category to log in</param>
+        /// <param name="Message">The message</param>
+        /// <param name="Args">Arguments</param>
         public static void Warn(string CategoryName, string Message, params object[] Args)
         {
             Log(CategoryName, MDLogLevel.Warn, Message, Args);
         }
 
-        // Calls Log with level == info
+        /// <summary>
+        /// Calls Log with level == info
+        /// </summary>
+        /// <param name="CategoryName">The category to log in</param>
+        /// <param name="Message">The message</param>
+        /// <param name="Args">Arguments</param>
         public static void Info(string CategoryName, string Message, params object[] Args)
         {
             Log(CategoryName, MDLogLevel.Info, Message, Args);
         }
 
-        // Calls Log with level == debug
+        /// <summary>
+        /// Calls Log with level == debug
+        /// </summary>
+        /// <param name="CategoryName">The category to log in</param>
+        /// <param name="Message">The message</param>
+        /// <param name="Args">Arguments</param>
         public static void Debug(string CategoryName, string Message, params object[] Args)
         {
             Log(CategoryName, MDLogLevel.Debug, Message, Args);
         }
 
-        // Calls Log with level == trace
+        /// <summary>
+        /// Calls Log with level == trace
+        /// </summary>
+        /// <param name="CategoryName">The category to log in</param>
+        /// <param name="Message">The message</param>
+        /// <param name="Args">Arguments</param>
         public static void Trace(string CategoryName, string Message, params object[] Args)
         {
             Log(CategoryName, MDLogLevel.Trace, Message, Args);
         }
 
-        // Calls Log with level == force
+        /// <summary>
+        /// Calls Log with level == force
+        /// </summary>
+        /// <param name="Condition">The condition</param>
+        /// <param name="CategoryName">The category to log in</param>
+        /// <param name="Message">The message</param>
+        /// <param name="Args">Arguments</param>
         public static void CForce(bool Condition, string CategoryName, string Message, params object[] Args)
         {
             CLog(Condition, CategoryName, MDLogLevel.Force, Message, Args);
         }
 
-        // Calls Log with level == fatal
+        /// <summary>
+        /// Calls Log with level == fatal
+        /// </summary>
+        /// <param name="Condition">The condition</param>
+        /// <param name="CategoryName">The category to log in</param>
+        /// <param name="Message">The message</param>
+        /// <param name="Args">Arguments</param>
         public static void CFatal(bool Condition, string CategoryName, string Message, params object[] Args)
         {
             CLog(Condition, CategoryName, MDLogLevel.Fatal, Message, Args);
         }
 
-        // Calls Log with level == error
+        /// <summary>
+        /// Calls Log with level == error
+        /// </summary>
+        /// <param name="Condition">The condition</param>
+        /// <param name="CategoryName">The category to log in</param>
+        /// <param name="Message">The message</param>
+        /// <param name="Args">Arguments</param>
         public static void CError(bool Condition, string CategoryName, string Message, params object[] Args)
         {
             CLog(Condition, CategoryName, MDLogLevel.Error, Message, Args);
         }
 
-        // Calls Log with level == warn
+        /// <summary>
+        /// Calls Log with level == warn
+        /// </summary>
+        /// <param name="Condition">The condition</param>
+        /// <param name="CategoryName">The category to log in</param>
+        /// <param name="Message">The message</param>
+        /// <param name="Args">Arguments</param>
         public static void CWarn(bool Condition, string CategoryName, string Message, params object[] Args)
         {
             CLog(Condition, CategoryName, MDLogLevel.Warn, Message, Args);
         }
 
-        // Calls Log with level == info
+        /// <summary>
+        /// Calls Log with level == info
+        /// </summary>
+        /// <param name="Condition">The condition</param>
+        /// <param name="CategoryName">The category to log in</param>
+        /// <param name="Message">The message</param>
+        /// <param name="Args">Arguments</param>
         public static void CInfo(bool Condition, string CategoryName, string Message, params object[] Args)
         {
             CLog(Condition, CategoryName, MDLogLevel.Info, Message, Args);
         }
 
-        // Calls Log with level == debug
+        /// <summary>
+        /// Calls Log with level == debug
+        /// </summary>
+        /// <param name="Condition">The condition</param>
+        /// <param name="CategoryName">The category to log in</param>
+        /// <param name="Message">The message</param>
+        /// <param name="Args">Arguments</param>
         public static void CDebug(bool Condition, string CategoryName, string Message, params object[] Args)
         {
             CLog(Condition, CategoryName, MDLogLevel.Debug, Message, Args);
         }
 
-        // Calls Log with level == trace
+        /// <summary>
+        /// Calls Log with level == trace
+        /// </summary>
+        /// <param name="Condition">The condition</param>
+        /// <param name="CategoryName">The category to log in</param>
+        /// <param name="Message">The message</param>
+        /// <param name="Args">Arguments</param>
         public static void CTrace(bool Condition, string CategoryName, string Message, params object[] Args)
         {
             CLog(Condition, CategoryName, MDLogLevel.Trace, Message, Args);
         }
 
-        // Sames as Log() except it only logs if Condition == true
+        /// <summary>
+        /// Sames as Log() except it only logs if Condition == true
+        /// </summary>
+        /// <param name="Condition">The condition</param>
+        /// <param name="CategoryName">The category to log in</param>
+        /// <param name="LogLevel">The log level</param>
+        /// <param name="Message">The message</param>
+        /// <param name="Args">Arguments</param>
         public static void CLog(bool Condition, string CategoryName, MDLogLevel LogLevel, string Message,
             params object[] Args)
         {
@@ -206,12 +297,21 @@ namespace MD
             }
         }
 
-        // Adds log category properties to be referenced when making logs of that type
+        /// <summary>
+        /// Adds log category properties to be referenced when making logs of that type
+        /// </summary>
+        /// <param name="CategoryName">The category name</param>
+        /// <param name="LogProps">The logging properties</param>
         public static void AddLogCategoryProperties(string CategoryName, MDLogProperties LogProps)
         {
             LogProperties[CategoryName] = LogProps;
         }
 
+        /// <summary>
+        /// Sets log level with a command
+        /// </summary>
+        /// <param name="CategoryName">The category to set</param>
+        /// <param name="LogLevel">The log level</param>
         [MDCommand]
         public static void SetLogLevel(string CategoryName, MDLogLevel LogLevel)
         {

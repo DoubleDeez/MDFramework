@@ -134,7 +134,10 @@ namespace MD
             }
         }
 
-        ///<summary>Adds the ping to the players ping list and removes any overflow</summary>
+        /// <summary>
+        /// Adds the ping to the players ping list and removes any overflow
+        /// </summary>
+        /// <param name="Ping">The ping</param>
         public void PushPlayerPingToQueue(int Ping)
         {
             PingList.Enqueue(Ping);

@@ -117,6 +117,11 @@ namespace MD
             return 0;
         }
 
+        /// <summary>
+        /// Checks if the peer has completed node synching
+        /// </summary>
+        /// <param name="PeerId">The peer id</param>
+        /// <returns>True if they have, false if not</returns>
         public bool HasPeerCompletedNodeSynch(int PeerId)
         {
             if (!PeerSynchInfo.ContainsKey(PeerId))
@@ -131,7 +136,7 @@ namespace MD
         #region RPC METHODS
 
         [Puppet]
-        protected void RpcReceiveNodeCount(int NodeCount)
+        private void RpcReceiveNodeCount(int NodeCount)
         {
             MDLog.Debug(LOG_CAT, $"Total nodes that need synch are {NodeCount}");
             this.NodeCount = NodeCount;
@@ -162,13 +167,13 @@ namespace MD
         }
 
         [Puppet]
-        protected void UpdateSynchStatus(int PeerId, float SynchStatus)
+        private void UpdateSynchStatus(int PeerId, float SynchStatus)
         {
             OnPlayerSynchStatusUpdateEvent(PeerId, SynchStatus);
         }
 
         [Master]
-        protected void ClientSynchDone()
+        private void ClientSynchDone()
         {
             // Great this client is done
             MDLog.Debug(LOG_CAT, $"Peer [{Multiplayer.GetRpcSenderId()}] completed synch");
@@ -185,7 +190,7 @@ namespace MD
         }
 
         [Master]
-        protected void ClientSynchStatus(int SynchedNodes)
+        private void ClientSynchStatus(int SynchedNodes)
         {
             // Synch in progress
             MDLog.Debug(LOG_CAT,
@@ -199,7 +204,7 @@ namespace MD
         }
 
         [Remote]
-        protected void RequestPingAndUpdateClock(uint ServerTimeOfRequest)
+        private void RequestPingAndUpdateClock(uint ServerTimeOfRequest)
         {
             // Respond
             RpcId(Multiplayer.GetRpcSenderId(), nameof(PingResponse), ServerTimeOfRequest);
@@ -208,7 +213,7 @@ namespace MD
 
         ///<Summary>Sent by server when requesting ping, also keeping game clock in sync</summary>
         [Puppet]
-        protected void RequestPing(uint ServerTimeOfRequest, uint EstimateTime, uint EstimatedTick, int MaxPing)
+        private void RequestPing(uint ServerTimeOfRequest, uint EstimateTime, uint EstimatedTick, int MaxPing)
         {
             // Set max player's ping received from server
             OnPlayerPingUpdatedEvent(MDStatics.GetServerId(), MaxPing);
@@ -220,7 +225,7 @@ namespace MD
 
         ///<Summary>Sent by server to request ping or when gameclock is inactive</summary>
         [Remote]
-        protected void RequestPing(uint ServerTimeOfRequest)
+        private void RequestPing(uint ServerTimeOfRequest)
         {
             // Respond
             RpcId(Multiplayer.GetRpcSenderId(), nameof(PingResponse), ServerTimeOfRequest);
@@ -228,7 +233,7 @@ namespace MD
         }
 
         [Remote]
-        protected void PingResponse(uint ServerTimeOfRequest)
+        private void PingResponse(uint ServerTimeOfRequest)
         {
             int ping = (int) (OS.GetTicksMsec() - ServerTimeOfRequest);
             PeerSynchInfo[Multiplayer.GetRpcSenderId()].PushPlayerPingToQueue(ping);
@@ -236,7 +241,7 @@ namespace MD
 
         ///<summary>Requests the OS.GetTicksMsec() from the client</summary>
         [Puppet]
-        protected void RequestTicksMsec(int RequestNumber, uint ServerTimeOfRequest)
+        private void RequestTicksMsec(int RequestNumber, uint ServerTimeOfRequest)
         {
             // Respond
             RpcId(GameSession.GetNetworkMaster(), nameof(ResponseTicksMsec), OS.GetTicksMsec(), ServerTimeOfRequest,
@@ -247,7 +252,7 @@ namespace MD
 
         ///<summary>Response to our OS.GetTicksMsec() request from the client</summary>
         [Master]
-        protected void ResponseTicksMsec(uint ClientTicksMsec, uint ServerTimeOfRequest, int RequestNumber)
+        private void ResponseTicksMsec(uint ClientTicksMsec, uint ServerTimeOfRequest, int RequestNumber)
         {
             MDLog.Debug(LOG_CAT,
                 $"Msec response number {RequestNumber} from peer [{Multiplayer.GetRpcSenderId()}] is {ClientTicksMsec} local Msec is {OS.GetTicksMsec()}");
@@ -311,7 +316,11 @@ namespace MD
 
         #region SUPPORTING METHODS
 
-        ///<summary>Set the ping for the player</summary>
+        /// <summary>
+        /// Send player ping event
+        /// </summary>
+        /// <param name="PeerId">The peer to set ping for</param>
+        /// <param name="Ping">The ping</param>
         public void SendPlayerPingEvent(int PeerId, int Ping)
         {
             OnPlayerPingUpdatedEvent(PeerId, Ping);
