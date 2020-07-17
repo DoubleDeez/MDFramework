@@ -3,11 +3,9 @@ using System.Collections.Generic;
 
 namespace MD
 {
-/*
- * MDConsole
- *
- * Class that allows the user to enter console commands that have been registered with MDCommand
- */
+    /// <summary>
+    /// Class that allows the user to enter console commands that have been registered with MDCommand
+    /// </summary>
     public class MDConsole : Control
     {
         private const int HISTORY_DISPLAY_COUNT = 10;
@@ -85,7 +83,9 @@ namespace MD
             }
         }
 
-        // Closes and frees the console prompt
+        /// <summary>
+        /// Closes and frees the console prompt
+        /// </summary>
         public void Close()
         {
             this.RemoveAndFree();

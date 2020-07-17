@@ -97,7 +97,7 @@ namespace MD
             GameSynchronizer.OnPlayerPingUpdatedEvent -= OnPlayerPingUpdatedEvent;
         }
 
-        protected void LoadConfig()
+        private void LoadConfig()
         {
             // Since these variables are hit very often we don't want to go to the config every time
             MinimumOffset = this.GetConfiguration().GetInt(MDConfiguration.ConfigurationSections.GameClock, MDConfiguration.MINIMUM_OFFSET, MinimumOffset);
@@ -149,6 +149,10 @@ namespace MD
             OnGameTick(CurrentTick);
         }
 
+        /// <summary>
+        /// Sets the current tick
+        /// </summary>
+        /// <param name="Tick">The new tick</param>
         public void SetCurrentTick(uint Tick)
         {
             MDLog.Debug(LOG_CAT, $"Tick changed by code from {CurrentTick} to {Tick}");
@@ -169,7 +173,10 @@ namespace MD
             return (uint) Math.Max(CurrentTick - CurrentRemoteTickOffset, 0);
         }
 
-        ///<summary>Get time in milliseconds (OS.GetTickMsec() format) until the tick or since the tick</summary>
+        /// <summary>
+        /// Get time in milliseconds (OS.GetTickMsec() format) until the tick or since the tick
+        /// </summary>
+        /// <param name="Tick">The tick</param>
         public long GetTimeOfTick(uint Tick)
         {
             long differenceBetweenCurrent = Tick - CurrentTick;
@@ -177,7 +184,10 @@ namespace MD
             return timeInMilliseconds;
         }
 
-        ///<summary>Returns the tick that we will be in at the given offset (msec)</summary>
+        /// <summary>
+        /// Returns the tick that we will be in at the given offset (msec)
+        /// </summary>
+        /// <param name="Offset">The offset time</param>
         public uint GetTickAtTimeOffset(long Offset)
         {
             int tickOffset = (int) Mathf.Round(Offset / TICK_INTERVAL_MILLISECONDS);
@@ -185,7 +195,7 @@ namespace MD
         }
 
         ///<summary>Adjust the remote tick offset if necessary</summary>
-        protected void AdjustRemoteTickOffset()
+        private void AdjustRemoteTickOffset()
         {
             LastTickDuplicated = false;
             if (CurrentRemoteTickOffsetTarget != CurrentRemoteTickOffset)
@@ -216,6 +226,11 @@ namespace MD
             }
         }
 
+        /// <summary>
+        /// Called when player ping is updated
+        /// </summary>
+        /// <param name="PeerId">The peer the ping has updated for</param>
+        /// <param name="Ping">The new ping</param>
         protected void OnPlayerPingUpdatedEvent(int PeerId, int Ping)
         {
             if (!GetTree().Paused)
@@ -225,7 +240,7 @@ namespace MD
         }
 
         /// <summary>Attempts to calculate what the remote offset should be based on the current ping</summary>
-        protected void CalculateRemoteOffset()
+        private void CalculateRemoteOffset()
         {
             // Check if we got a fixed offset
             if (RemoteTickOffset > 0)
@@ -269,7 +284,11 @@ namespace MD
             }
         }
 
-        ///<summary>Clients receive this from the server as a way to attempt to keep them in synch in case they freeze for any reason</summary>
+        /// <summary>
+        /// Clients receive this from the server as a way to attempt to keep them in synch in case they freeze for any reason
+        /// </summary>
+        /// <param name="EstimateTime">The estimated time for the tick</param>
+        /// <param name="EstimatedTick">The estimated tick for the time</param>
         public void CheckSynch(long EstimateTime, long EstimatedTick)
         {
             long currentTime = OS.GetTicksMsec();

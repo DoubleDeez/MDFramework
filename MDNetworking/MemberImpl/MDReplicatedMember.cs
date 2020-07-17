@@ -5,6 +5,9 @@ using System.Collections.Generic;
 
 namespace MD
 {
+    /// <summary>
+    /// Our base class for replicated members
+    /// </summary>
     public class MDReplicatedMember
     {
         public enum Settings
@@ -48,6 +51,10 @@ namespace MD
             CheckIfShouldReplicate();
         }
 
+        /// <summary>
+        /// Parses the settings we know about
+        /// </summary>
+        /// <param name="SettingsValues">A setting array that has been run through MDReplicator.ParseParameters</param>
         protected void ParseSettings(MDReplicatedSetting[] SettingsValues)
         {
             foreach (MDReplicatedSetting setting in SettingsValues)
@@ -77,14 +84,21 @@ namespace MD
             }
         }
 
-        ///<summary>Provides a unique key to identify this member</summary>
+        /// <summary>
+        /// Provides a unique key to identify this member
+        /// </summary>
+        /// <returns>The unique key</returns>
         public string GetUniqueKey()
         {
             Node Node = NodeRef.GetRef() as Node;
             return Node?.GetPath() + "#" + Member.Name;
         }
 
-        ///<summary>It is better to implement ReplicateToAll and ReplicateToPeer instead of this method</summary>
+        /// <summary>
+        /// It is better to implement ReplicateToAll and ReplicateToPeer instead of this method
+        /// </summary>
+        /// <param name="JoinInProgressPeerId">The ID of any peer that is currently joining or -1 if none is</param>
+        /// <param name="IsIntervalReplicationTime">True if it is time for us to do interval replication</param>
         public virtual void Replicate(int JoinInProgressPeerId, bool IsIntervalReplicationTime)
         {
             Node Instance = NodeRef.GetRef() as Node;
@@ -93,16 +107,19 @@ namespace MD
             if (GetReplicatedType() == MDReplicatedType.Interval && IsIntervalReplicationTime ||
                 GetReplicatedType() == MDReplicatedType.OnChange && DataConverter.ShouldObjectBeReplicated(LastValue, CurrentValue))
             {
-                ReplicateToAll(Instance, CurrentValue);
+                ReplicateToAll(CurrentValue);
             }
             else if (JoinInProgressPeerId != -1)
             {
-                ReplicateToPeer(Instance, CurrentValue, JoinInProgressPeerId);
+                ReplicateToPeer(CurrentValue, JoinInProgressPeerId);
             }
         }
 
-        ///<summary>Replicate this value to all clients</summary>
-        protected virtual void ReplicateToAll(Node Node, object Value)
+        /// <summary>
+        /// Replicate this value to all clients
+        /// </summary>
+        /// <param name="Value">The value to replicate</param>
+        protected virtual void ReplicateToAll(object Value)
         {
             MDLog.Debug(LOG_CAT, $"Replicating {Member.Name} with value {Value} from {LastValue}");
             if (IsReliable())
@@ -119,8 +136,12 @@ namespace MD
             LastValue = Value;
         }
 
-        ///<summary>Replicate this value to the given peer</summary>
-        protected virtual void ReplicateToPeer(Node Node, object Value, int PeerId)
+        /// <summary>
+        /// Replicate this value to the given peer
+        /// </summary>
+        /// <param name="Value">The value to replicate</param>
+        /// <param name="PeerId">The peer to replicate to</param>
+        protected virtual void ReplicateToPeer(object Value, int PeerId)
         {
             MDLog.Debug(LOG_CAT, $"Replicating to JIP Peer {PeerId} for member {Member.Name} with value {Value}");
             if (IsReliable())
@@ -135,6 +156,12 @@ namespace MD
             }
         }
 
+        /// <summary>
+        /// Set the vlaues of this replicated member, this is called on clients 
+        /// after we receive an update from the network master of a member.
+        /// </summary>
+        /// <param name="Tick">The tick this update is for</param>
+        /// <param name="Parameters">The value</param>
         public virtual void SetValues(uint Tick, params object[] Parameters)
         {
             // If we got no GameClock or the tick this update is for is past the current tick
@@ -154,6 +181,9 @@ namespace MD
             }
         }
 
+        /// <summary>
+        /// Checks if we got an updated value, this is called on clients that this value is replicated to.
+        /// </summary>
         public virtual void CheckForValueUpdate()
         {
             // Check if we are the owner of this
@@ -186,6 +216,10 @@ namespace MD
             }
         }
 
+        /// <summary>
+        /// Update the value by setting it on the node
+        /// </summary>
+        /// <param name="Parameters">The values to update with</param>
         protected virtual void UpdateValue(params object[] Parameters)
         {
             Node Instance = NodeRef.GetRef() as Node;
@@ -199,6 +233,10 @@ namespace MD
             }
         }
 
+        /// <summary>
+        /// Get the current game tick
+        /// </summary>
+        /// <returns>The current tick or 0 if game clock is not active</returns>
         protected uint GetGameTick()
         {
             if (GameClock != null)
@@ -209,11 +247,18 @@ namespace MD
             return 0;
         }
 
+        /// <summary>
+        /// Tells us if we should replicate this to other clients
+        /// </summary>
+        /// <returns>True if we should, false if not</returns>
         public virtual bool ShouldReplicate()
         {
             return IsShouldReplicate;
         }
 
+        /// <summary>
+        /// Checks if we should replicate this to other clients and sets our internal state accordingly.
+        /// </summary>
         public void CheckIfShouldReplicate()
         {
             MasterAttribute MasterAtr = Member.GetCustomAttribute(typeof(MasterAttribute)) as MasterAttribute;
@@ -232,28 +277,50 @@ namespace MD
             }
         }
 
+        /// <summary>
+        /// Get our replication type
+        /// </summary>
+        /// <returns>The replication type</returns>
         public virtual MDReplicatedType GetReplicatedType()
         {
             return ReplicatedType;
         }
 
+        /// <summary>
+        /// Are we sending rpc as reliable
+        /// </summary>
+        /// <returns>True if we are, false if not</returns>
         public virtual bool IsReliable()
         {
             return Reliable;
         }
 
-        // Just for convenience
+        /// <summary>
+        /// Just for convenience
+        /// </summary>
+        /// <param name="Item">The item to convert</param>
+        /// <param name="Complete">Should we do a complete conversion?</param>
+        /// <returns>The object array to send</returns>
         protected object[] ConvertToObject(object Item, bool Complete)
         {
             return DataConverter.ConvertForSending(Item, Complete);
         }
         
-        // Just for convenience
+        /// <summary>
+        /// Just for convenience
+        /// </summary>
+        /// <param name="CurrentObject">The current object we are updating</param>
+        /// <param name="Parameters">The values we got across the network</param>
+        /// <returns>The updated / new value</returns>
         protected object ConvertFromObject(object CurrentObject, object[] Parameters)
         {
             return DataConverter.CovertBackToObject(CurrentObject, (object[])Parameters);
         }
 
+        /// <summary>
+        /// Returns true if we are currently being synched
+        /// </summary>
+        /// <returns>True if we are being synched, false if not</returns>
         protected bool IsSynchInProgress()
         {
             if (GameSynchronizer == null || GameSynchronizer.SynchronizationState == MDGameSynchronizer.SynchronizationStates.SYNCRHONIZED)

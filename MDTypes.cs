@@ -1,5 +1,8 @@
 namespace MD
 {
+    /// <summary>
+    /// The mode the framework is running in.
+    /// </summary>
     public enum MDNetMode
     {
         Standalone,
@@ -7,6 +10,9 @@ namespace MD
         Client
     }
 
+    /// <summary>
+    /// All the possible method/member remote modes supported in godot.
+    /// </summary>
     public enum MDRemoteMode
     {
         Unknown,

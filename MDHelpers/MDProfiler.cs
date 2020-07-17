@@ -4,6 +4,9 @@ using System.Diagnostics;
 
 namespace MD
 {
+    /// <summary>
+    /// Profiler implementation
+    /// </summary>
     public class MDProfiler : IDisposable
     {
         private const string LOG_ARG = "logprofile";
@@ -15,12 +18,26 @@ namespace MD
         private string LowerProfileName;
         private Stopwatch Timer = new Stopwatch();
 
+        public MDProfiler(string InProfileName)
+        {
+            ProfileName = InProfileName;
+            LowerProfileName = ProfileName.ToLower();
+            Timer.Start();
+        }
+
+        /// <summary>
+        /// Initialize the profiler
+        /// </summary>
         public static void Initialize()
         {
             _enabledProfiles = new HashSet<string>();
             MDCommands.RegisterCommandAttributes(typeof(MDProfiler));
         }
 
+        /// <summary>
+        /// Enables a profile
+        /// </summary>
+        /// <param name="ProfileName">The name of the profile</param>
         [MDCommand]
         public static void EnableProfile(string ProfileName)
         {
@@ -31,6 +48,10 @@ namespace MD
             }
         }
 
+        /// <summary>
+        /// Disables the profile
+        /// </summary>
+        /// <param name="ProfileName">Name of the profile</param>
         [MDCommand]
         public static void DisableProfile(string ProfileName)
         {
@@ -41,6 +62,10 @@ namespace MD
             }
         }
 
+        /// <summary>
+        /// Toggles a profile between enabled/disabled
+        /// </summary>
+        /// <param name="ProfileName">Name of the profile</param>
         [MDCommand]
         public static void ToggleProfile(string ProfileName)
         {
@@ -55,18 +80,18 @@ namespace MD
             }
         }
 
-        public MDProfiler(string InProfileName)
-        {
-            ProfileName = InProfileName;
-            LowerProfileName = ProfileName.ToLower();
-            Timer.Start();
-        }
-
+        /// <summary>
+        /// Get micro seconds since profiler was created
+        /// </summary>
+        /// <returns>Microseconds since profiler was created</returns>
         public long GetMicroSeconds()
         {
             return Timer.ElapsedTicks / 10;
         }
 
+        /// <summary>
+        /// Disposes the profiler
+        /// </summary>
         public void Dispose()
         {
             Timer.Stop();
