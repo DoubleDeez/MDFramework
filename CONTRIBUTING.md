@@ -4,10 +4,10 @@
 If you're familiar with the framework, you can help out others in the [discord server](https://discord.gg/UH49eHK).
 
 ## Reporting Bugs
-If something isn't working quite as expected, report it on the [issue tracker](https://github.com/DoubleDeez/MDFramework/issues) and give it the `bug` label.
+If something isn't working quite as expected, report it on the [issue tracker](https://github.com/DoubleDeez/MDFramework/issues).
 Make sure to accurate describe your situation, the behaviour you're seeing, and the behaviour you're expecting. Consider also attaching a minimal example project to make it easier for others to reproduce.
 
-Sometimes there are typos or wrong/missing information in comments and documentation. Those instances should also be reported on the [issue tracker](https://github.com/DoubleDeez/MDFramework/issues) and be given the `documentation` label.
+Sometimes there are typos or wrong/missing information in comments and documentation. Those instances should also be reported on the [issue tracker](https://github.com/DoubleDeez/MDFramework/issues).
 
 ## Making Suggestions
 If there's a feature you'd like to see added to the framework, head over to the [issue tracker](https://github.com/DoubleDeez/MDFramework/issues) and create a new issue.
@@ -85,3 +85,6 @@ Field and Properties should come before methods.
 
 #### MD Namespace
 All aspects of MDFramework should be in the `MD` namespace.
+
+#### Internal Functions
+Functions that are marked internal to a class/struct should have the `_Internal` suffix.
