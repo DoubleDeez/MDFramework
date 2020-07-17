@@ -6,11 +6,9 @@ using System.Reflection;
 
 namespace MD
 {
-/*
- * MDNodeExtensions
- *
- * Extension class to provide useful framework methods
- */
+    /// <summary>
+    /// Extension class to provide useful framework methods
+    /// </summary>
     public static class MDNodeExtensions
     {
         /// <summary>
@@ -63,11 +61,19 @@ namespace MD
             return GI.GameSynchronizer.GetPlayerTicksMsec(PeerId);
         }
 
+        /// <summary>Get the input state</summary>
         public static MDInput GetInputState(this Node Instance)
         {
             return Instance.GetGameInstance().InputState;
         }
 
+        /// <summary>
+        /// Get the  player info for the peer
+        /// </summary>
+        /// <param name="Instance">The node this is called from</param>
+        /// <param name="PeerId">The peer id</param>
+        /// <typeparam name="T">The type of player info you want</typeparam>
+        /// <returns>The player info as T</returns>
         public static T GetPlayerInfo<T>(this Node Instance, int PeerId) where T : MDPlayerInfo
         {
             MDGameSession Session = Instance.GetGameSession();
@@ -75,11 +81,15 @@ namespace MD
             return PlayerInfo as T;
         }
 
+        /// <summary>
+        /// Spawn a network node
+        /// </summary>
         /// <param name="Instance">The Node from where function is called</param>
         /// <param name="NodeType">The type of node to spawn</param>
         /// <param name="NodeName">The name of the new node</param>
         /// <param name="NetworkMaster">The peer that should own this, default is server</param>
         /// <param name="SpawnPos">Where the spawn this node</param>
+        /// <returns>The new node</returns>
         public static Node SpawnNetworkedNode(this Node Instance, Type NodeType, string NodeName,
             int NetworkMaster = -1,
             Vector3? SpawnPos = null)
@@ -88,6 +98,9 @@ namespace MD
             return GameSession.SpawnNetworkedNode(NodeType, Instance, NodeName, true, NetworkMaster, SpawnPos);
         }
 
+        /// <summary>
+        /// Spawn a network node
+        /// </summary>
         /// <param name="Instance">The Node from where function is called</param>
         /// <param name="NodeType">The type of node to spawn</param>
         /// <param name="NodeName">The name of the new node</param>
@@ -101,6 +114,9 @@ namespace MD
             return GameSession.SpawnNetworkedNode(NodeType, Instance, NodeName, UseRandomName, NetworkMaster, SpawnPos);
         }
 
+        /// <summary>
+        /// Spawn a network node
+        /// </summary>
         /// <param name="Instance">The Node from where function is called</param>
         /// <param name="Scene">The packed scene to spawn</param>
         /// <param name="NodeName">The name of the new node</param>
@@ -113,6 +129,9 @@ namespace MD
             return GameSession.SpawnNetworkedNode(Scene, Instance, NodeName, NetworkMaster, SpawnPos);
         }
 
+        /// <summary>
+        /// Spawn a network node
+        /// </summary>
         /// <param name="Instance">The Node from where function is called</param>
         /// <param name="Scene">The packed scene to spawn</param>
         /// <param name="NodeName">The name of the new node</param>
@@ -127,6 +146,9 @@ namespace MD
             return GameSession.SpawnNetworkedNode(Scene, Instance, NodeName, UseRandomName, NetworkMaster, SpawnPos);
         }
 
+        /// <summary>
+        /// Spawn a network node
+        /// </summary>
         /// <param name="Instance">The Node from where function is called</param>
         /// <param name="ScenePath">The path to the scene</param>
         /// <param name="NodeName">The name of the new node</param>
@@ -140,7 +162,12 @@ namespace MD
             return GameSession.SpawnNetworkedNode(ScenePath, Instance, NodeName, NetworkMaster, SpawnPos);
         }
 
-        // Shortcut for GetTree().GetRoot().AddChild()
+        /// <summary>
+        /// Shortcut for GetTree().GetRoot().AddChild()
+        /// </summary>
+        /// <param name="Instance">The instance of the node</param>
+        /// <param name="Child">The child to add</param>
+        /// <param name="Deferred">Should this be a deferred call</param>
         public static void AddNodeToRoot(this Node Instance, Node Child, bool Deferred = false)
         {
             if (Deferred)
@@ -153,49 +180,55 @@ namespace MD
             }
         }
 
-        // Helper to mark input as handled
+        /// <summary>Helper to mark input as handled</summary>
         public static void SetInputHandled(this Node Instance)
         {
             Instance.GetTree().SetInputAsHandled();
         }
 
-        // Helper to register commands
+        /// <summary>Helper to register commands</summary>
         public static void RegisterCommandAttributes(this Node Instance)
         {
             MDCommands.RegisterCommandAttributes(Instance);
         }
 
-        // Helper to unregister commands
+        /// <summary>Helper to unregister commands</summary>
         public static void UnregisterCommandAttributes(this Node Instance)
         {
             MDCommands.UnregisterCommandAttributes(Instance);
         }
 
-        // Helper to register replication
+        /// <summary>Helper to register replication</summary>
         public static void RegisterReplicatedAttributes(this Node Instance)
         {
             Instance.GetGameSession().Replicator.RegisterReplication(Instance);
         }
 
-        // Helper to unregister replication
+        /// <summary>Helper to unregister replication</summary>
         public static void UnregisterReplicatedAttributes(this Node Instance)
         {
             Instance.GetGameSession().Replicator.UnregisterReplication(Instance);
         }
 
-        // Helper to populate members marked with [MDBindNode()]
+        /// <summary>Helper to populate members marked with [MDBindNode()]</summary>
         public static void PopulateBindNodes(this Node Instance)
         {
             MDBindNode.PopulateBindNodes(Instance);
         }
 
-        // Returns true if this application can set replicated variables, call client RPCs, and broadcast RPCs
+        /// <summary>
+        /// Returns true if this application can set replicated variables, call client RPCs, and broadcast RPCs
+        /// </summary>
+        /// <returns>Returns true if we are server, false if not</returns>
         public static bool IsServer(this Node Instance)
         {
             return Instance.GetNetMode() < MDNetMode.Client;
         }
 
-        // Returns true if the local peer is the network master of the node or we're not networking
+        /// <summary>
+        /// Returns true if the local peer is the network master of the node or we're not networking
+        /// </summary>
+        /// <returns>True if we are master of the node, false if not</returns>
         public static bool IsMaster(this Node Instance)
         {
             return MDStatics.IsNetworkActive() == false || Instance.GetNetworkMaster() == MDStatics.GetPeerId();
@@ -207,7 +240,7 @@ namespace MD
             return MDStatics.IsClient();
         }
 
-        // Returns the net mode of the game session
+        ///<summary>Returns the net mode of the game session</summary>
         public static MDNetMode GetNetMode(this Node Instance)
         {
             if (Instance.GetTree().HasNetworkPeer())
@@ -218,7 +251,7 @@ namespace MD
             return MDNetMode.Standalone;
         }
 
-        // Removes this node from its parent and frees it
+        ///<summary>Removes this node from its parent and frees it</summary>
         public static void RemoveAndFree(this Node Instance)
         {
             if (Godot.Object.IsInstanceValid(Instance))
@@ -232,79 +265,102 @@ namespace MD
             }
         }
 
-        // Same as Rpc except it checks if the network is activate first and takes game clock into account
-        public static object MDRpc(this Node Instance, string Method, params object[] Args)
+        // 
+        /// <summary>
+        /// Same as Rpc except it checks if the network is activate first and takes game clock into account
+        /// </summary>
+        /// <param name="Method">The method to call</param>
+        /// <param name="Args">Arguments</param>
+        public static void MDRpc(this Node Instance, string Method, params object[] Args)
         {
             if (!MDStatics.IsNetworkActive())
             {
-                return null;
+                return;
             }
 
             if (!MDStatics.IsGameClockActive())
             {
-                return Instance.Rpc(Method, Args);
+                Instance.Rpc(Method, Args);
+                return;
             }
 
             // Send through replicator
             MDStatics.GetReplicator().SendClockedRpc(-1, MDReliability.Reliable, Instance, Method, Args);
-            return null;
         }
 
-        // Same as RpcId except it checks if the network is activate first and takes game clock into account
-        public static object MDRpcId(this Node Instance, int PeerId, string Method, params object[] Args)
+        /// <summary>
+        /// Same as RpcId except it checks if the network is activate first and takes game clock into account
+        /// </summary>
+        /// <param name="PeerId">The id of the peer to send to</param>
+        /// <param name="Method">The method to call</param>
+        /// <param name="Args">Arguments</param>
+        public static void MDRpcId(this Node Instance, int PeerId, string Method, params object[] Args)
         {
             if (!MDStatics.IsNetworkActive())
             {
-                return null;
+                return;
             }
 
             if (!MDStatics.IsGameClockActive())
             {
-                return Instance.RpcId(PeerId, Method, Args);
+                Instance.RpcId(PeerId, Method, Args);
+                return;
             }
 
             // Send through replicator
             MDStatics.GetReplicator().SendClockedRpc(PeerId, MDReliability.Reliable, Instance, Method, Args);
-            return null;
         }
 
-        // Same as RpcUnreliable except it checks if the network is activate first and takes game clock into account
-        public static object MDRpcUnreliable(this Node Instance, string Method, params object[] Args)
+        /// <summary>
+        /// Same as RpcUnreliable except it checks if the network is activate first and takes game clock into account
+        /// </summary>
+        /// <param name="Method">The method to call</param>
+        /// <param name="Args">Arguments</param>
+        public static void MDRpcUnreliable(this Node Instance, string Method, params object[] Args)
         {
             if (!MDStatics.IsNetworkActive())
             {
-                return null;
+                return;
             }
 
             if (!MDStatics.IsGameClockActive())
             {
-                return Instance.RpcUnreliable(Method, Args);
+                Instance.RpcUnreliable(Method, Args);
+                return;
             }
 
             // Send through replicator
             MDStatics.GetReplicator().SendClockedRpc(-1, MDReliability.Unreliable, Instance, Method, Args);
-            return null;
         }
 
-        // Same as RpcUnreliableId except it checks if the network is activate first and takes game clock into account
-        public static object MDRpcUnreliableId(this Node Instance, int PeerId, string Method, params object[] Args)
+        /// <summary>
+        /// Same as RpcUnreliableId except it checks if the network is activate first and takes game clock into account
+        /// </summary>
+        /// <param name="PeerId">The id of the peer to send to</param>
+        /// <param name="Method">The method to call</param>
+        /// <param name="Args">Arguments</param>
+        public static void MDRpcUnreliableId(this Node Instance, int PeerId, string Method, params object[] Args)
         {
             if (!MDStatics.IsNetworkActive())
             {
-                return null;
+                return;
             }
 
             if (!MDStatics.IsGameClockActive())
             {
-                return Instance.RpcUnreliableId(PeerId, Method, Args);
+                Instance.RpcUnreliableId(PeerId, Method, Args);
+                return;
             }
 
             // Send through replicator
             MDStatics.GetReplicator().SendClockedRpc(PeerId, MDReliability.Unreliable, Instance, Method, Args);
-            return null;
         }
 
-        // Same as Rset except it checks if the network is activate first
+        /// <summary>
+        /// Same as Rset except it checks if the network is activate first
+        /// </summary>
+        /// <param name="Property">The property to set</param>
+        /// <param name="Value">The value</param>
         public static void MDRset(this Node Instance, string Property, object Value)
         {
             if (!MDStatics.IsNetworkActive())
@@ -322,7 +378,12 @@ namespace MD
             Instance.Rset(Property, Value);
         }
 
-        // Same as RsetId except it checks if the network is activate first
+        /// <summary>
+        /// Same as RsetId except it checks if the network is activate first
+        /// </summary>
+        /// <param name="PeerId">The peer to send to</param>
+        /// <param name="Property">The property to set</param>
+        /// <param name="Value">The value</param>
         public static void MDRsetId(this Node Instance, int PeerId, string Property, object Value)
         {
             if (MDStatics.IsNetworkActive())
@@ -339,7 +400,11 @@ namespace MD
             }
         }
 
-        // Same as RsetUnreliable except it checks if the network is activate first
+        /// <summary>
+        /// Same as RsetUnreliable except it checks if the network is activate first
+        /// </summary>
+        /// <param name="Property">The property to set</param>
+        /// <param name="Value">The value</param>
         public static void MDRsetUnreliable(this Node Instance, string Property, object Value)
         {
             if (MDStatics.IsNetworkActive())
@@ -355,7 +420,12 @@ namespace MD
             }
         }
 
-        // Same as RsetUnreliable except it checks if the network is activate first
+        /// <summary>
+        /// Same as RsetUnreliable except it checks if the network is activate first
+        /// </summary>
+        /// <param name="PeerId">The peer to send to</param>
+        /// <param name="Property">The property to set</param>
+        /// <param name="Value">The value</param>
         public static void MDRsetUnreliableId(this Node Instance, int PeerId, string Property, object Value)
         {
             if (MDStatics.IsNetworkActive())
@@ -372,20 +442,34 @@ namespace MD
             }
         }
 
-        // Sends the RPC to the server only
-        public static object MDServerRpc(this Node Instance, string Method, params object[] Args)
+        /// <summary>
+        /// Sends the RPC to the server only
+        /// </summary>
+        /// <param name="Method">The method to call</param>
+        /// <param name="Args">Arguments</param>
+        public static void MDServerRpc(this Node Instance, string Method, params object[] Args)
         {
             int ServerId = Instance.GetGameSession().GetNetworkMaster();
-            return Instance.MDRpcId(ServerId, Method, Args);
+            Instance.MDRpcId(ServerId, Method, Args);
         }
 
-        // Sends the unreliable RPC to the server only
-        public static object MDServerRpcUnreliable(this Node Instance, string Method, params object[] Args)
+        /// <summary>
+        /// Sends the unreliable RPC to the server only
+        /// </summary>
+        /// <param name="Method">The method to call</param>
+        /// <param name="Args">Arguments</param>
+        public static void MDServerRpcUnreliable(this Node Instance, string Method, params object[] Args)
         {
             int ServerId = Instance.GetGameSession().GetNetworkMaster();
-            return Instance.MDRpcUnreliableId(ServerId, Method, Args);
+            Instance.MDRpcUnreliableId(ServerId, Method, Args);
         }
 
+        /// <summary>
+        /// Invoke the given method on the node
+        /// </summary>
+        /// <param name="Method">The method to invoke</param>
+        /// <param name="Parameters">Parameters</param>
+        /// <returns>True if invoked, false if not found</returns>
         public static bool Invoke(this Node Instance, String Method, params object[] Parameters)
         {
             MethodInfo Info = MDStatics.GetMethodInfo(Instance, Method, Parameters);
@@ -398,6 +482,12 @@ namespace MD
             return false;
         }
 
+        /// <summary>
+        /// Set the value of a member on the node
+        /// </summary>
+        /// <param name="Name">The name of the member</param>
+        /// <param name="Value">The value</param>
+        /// <returns>True if set, false if not</returns>
         public static bool SetMemberValue(this Node Instance, String Name, object Value)
         {
             MemberInfo Member = MDStatics.GetMemberInfo(Instance, Name);

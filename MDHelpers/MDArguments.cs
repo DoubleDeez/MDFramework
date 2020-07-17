@@ -4,11 +4,9 @@ using static Godot.StringExtensions;
 
 namespace MD
 {
-/*
- * MDArguments
- *
- * Static class that parses the arguments passed into the game executable to be exposed to game code.
- */
+    /// <summary>
+    /// Static class that parses the arguments passed into the game executable to be exposed to game code.
+    /// </summary>
     public static class MDArguments
     {
         private const string ARG_PREFIX = "-";
@@ -17,35 +15,52 @@ namespace MD
         // Maps arguments to their values in PopulateArgs()
         private static Dictionary<string, string> _args;
 
-        // Does this argument exist?
+        /// <summary>
+        /// Does this argument exist?
+        /// </summary>
+        /// <param name="ArgKey">The argument key</param>
+        /// <returns>True if it does, false if not</returns>
         public static bool HasArg(string ArgKey)
         {
             return _args.ContainsKey(ArgKey);
         }
 
-        // Empty string if not found
+        /// <summary>
+        /// Gets the argument
+        /// </summary>
+        /// <param name="ArgKey">The argument key</param>
+        /// <returns>Empty string if not found</returns>
         public static string GetArg(string ArgKey)
         {
             return HasArg(ArgKey) ? _args[ArgKey] : "";
         }
 
-        // -1 if not found
+        /// <summary>
+        /// Gets the argument
+        /// </summary>
+        /// <param name="ArgKey">The argument key</param>
+        /// <returns>-1 if not found</returns>
         public static int GetArgInt(string ArgKey)
         {
             string ArgValue = GetArg(ArgKey);
             return ArgValue.IsValidInteger() ? ArgValue.ToInt() : -1;
         }
 
-        // -1.0f if not found
+        /// <summary>
+        /// Gets the argument
+        /// </summary>
+        /// <param name="ArgKey">The argument key</param>
+        /// <returns>-1.0f if not found</returns>
         public static float GetArgFloat(string ArgKey)
         {
             string ArgValue = GetArg(ArgKey);
             return ArgValue.IsValidFloat() ? ArgValue.ToFloat() : -1.0f;
         }
 
-        /* Simple argument parser that generates a dictionary of arguments passed to the game application to their values.
-         * Expects arguments to being with ARG_PREFIX value.
-         */
+         /// <summary>
+         /// Simple argument parser that generates a dictionary of arguments passed to the game application to their values.
+         /// Expects arguments to being with ARG_PREFIX value.
+         /// </summary>
         public static void PopulateArgs()
         {
             if (_args != null)

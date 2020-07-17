@@ -3,11 +3,9 @@ using System;
 
 namespace MD
 {
-/*
- * MDGameInstance
- *
- * Single-instance class that persists throughout the life-time of the game application.
- */
+    /// <summary>
+    /// Single-instance class that persists throughout the life-time of the game application.
+    /// </summary>
     public class MDGameInstance : Node
     {
         private const string LOG_CAT = "LogGameInstance";
@@ -64,48 +62,18 @@ namespace MD
             InputState.OnInputEvent(Event);
         }
 
-        /// <summary>Override this to provide the your GameSession subclass type</summary>
-        protected virtual Type GetGameSessionType()
-        {
-            return Configuration.GetType(MDConfiguration.ConfigurationSections.GameInstance, MDConfiguration.GAME_SESSION_TYPE, typeof(MDGameSession));
-        }
-
-        /// <summary>Override this to provide the your GameSynchronizer subclass type</summary>
-        protected virtual Type GetGameSynchronizerType()
-        {
-            return Configuration.GetType(MDConfiguration.ConfigurationSections.GameInstance, MDConfiguration.GAME_SYNCHRONIZER_TYPE, typeof(MDGameSynchronizer));
-        }
-
-        /// <summary>Override this to provide the your GameClock subclass type</summary>
-        protected virtual Type GetGameClockType()
-        {
-            return Configuration.GetType(MDConfiguration.ConfigurationSections.GameInstance, MDConfiguration.GAME_CLOCK_TYPE, typeof(MDGameClock));
-        }
-
-        /// <summary>Override this to provide your Replicator subclass type</summary>
-        protected virtual Type GetReplicatorType()
-        {
-            return Configuration.GetType(MDConfiguration.ConfigurationSections.GameInstance, MDConfiguration.REPLICATOR_TYPE, typeof(MDReplicator));
-        }
-
-        /// <summary>Override this to provide your Configuration subclass type</summary>
-        protected virtual Type GetConfigurationType()
-        {
-            return typeof(MDConfiguration);
-        }
-
-        // Override this to provide your own Player class type
-        public virtual Type GetPlayerInfoType()
-        {
-            return Configuration.GetType(MDConfiguration.ConfigurationSections.GameInstance, MDConfiguration.PLAYER_INFO_TYPE, typeof(MDPlayerInfo));
-        }
-
-        // Called whenever a node is added to the scene
+        /// <summary>
+        /// Called whenever a new node is added to the scene
+        /// </summary>
+        /// <param name="AddedNode">The node that was added</param>
         protected virtual void OnNodeAdded(Node AddedNode)
         {
         }
 
-        // Called whenever a node is removed to the scene
+        /// <summary>
+        /// Called whenever a node is removed to the scene
+        /// </summary>
+        /// <param name="RemovedNode">The node that was removed</param>
         protected virtual void OnNodeRemoved(Node RemovedNode)
         {
         }
@@ -180,7 +148,7 @@ namespace MD
             Instance.UnregisterReplicatedAttributes();
         }
 
-        ///<summary>Ensure Replicator is created</summary>
+        // Ensure Replicator is created
         private void CreateReplicator()
         {
             if (Replicator == null)
@@ -188,12 +156,11 @@ namespace MD
                 Replicator = CreateTypeInstance<MDReplicator>(GetReplicatorType());
                 Replicator.Name = "Replicator";
                 this.AddNodeToRoot(Replicator, true);
-                Replicator.Initialize();
                 GameSession.Replicator = Replicator;
             }
         }
 
-        ///<summary>Ensure Replicator is created</summary>
+        // Ensure Replicator is created
         private void CreateConfiguration()
         {
             if (Configuration == null)
@@ -205,7 +172,7 @@ namespace MD
             }
         }
 
-        ///<summary>Ensure GameSession is created</summary>
+        // Ensure GameSession is created
         private void CreateGameSession()
         {
             if (GameSession == null)
@@ -242,7 +209,7 @@ namespace MD
             }
         }
 
-        /// <summary>Creates an instance of the type based on the base class T</summary>
+        // Creates an instance of the type based on the base class T
         private T CreateTypeInstance<T>(Type Type) where T : class
         {
             if (!MDStatics.IsSameOrSubclass(Type, typeof(T)))
@@ -266,6 +233,44 @@ namespace MD
 
                 this.AddNodeToRoot(InterfaceManager, true);
             }
+        }
+
+        #region Configuration
+
+        /// <summary>Override this to provide the your GameSession subclass type</summary>
+        protected virtual Type GetGameSessionType()
+        {
+            return Configuration.GetType(MDConfiguration.ConfigurationSections.GameInstance, MDConfiguration.GAME_SESSION_TYPE, typeof(MDGameSession));
+        }
+
+        /// <summary>Override this to provide the your GameSynchronizer subclass type</summary>
+        protected virtual Type GetGameSynchronizerType()
+        {
+            return Configuration.GetType(MDConfiguration.ConfigurationSections.GameInstance, MDConfiguration.GAME_SYNCHRONIZER_TYPE, typeof(MDGameSynchronizer));
+        }
+
+        /// <summary>Override this to provide the your GameClock subclass type</summary>
+        protected virtual Type GetGameClockType()
+        {
+            return Configuration.GetType(MDConfiguration.ConfigurationSections.GameInstance, MDConfiguration.GAME_CLOCK_TYPE, typeof(MDGameClock));
+        }
+
+        /// <summary>Override this to provide your Replicator subclass type</summary>
+        protected virtual Type GetReplicatorType()
+        {
+            return Configuration.GetType(MDConfiguration.ConfigurationSections.GameInstance, MDConfiguration.REPLICATOR_TYPE, typeof(MDReplicator));
+        }
+
+        /// <summary>Override this to provide your Configuration subclass type</summary>
+        protected virtual Type GetConfigurationType()
+        {
+            return typeof(MDConfiguration);
+        }
+
+        // Override this to provide your own Player class type
+        public virtual Type GetPlayerInfoType()
+        {
+            return Configuration.GetType(MDConfiguration.ConfigurationSections.GameInstance, MDConfiguration.PLAYER_INFO_TYPE, typeof(MDPlayerInfo));
         }
 
         /// <summary>Override to change when the console is available (Default: Only in debug mode)</summary>
@@ -334,5 +339,7 @@ namespace MD
         {
             return Configuration.GetBool(MDConfiguration.ConfigurationSections.GameInstance, MDConfiguration.GAME_CLOCK_ACTIVE, true);
         }
+
+        #endregion
     }
 }

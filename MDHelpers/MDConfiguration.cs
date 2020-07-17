@@ -4,6 +4,9 @@ using System.Reflection;
 
 namespace MD
 {
+    /// <summary>
+    /// Handles reading of the configuration for the MDFramework
+    /// </summary>
     public class MDConfiguration : Node
     {
         // GAME INSTANCE
@@ -58,16 +61,33 @@ namespace MD
             
         }
 
+        /// <summary>
+        /// Load our configuration
+        /// </summary>
         public void LoadConfiguration()
         {
             Error err = Configuration.Load(GetConfigFilePath());
         }
 
+        /// <summary>
+        /// Get a string value from the configuration
+        /// </summary>
+        /// <param name="Category">The category</param>
+        /// <param name="Key">The key</param>
+        /// <param name="Default">The default value</param>
+        /// <returns>The value if found, default if not</returns>
         public string GetString(ConfigurationSections Category, string Key, string Default)
         {
             return Configuration.GetValue(Category.ToString(), Key, Default).ToString();
         }
 
+        /// <summary>
+        /// Get a int value from the configuration
+        /// </summary>
+        /// <param name="Category">The category</param>
+        /// <param name="Key">The key</param>
+        /// <param name="Default">The default value</param>
+        /// <returns>The value if found, default if not</returns>
         public int GetInt(ConfigurationSections Category, string Key, int Default)
         {
             object value = Configuration.GetValue(Category.ToString(), Key, Default);
@@ -81,6 +101,13 @@ namespace MD
             }
         }
 
+        /// <summary>
+        /// Get a bool value from the configuration
+        /// </summary>
+        /// <param name="Category">The category</param>
+        /// <param name="Key">The key</param>
+        /// <param name="Default">The default value</param>
+        /// <returns>The value if found, default if not</returns>
         public bool GetBool(ConfigurationSections Category, string Key, bool Default)
         {
             object value = Configuration.GetValue(Category.ToString(), Key, Default);
@@ -94,6 +121,13 @@ namespace MD
             }
         }
 
+        /// <summary>
+        /// Get a type value from the configuration
+        /// </summary>
+        /// <param name="Category">The category</param>
+        /// <param name="Key">The key</param>
+        /// <param name="Default">The default value</param>
+        /// <returns>The value if found, default if not</returns>
         public Type GetType(ConfigurationSections Category, string Key, Type Default)
         {
             object value = Configuration.GetValue(Category.ToString(), Key, null);
@@ -109,6 +143,10 @@ namespace MD
             return Default;
         }
 
+        /// <summary>
+        /// Get the path of the configuration file
+        /// </summary>
+        /// <returns>The path to the file</returns>
         protected virtual String GetConfigFilePath()
         {
             #if DEBUG
@@ -118,12 +156,17 @@ namespace MD
             #endif
         }
 
+        /// <summary>
+        /// Finds the given file inside the project
+        /// </summary>
+        /// <param name="name">Name of the file to find</param>
+        /// <returns>The path to the file</returns>
         protected String FindFile(string name)
         {
             return FindFileInt(name, "res://");
         }
 
-        protected String FindFileInt(string name, string path)
+        private String FindFileInt(string name, string path)
         {
             Directory dir = new Directory();
             dir.Open(path);

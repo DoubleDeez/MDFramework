@@ -2,6 +2,9 @@ using static Godot.NetworkedMultiplayerENet;
 
 namespace MD
 {
+    /// <summary>
+    /// Peer configuration
+    /// </summary>
     public static class MDPeerConfigs
     {
         public static bool ServerRelay { get; set; } = true;
