@@ -149,6 +149,21 @@ namespace MD
         /// <returns>The path to the file</returns>
         protected virtual String GetConfigFilePath()
         {
+            // Attempt to load custom export config
+            String configPath = FindFile("CustomMDConfigExport.ini");
+            if (configPath == null || configPath == "")
+            {
+                // Attempt to load custom debug config
+                configPath = FindFile("CustomMDConfigDebug.ini");
+            }
+
+            // If any custom config was found use it
+            if (configPath != null && configPath != "")
+            {
+                return configPath;
+            }
+
+            // Use internal default configs
             #if DEBUG
                 return FindFile("MDConfigDebug.ini");
             #else
