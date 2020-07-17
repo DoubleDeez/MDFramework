@@ -60,7 +60,7 @@ namespace MD
             Vector2 Value = GetValueForTick(NextValue);
             UpdateValue(LastClockedValue.Value.LinearInterpolate(Value,
                 TicksSinceLastValue / TicksBetweenUpdates));
-            LastTickValueWasChanged = GameClock.GetTick();
+            LastTickValueWasChanged = GameClock.GetRemoteTick();
         }
 
         private Vector2 GetValueForTick(uint Tick)
