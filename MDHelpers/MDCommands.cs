@@ -10,7 +10,7 @@ using static Godot.StringExtensions;
 namespace MD
 {
     /// <summary>
-    /// Class allow functions to be registered as commands to be accessed via an MDConsole instance
+    /// Class that allows functions to be registered as commands to be accessed via an MDConsole instance
     /// </summary>
     public static class MDCommands
     {

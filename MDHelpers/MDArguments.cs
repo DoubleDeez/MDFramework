@@ -59,7 +59,7 @@ namespace MD
 
          /// <summary>
          /// Simple argument parser that generates a dictionary of arguments passed to the game application to their values.
-         /// Expects arguments to being with ARG_PREFIX value.
+         /// Expects arguments to begin with ARG_PREFIX value.
          /// </summary>
         public static void PopulateArgs()
         {

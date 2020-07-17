@@ -156,6 +156,7 @@ namespace MD
                 Replicator = CreateTypeInstance<MDReplicator>(GetReplicatorType());
                 Replicator.Name = "Replicator";
                 this.AddNodeToRoot(Replicator, true);
+                Replicator.Initialize();
                 GameSession.Replicator = Replicator;
             }
         }

@@ -181,7 +181,7 @@ namespace MD
 
         private MDGameClock GameClock;
 
-        public override void _Ready()
+        public void Initialize()
         {
             MDLog.AddLogCategoryProperties(LOG_CAT, new MDLogProperties(MDLogLevel.Info));
             MDOnScreenDebug.AddOnScreenDebugInfo("KeyToMemberMap Size", () => KeyToMemberMap.Count.ToString());
