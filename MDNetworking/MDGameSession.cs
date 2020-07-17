@@ -5,11 +5,9 @@ using System.Linq;
 
 namespace MD
 {
-/*
-* MDGameSession
-*
-* Class that manages the current multiplayer state of the game.
-*/
+    /// <summary>
+    /// Class that manages the current multiplayer state of the game.
+    /// </summary>
     [MDAutoRegister]
     public class MDGameSession : Node
     {
@@ -71,15 +69,27 @@ namespace MD
             CheckArgsForConnectionInfo();
         }
 
-        // Technically unnecessary but this will trigger the game session delegates so implementations won't need to make a special case for offline games
+        /// <summary>
+        /// Technically unnecessary but this will trigger the game session delegates so implementations 
+        /// won't need to make a special case for offline games
+        /// </summary>
+        /// <returns>Always returns true</returns>
         [MDCommand]
         public bool StartStandalone()
         {
             MDLog.Info(LOG_CAT, "Starting Standalone Game Session");
-            StandaloneOnStarted();
+            OnPlayerJoined_Internal(STANDALONE_ID);
+            OnSessionStartedEvent();
+            IsSessionStarted = true;
             return true;
         }
 
+        /// <summary>
+        /// Starts a multiplayer server
+        /// </summary>
+        /// <param name="Port">The port to start the server on</param>
+        /// <param name="MaxPlayers">Maximum number of players</param>
+        /// <returns>True if server is started, false if not</returns>
         [MDCommand(DefaultArgs = new object[] {DEFAULT_PORT, DEFAULT_MAX_PLAYERS})]
         public bool StartServer(int Port, int MaxPlayers = DEFAULT_MAX_PLAYERS)
         {
@@ -102,12 +112,19 @@ namespace MD
             }
             else
             {
-                ServerOnFailedToStart();
+                MDLog.Error(LOG_CAT, "Failed to start server");
+                OnSessionFailedEvent();
             }
 
             return Success;
         }
 
+        /// <summary>
+        /// Attempts to connect to a multiplayer server
+        /// </summary>
+        /// <param name="Address">The server address</param>
+        /// <param name="Port">The port to connect on</param>
+        /// <returns>True on success, false on failure</returns>
         [MDCommand(DefaultArgs = new object[] {DEFAULT_IP, DEFAULT_PORT})]
         public bool StartClient(string Address, int Port)
         {
@@ -139,12 +156,38 @@ namespace MD
             Peer.TransferChannel = MDPeerConfigs.TransferChannel;
         }
 
+        /// <summary>
+        /// Disconnect from the server if we are connected.
+        /// </summary>
         [MDCommand]
         public void Disconnect()
         {
-            OnDisconnect();
+            MDLog.Info(LOG_CAT, "Disconnected from server");
+            IsSessionStarted = false;
+            foreach (int PeerId in Players.Keys)
+            {
+                MDPlayerInfo Player = Players[PeerId];
+                Player.RemoveAndFree();
+                OnPlayerLeftEvent(PeerId);
+            }
+
+            NetworkedMultiplayerENet peer = GetPeer();
+            if (peer != null)
+            {
+                peer.CloseConnection();
+                SetNetworkPeer(null);
+            }
+
+            StopUPNP();
+            Players.Clear();
+            ClearNetworkedNodes();
+            OnSessionEndedEvent();
         }
 
+        /// <summary>
+        /// Get the underlying network implementation
+        /// </summary>
+        /// <returns>The underlying ENet implementation or null if not found</returns>
         public NetworkedMultiplayerENet GetPeer()
         {
             NetworkedMultiplayerPeer peer = GameInstance.GetTree().NetworkPeer;
@@ -154,13 +197,6 @@ namespace MD
             }
 
             return null;
-        }
-
-        private void StandaloneOnStarted()
-        {
-            OnPlayerJoined_Internal(STANDALONE_ID);
-            OnSessionStartedEvent();
-            IsSessionStarted = true;
         }
 
         private void ServerOnStarted()
@@ -176,12 +212,6 @@ namespace MD
 #endif
             OnSessionStartedEvent();
             IsSessionStarted = true;
-        }
-
-        private void ServerOnFailedToStart()
-        {
-            MDLog.Error(LOG_CAT, "Failed to start server");
-            OnSessionFailedEvent();
         }
 
         private void ClientOnConnected()
@@ -202,7 +232,7 @@ namespace MD
         private void ClientOnServerDisconnect()
         {
             MDLog.Error(LOG_CAT, "Client was disconnected from server");
-            ClientOnDisconnectedFromServer();
+            Disconnect();
         }
 
         // Called on the server when a client connects
@@ -223,13 +253,10 @@ namespace MD
             BroadcastPlayerLeft(PeerId);
         }
 
-        protected virtual void ClientOnDisconnectedFromServer()
-        {
-            MDLog.Info(LOG_CAT, "Disconnected from server");
-            OnDisconnect();
-        }
-
-        // Called on the server when a client first connects
+        /// <summary>
+        /// Called on the server when a client first connects
+        /// </summary>
+        /// <param name="Joiner">The PeerID of the joining client</param>
         protected virtual void SendConnectionDataToClient(int Joiner)
         {
             foreach (int PeerId in Players.Keys.Where(PeerId => PeerId != Joiner))
@@ -247,14 +274,20 @@ namespace MD
             }
         }
 
-        // Tells the network master of a player info to sync a new player
+        /// <summary>
+        /// Tells the network master of a player info to sync a new player
+        /// </summary>
+        /// <param name="Joiner">The PeerID of the joining client</param>
         [Puppet]
         protected virtual void ClientSendConnectionDataToClient(int Joiner)
         {
             GetPlayerInfo(MDStatics.GetPeerId()).PerformFullSync(Joiner);
         }
 
-        // Notifies all clients (except the new one) that a new player has joined
+        /// <summary>
+        /// Notifies all clients (except the new one) that a new player has joined
+        /// </summary>
+        /// <param name="Joiner">The PeerID of the joining client</param>
         protected virtual void BroadcastNewPlayerJoined(int Joiner)
         {
             foreach (int PeerId in Players.Keys)
@@ -269,7 +302,10 @@ namespace MD
             }
         }
 
-        // Notifies all clients that a player has left
+        /// <summary>
+        /// Notifies all clients that a player has left
+        /// </summary>
+        /// <param name="Leaver">The PeerID of the leaving client</param>
         protected virtual void BroadcastPlayerLeft(int Leaver)
         {
             foreach (int PeerId in Players.Keys)
@@ -310,30 +346,6 @@ namespace MD
             RemovePlayerObject(PeerId);
         }
 
-        // Called when disconnected from the server or as the server
-        private void OnDisconnect()
-        {
-            IsSessionStarted = false;
-            foreach (int PeerId in Players.Keys)
-            {
-                MDPlayerInfo Player = Players[PeerId];
-                Player.RemoveAndFree();
-                OnPlayerLeftEvent(PeerId);
-            }
-
-            NetworkedMultiplayerENet peer = GetPeer();
-            if (peer != null)
-            {
-                peer.CloseConnection();
-                SetNetworkPeer(null);
-            }
-
-            StopUPNP();
-            Players.Clear();
-            ClearNetworkedNodes();
-            OnSessionEndedEvent();
-        }
-
         // Create and initialize the player object
         private MDPlayerInfo GetOrCreatePlayerObject(int PeerId)
         {
@@ -360,28 +372,46 @@ namespace MD
             return Player;
         }
 
+        /// <summary>
+        /// Called to initialize the player info
+        /// </summary>
+        /// <param name="PlayerInfo">The player info for the joining client</param>
         protected virtual void InitializePlayerInfo(MDPlayerInfo PlayerInfo)
         {
         }
 
+        /// <summary>
+        /// Get the player info for the given per
+        /// </summary>
+        /// <param name="PeerId">The peer to get the player info for</param>
+        /// <returns>The player info or null if the peer is unknown</returns>
         public MDPlayerInfo GetPlayerInfo(int PeerId)
         {
             return Players.ContainsKey(PeerId) ? Players[PeerId] : null;
         }
 
-        ///<summary>Get player infos for all players</summary>
+        /// <summary>
+        /// Get player infos for all players
+        /// </summary>
+        /// <returns>A list of all player infos</returns>
         public List<MDPlayerInfo> GetAllPlayerInfos()
         {
             return new List<MDPlayerInfo>(Players.Values);
         }
 
-        ///<summary>Returns a list of all active PeerIDs.false This includes the host.</summary>
+        /// <summary>
+        /// Returns a list of all active PeerIDs.false This includes the host.
+        /// </summary>
+        /// <returns></returns>
         public List<int> GetAllPeerIds()
         {
             return new List<int>(Players.Keys);
         }
 
-        ///<summary>Get the playerinfo for the local player</summary>
+        /// <summary>
+        /// Get the playerinfo for the local player
+        /// </summary>
+        /// <returns>The player info of the local player</returns>
         public MDPlayerInfo GetMyPlayerInfo()
         {
             return Players[MDStatics.GetPeerId()];
@@ -399,6 +429,10 @@ namespace MD
             }
         }
 
+        /// <summary>
+        /// Called right before a player info is removed
+        /// </summary>
+        /// <param name="PlayerInfo">The player info that is going to be removed</param>
         protected virtual void PreparePlayerInfoForRemoval(MDPlayerInfo PlayerInfo)
         {
         }
@@ -433,6 +467,10 @@ namespace MD
             }
         }
 
+        /// <summary>
+        /// Send a command string to the server for execution, only works in debug mode
+        /// </summary>
+        /// <param name="Command">The command to send</param>
         public void ServerCommand(string Command)
         {
 #if DEBUG
@@ -448,7 +486,12 @@ namespace MD
 #endif
         }
 
-        /// <summary>Returns adds a random number to the name if the second boolean parameter is true</summary>
+        /// <summary>
+        /// Adds a guid to the name if the second boolean parameter is true
+        /// </summary>
+        /// <param name="Name">The name to randomize</param>
+        /// <param name="UseRandomName">Should we randomize it</param>
+        /// <returns>Either the name or the name + guid at the end</returns>
         protected string BuildNodeName(string Name, bool UseRandomName)
         {
             if (UseRandomName)
@@ -459,12 +502,16 @@ namespace MD
             return Name;
         }
 
-        ///<param name="NodeType">The type of node to spawn</param>
-        ///<param name="Parent">The parent that the new instance will be a child of</param>
-        ///<param name="NodeName">The name of the new node</param>
-        ///<param name="UseRandomName">If set to true a random number will be added at the end of the node name</param>
-        ///<param name="NetworkMaster">The peer that should own this, default is server</param>
-        ///<param name="SpawnPos">Where the spawn this node</param>
+        /// <summary>
+        /// Spawn a network node
+        /// </summary>
+        /// <param name="NodeType">The type of node to spawn</param>
+        /// <param name="Parent">The parent that the new instance will be a child of</param>
+        /// <param name="NodeName">The name of the new node</param>
+        /// <param name="UseRandomName">If set to true a random number will be added at the end of the node name</param>
+        /// <param name="NetworkMaster">The peer that should own this, default is server</param>
+        /// <param name="SpawnPos">Where the spawn this node</param>
+        /// <returns>The new node</returns>
         public Node SpawnNetworkedNode(Type NodeType, Node Parent, string NodeName, bool UseRandomName = true,
             int NetworkMaster = -1, Vector3? SpawnPos = null)
         {
@@ -501,24 +548,62 @@ namespace MD
             return SpawnNodeType(NodeTypeString, ParentPath, NodeName, NodeMaster, SpawnPosVal);
         }
 
+        /// <summary>
+        /// Spawns a network node
+        /// </summary>
+        /// <param name="ScenePath">The path to the scene</param>
+        /// <param name="Parent">The parent that the new instance will be a child of</param>
+        /// <param name="NodeName">The name of the new node</param>
+        /// <param name="NetworkMaster">The peer that should own this, default is server</param>
+        /// <param name="SpawnPos">Where the spawn this node</param>
+        /// <returns>The new node</returns>
         public Node SpawnNetworkedNode(string ScenePath, Node Parent, string NodeName, int NetworkMaster = -1,
             Vector3? SpawnPos = null)
         {
             return SpawnNetworkedNode(ScenePath, Parent, NodeName, true, NetworkMaster, SpawnPos);
         }
 
+        /// <summary>
+        /// Spawn a network node
+        /// </summary>
+        /// <param name="Scene">The scene to spawn</param>
+        /// <param name="Parent">The parent that the new instance will be a child of</param>
+        /// <param name="NodeName">The name of the new node</param>
+        /// <param name="NetworkMaster">The peer that should own this, default is server</param>
+        /// <param name="SpawnPos">Where the spawn this node</param>
+        /// <returns>The new node</returns>
         public Node SpawnNetworkedNode(PackedScene Scene, Node Parent, string NodeName, int NetworkMaster = -1,
             Vector3? SpawnPos = null)
         {
             return SpawnNetworkedNode(Scene.ResourcePath, Parent, NodeName, true, NetworkMaster, SpawnPos);
         }
 
+        /// <summary>
+        /// Spawn a network node
+        /// </summary>
+        /// <param name="Scene">The scene to spawn</param>
+        /// <param name="Parent">The parent that the new instance will be a child of</param>
+        /// <param name="NodeName">The name of the new node</param>
+        /// <param name="UseRandomName">If set to true a random number will be added at the end of the node name</param>
+        /// <param name="NetworkMaster">The peer that should own this, default is server</param>
+        /// <param name="SpawnPos">Where the spawn this node</param>
+        /// <returns>The new node</returns>
         public Node SpawnNetworkedNode(PackedScene Scene, Node Parent, string NodeName, bool UseRandomName = true,
             int NetworkMaster = -1, Vector3? SpawnPos = null)
         {
             return SpawnNetworkedNode(Scene.ResourcePath, Parent, NodeName, UseRandomName, NetworkMaster, SpawnPos);
         }
 
+        /// <summary>
+        /// Spawn a network node
+        /// </summary>
+        /// <param name="ScenePath">The path to the scene to spawn</param>
+        /// <param name="Parent">The parent that the new instance will be a child of</param>
+        /// <param name="NodeName">The name of the new node</param>
+        /// <param name="UseRandomName">If set to true a random number will be added at the end of the node name</param>
+        /// <param name="NetworkMaster">The peer that should own this, default is server</param>
+        /// <param name="SpawnPos">Where the spawn this node</param>
+        /// <returns>The new node</returns>
         public Node SpawnNetworkedNode(string ScenePath, Node Parent, string NodeName, bool UseRandomName = true,
             int NetworkMaster = -1, Vector3? SpawnPos = null)
         {
@@ -631,7 +716,7 @@ namespace MD
             return NewNode;
         }
 
-        ///<summary>Allows for buffering of scenes so we don't have to load from disc every time</summary>
+        // Allows for buffering of scenes so we don't have to load from disc every time
         private PackedScene LoadScene(string path)
         {
             if (GameInstance.UseSceneBuffer(path))
@@ -648,6 +733,10 @@ namespace MD
             return ResourceLoader.Load(path) as PackedScene;
         }
 
+        /// <summary>
+        /// Called when a node is removed
+        /// </summary>
+        /// <param name="RemovedNode">The removed node</param>
         public void OnNodeRemoved(Node RemovedNode)
         {
             if (MDStatics.IsNetworkActive() == false)
@@ -733,6 +822,11 @@ namespace MD
             NetworkedTypes.Clear();
         }
 
+        /// <summary>
+        /// Initialize UPNP
+        /// </summary>
+        /// <param name="Port">The port</param>
+        /// <returns>The UPNP object</returns>
         protected UPNP InitUPNP(int Port)
         {
             UPNP NewUPNP = new UPNP();
@@ -745,6 +839,9 @@ namespace MD
             return NewUPNP;
         }
 
+        /// <summary>
+        /// Stops UPNP if it is active
+        /// </summary>
         protected void StopUPNP()
         {
             ExternalAddress = "";
@@ -756,16 +853,30 @@ namespace MD
             }
         }
 
+        /// <summary>
+        /// Sets the network peer for the node tree
+        /// </summary>
+        /// <param name="InPeer">The peer to set to owner of the tree</param>
         protected void SetNetworkPeer(NetworkedMultiplayerPeer InPeer)
         {
             GameInstance.GetTree().NetworkPeer = InPeer;
         }
 
+        /// <summary>
+        /// Notify that a player has changed their name
+        /// </summary>
+        /// <param name="peerId">The peerid of the client that changed their name</param>
         public void NotifyPlayerNameChanged(int peerId)
         {
             OnPlayerNameChanged(peerId);
         }
 
+        /// <summary>
+        /// Change the network master of a node. This only works on the server.
+        /// </summary>
+        /// <param name="Node">The node to change network master of</param>
+        /// <param name="NewNetworkMaster">The new network master</param>
+        /// <returns>True if network master was changed, false if not</returns>
         public bool ChangeNetworkMaster(Node Node, int NewNetworkMaster)
         {
             if (!GetAllPeerIds().Contains(NewNetworkMaster))

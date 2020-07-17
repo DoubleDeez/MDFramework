@@ -7,6 +7,9 @@ using System.Text;
 
 namespace MD
 {
+    /// <summary>
+    /// Contains static methods for the MDFramework
+    /// </summary>
     public static class MDStatics
     {
         private static readonly Dictionary<string, MemberInfo> MemberInfoCache = new Dictionary<string, MemberInfo>();
@@ -44,12 +47,22 @@ namespace MD
             return GI.GameSynchronizer;
         }
 
+        /// <summary>
+        /// Get the replicator from the game instance
+        /// </summary>
         public static MDReplicator GetReplicator()
         {
             return GI.Replicator;
         }
 
-        // Helper to construct a subarray
+        /// <summary>
+        /// Helper to construct a subarray
+        /// </summary>
+        /// <param name="data">The array to construct from</param>
+        /// <param name="StartIndex">Starting index</param>
+        /// <param name="EndIndex">Ending index</param>
+        /// <typeparam name="T">Type of the array</typeparam>
+        /// <returns>The new sub array</returns>
         public static T[] SubArray<T>(this T[] data, int StartIndex, int EndIndex)
         {
             int NewLength = 1 + (EndIndex - StartIndex);
@@ -63,13 +76,23 @@ namespace MD
             return result;
         }
 
-        // Helper to trim the beginning of an array
+        /// <summary>
+        /// Helper to trim the beginning of an array
+        /// </summary>
+        /// <param name="data">The array to trim</param>
+        /// <param name="StartIndex">The index to keep from</param>
+        /// <typeparam name="T">The type of the array</typeparam>
+        /// <returns>New array without the beginning</returns>
         public static T[] SubArray<T>(this T[] data, int StartIndex)
         {
             return data.SubArray(StartIndex, data.Length - 1);
         }
 
-        // Helper to append any number of byte arrays
+        /// <summary>
+        /// Helper to append any number of byte arrays
+        /// </summary>
+        /// <param name="ByteArrays">The byte arrays to append</param>
+        /// <returns>A joined byte array</returns>
         public static byte[] JoinByteArrays(params byte[][] ByteArrays)
         {
             // Count the total number of bytes
@@ -88,7 +111,10 @@ namespace MD
             return JoinedArray;
         }
 
-        // Gets the peer ID from the game session, 1 for server or 0 for standalone
+        /// <summary>
+        /// Gets the peer ID from the game session, 1 for server or 0 for standalone
+        /// </summary>
+        /// <returns>The peer id</returns>
         public static int GetPeerId()
         {
             SceneTree Tree = GetTree();
@@ -100,59 +126,97 @@ namespace MD
             return 0;
         }
 
+        /// <summary>
+        /// Checks if the gameclock is active
+        /// </summary>
+        /// <returns>True if it is, false if not</returns>
         public static bool IsGameClockActive()
         {
             return GetGameSynchronizer() != null && GI.IsGameClockActive();
         }
 
-        // Is the game session started in non-standalone?
+        /// <summary>
+        /// Is the game session started in non-standalone?
+        /// </summary>
+        /// <returns>True if network is active, false if not</returns>
         public static bool IsNetworkActive()
         {
             return GetPeerId() != 0;
         }
 
-        // Is the game session the server?
+        /// <summary>
+        /// Is the game session the server?
+        /// </summary>
+        /// <returns>Returns true if we are or if network is inactive, false if not</returns>
         public static bool IsServer()
         {
+            if (!IsNetworkActive())
+            {
+                return true;
+            }
             return GetPeerId() == GetServerId();
         }
 
-        ///<summary>Returns true if we are on a networked connection and we are a client</summary>
+        /// <summary>
+        /// Check if we are a client
+        /// </summary>
+        /// <returns>True if we are, false if not or if network is not active</returns>
         public static bool IsClient()
         {
             return IsNetworkActive() && !IsServer();
         }
 
-        // Get the PeerId of the server
+        /// <summary>
+        /// Get the PeerId of the server
+        /// </summary>
+        /// <returns>The PeerID of the server</returns>
         public static int GetServerId()
         {
             return GetGameSession().GetNetworkMaster();
         }
 
+        /// <summary>
+        /// Get how many players are in the game
+        /// </summary>
         public static int GetPlayersCount()
         {
             return GetGameSession().PlayersCount;
         }
 
-        // Gets the net mode of the local client
+        /// <summary>
+        /// Gets the net mode of the local client
+        /// </summary>
         public static MDNetMode GetNetMode()
         {
             return GI?.GetNetMode() ?? MDNetMode.Standalone;
         }
 
-        // Gets the SceneTree from the GameInstance
+        /// <summary>
+        /// Gets the SceneTree from the GameInstance
+        /// </summary>
         public static SceneTree GetTree()
         {
             return GI != null && GI.IsInsideTree() ? GI.GetTree() : null;
         }
 
-        // Returns true if the types are equal or is SubClass is a a subclass of Base
+        /// <summary>
+        /// Check if subclass is a subclass of the base 
+        /// </summary>
+        /// <param name="SubClass">The sube class</param>
+        /// <param name="Base">The base class</param>
+        /// <returns>true if the types are equal or is SubClass is a a subclass of Base</returns>
         public static bool IsSameOrSubclass(Type SubClass, Type Base)
         {
             return SubClass.IsSubclassOf(Base) || SubClass == Base;
         }
 
-        // Returns the attribute object for the specified type, climbing the hierarchy until Node is reached or the attribute is found
+        /// <summary>
+        /// Returns the attribute object for the specified type, 
+        /// climbing the hierarchy until Node is reached or the attribute is found
+        /// </summary>
+        /// <param name="InstanceType">The type to search</param>
+        /// <typeparam name="T">The type to find</typeparam>
+        /// <returns>The attribute object for the specified type or null if not found</returns>
         public static T FindClassAttribute<T>(Type InstanceType) where T : Attribute
         {
             if (IsSameOrSubclass(InstanceType, typeof(Node)) == false)
@@ -174,12 +238,21 @@ namespace MD
             return null;
         }
 
+        /// <summary>
+        /// Get type member infos for the object
+        /// </summary>
+        /// <param name="Object">The object to find member infos for</param>
+        /// <returns>List of member infos</returns>
         public static List<MemberInfo> GetTypeMemberInfos(object Object)
         {
             return GetTypeMemberInfos(Object.GetType());
         }
 
-        // Returns a list of all the unique members for a Node, including the hierarchy
+        /// <summary>
+        /// Returns a list of all the unique members for a Node, including the hierarchy
+        /// </summary>
+        /// <param name="ObjectType">The object type to find for</param>
+        /// <returns>List of members</returns>
         public static List<MemberInfo> GetTypeMemberInfos(Type ObjectType)
         {
             List<MemberInfo> Members = new List<MemberInfo>();
@@ -206,6 +279,12 @@ namespace MD
             return DeDupedMembers;
         }
 
+        /// <summary>
+        /// Find a specific member by name
+        /// </summary>
+        /// <param name="CurNode">The node to search</param>
+        /// <param name="Name">Name of the member</param>
+        /// <returns>The MemberInfo or null if not found</returns>
         private static MemberInfo GetMemberByName(Node CurNode, string Name)
         {
             Type NodeType = CurNode.GetType();
@@ -218,6 +297,12 @@ namespace MD
             return Member;
         }
 
+        /// <summary>
+        /// Get the RPC type of a member
+        /// </summary>
+        /// <param name="Node">The node the member belongs to</param>
+        /// <param name="MemberName">The name of the member</param>
+        /// <returns>The rpc type as an enum</returns>
         public static MDRemoteMode GetMemberRpcType(Node Node, string MemberName)
         {
             MemberInfo Info = GetMemberInfo(Node, MemberName);
@@ -260,6 +345,13 @@ namespace MD
             return MDRemoteMode.Unknown;
         }
 
+        /// <summary>
+        /// Get rpc type of a method
+        /// </summary>
+        /// <param name="Node">The node to check</param>
+        /// <param name="Method">The method name</param>
+        /// <param name="Parameters">The parameters the method takes</param>
+        /// <returns>The rpc type</returns>
         public static MDRemoteMode GetMethodRpcType(Node Node, string Method, params object[] Parameters)
         {
             MethodInfo Info = GetMethodInfo(Node, Method, Parameters);
@@ -361,7 +453,11 @@ namespace MD
             return Signature;
         }
 
-        ///<summary>Converts a size in bytes such as the one from OS.GetStaticMemoryUsage() into a more human readable format</summary>
+        /// <summary>
+        /// Converts a size in bytes such as the one from OS.GetStaticMemoryUsage() into a more human readable format
+        /// </summary>
+        /// <param name="len">The value to convert</param>
+        /// <returns>A human readable string</returns>
         public static string HumanReadableSize(double len)
         {
             string[] sizes = {"B", "KB", "MB", "GB", "TB"};
@@ -384,12 +480,12 @@ namespace MD
         {
             if (!DataConverterCache.ContainsKey(Type))
             {
-                DataConverterCache.Add(Type, IntGetConverterForType(Type));
+                DataConverterCache.Add(Type, _InternalGetConverterForType(Type));
             }
             return DataConverterCache[Type];
         }
 
-        private static IMDDataConverter IntGetConverterForType(Type Type)
+        private static IMDDataConverter _InternalGetConverterForType(Type Type)
         {
             String NameSpace = Type.Namespace;
             if (Type.GetInterface(nameof(IMDDataConverter)) != null)

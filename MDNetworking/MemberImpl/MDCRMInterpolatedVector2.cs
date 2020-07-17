@@ -4,6 +4,9 @@ using System.Reflection;
 
 namespace MD
 {
+    /// <summary>
+    /// Clocked interpolated vector2
+    /// </summary>
     public class MDCRMInterpolatedVector2 : MDReplicatedMember
     {
         protected KeyValuePair<uint, Vector2> LastClockedValue = new KeyValuePair<uint, Vector2>(0, Vector2.Zero);
@@ -60,12 +63,12 @@ namespace MD
             LastTickValueWasChanged = GameClock.GetTick();
         }
 
-        protected Vector2 GetValueForTick(uint Tick)
+        private Vector2 GetValueForTick(uint Tick)
         {
             return (Vector2)ConvertFromObject(null, (object[])ValueList[Tick][0]);
         }
 
-        ///<summary>Finds the next value that is in the future and removes old values from the list</summary>
+        // Finds the next value that is in the future and removes old values from the list
         private uint FindNextValue()
         {
             List<uint> oldKeys = new List<uint>();

@@ -92,6 +92,10 @@ namespace MD
         }
     }
 
+    /// <summary>
+    /// Data converter for custom classes
+    /// </summary>
+    /// <typeparam name="T">The custom class type</typeparam>
     public class MDCustomClassDataConverter<T> : IMDDataConverter
     {
         private List<MemberInfo> Members = null;

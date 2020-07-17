@@ -4,6 +4,9 @@ using System.Linq;
 
 namespace MD
 {
+    /// <summary>
+    /// Manages replication groups
+    /// </summary>
     public class MDReplicatorGroupManager
     {
         protected Dictionary<string, int> GroupNameToNumberMap = new Dictionary<string, int>();
@@ -20,6 +23,10 @@ namespace MD
             }
         }
 
+        /// <summary>
+        /// Get the members to replicate for the current frame
+        /// </summary>
+        /// <returns>List of members to replicate</returns>
         public HashSet<MDReplicatedMember> GetMembersToReplicate()
         {
             CurrentReplicationGroup++;
@@ -31,7 +38,10 @@ namespace MD
             return ReplicationGroups[CurrentReplicationGroup];
         }
 
-        ///<summary>Adds a replicated member to the group manager</summary>
+        /// <summary>
+        /// Adds a replicated member to the group manager
+        /// </summary>
+        /// <param name="Member">The member to add</param>
         public void AddReplicatedMember(MDReplicatedMember Member)
         {
             if (Member.GetReplicatedType() != MDReplicatedType.Interval)
@@ -53,6 +63,10 @@ namespace MD
             ReplicationGroups[Group].Add(Member);
         }
 
+        /// <summary>
+        /// Removes the replicated member from any groups it is in
+        /// </summary>
+        /// <param name="Member">The member to remove</param>
         public void RemoveReplicatedMember(MDReplicatedMember Member)
         {
             if (Member.GetReplicatedType() != MDReplicatedType.Interval)
@@ -70,7 +84,11 @@ namespace MD
             }
         }
 
-        ///<Summary>Get the replication group by name</summary>
+        /// <summary>
+        /// Get the replication group by name
+        /// </summary>
+        /// <param name="Name">The name of the replication group</param>
+        /// <returns>The group index</returns>
         protected int GetReplicationGroupByName(string Name)
         {
             if (!GroupNameToNumberMap.ContainsKey(Name))
@@ -81,7 +99,10 @@ namespace MD
             return GroupNameToNumberMap[Name];
         }
 
-        // Find the group with the least members
+        /// <summary>
+        /// Find the group with the least members
+        /// </summary>
+        /// <returns>The index of the group with the least members</returns>
         protected int GetGroupWithLeastMembers()
         {
             int GroupWithLeastMembers = 0;

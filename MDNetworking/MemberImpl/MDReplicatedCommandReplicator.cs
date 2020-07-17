@@ -8,15 +8,34 @@ namespace MD
     ///<summary>The command replicator can replicate custom commands across the network</summary>
     public interface IMDCommandReplicator
     {
+        /// <summary>
+        /// Get a list of commands for a player that just joined so they can synch up to the current state.
+        /// </summary>
+        /// <returns>List of commands</returns>
         List<object[]> MDGetCommandsForNewPlayer();
 
+        /// <summary>
+        /// Get a list of commands containing changes since the last update.
+        /// </summary>
+        /// <returns>List of commands</returns>
         List<object[]> MDGetCommands();
 
+        /// <summary>
+        /// Process a command that we received.
+        /// </summary>
+        /// <param name="Parameters">The command parameters</param>
         void MDProcessCommand(params object[] Parameters);
 
+        /// <summary>
+        /// Prase the settings that was set as attributes, remember to filter for the ones you care about.
+        /// </summary>
+        /// <param name="Settings">List of settings</param>
         void MDSetSettings(MDReplicatedSetting[] Settings);
     }
 
+    /// <summary>
+    /// A command replicator capable of replicating any class that implements IMDCommandReplicator across the network
+    /// </summary>
     public class MDReplicatedCommandReplicator : MDReplicatedMember
     {
         public MDReplicatedCommandReplicator(MemberInfo Member, bool Reliable, MDReplicatedType ReplicatedType, WeakRef NodeRef, MDReplicatedSetting[] Settings) 
@@ -137,7 +156,7 @@ namespace MD
             }
         }
 
-        protected void ReplicateCommandToPeer(object[] Command, int PeerId)
+        private void ReplicateCommandToPeer(object[] Command, int PeerId)
         {
             Replicator.RpcId(PeerId, MDReplicator.REPLICATE_METHOD_NAME, Replicator.GetReplicationIdForKey(GetUniqueKey()), GetGameTick(), Command);
         }
