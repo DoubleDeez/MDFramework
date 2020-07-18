@@ -77,6 +77,21 @@ namespace MD
             return NewScreen;
         }
 
+        /// <summary>
+        /// Opens a screen of the provided type with the specified name on the specified layer
+        /// </summary>
+        public MDScreen OpenScreen(PackedScene ScreenScene, string ScreenName, MDScreenLayer ScreenLayer)
+        {
+            MDScreen NewScreen = ScreenScene.Instance() as MDScreen;
+            if (NewScreen != null)
+            {
+                NewScreen.Name = ScreenName;
+                AddScreenToStack(NewScreen, ScreenLayer);
+            }
+
+            return NewScreen;
+        }
+
         private void AddScreenToStack(MDScreen Screen, MDScreenLayer ScreenLayer)
         {
             MDLayerStack LayerStack = GetLayerStack(ScreenLayer);

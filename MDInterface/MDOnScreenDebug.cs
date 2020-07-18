@@ -140,7 +140,7 @@ namespace MD
         {
             if (DebugInfoList.ContainsKey(name))
             {
-                return DebugInfoList.Remove(name);;
+                return DebugInfoList.Remove(name);
             }
 
             return false;

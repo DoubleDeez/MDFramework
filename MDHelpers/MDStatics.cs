@@ -55,6 +55,12 @@ namespace MD
         {
             return GI.Replicator;
         }
+        
+        /// <summary>Grabs the Interface Manager from the GameInstance</summary>
+        public static MDInterfaceManager GetInterfaceManager()
+        {
+            return GI.InterfaceManager;
+        }
 
         /// <summary>
         /// Helper to construct a subarray

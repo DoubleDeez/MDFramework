@@ -23,6 +23,7 @@ namespace MD
 
             this.SetAnchor(0, 0, 1, 1);
             this.SetMargin(0, 0, 0, 0);
+            this.MouseFilter = MouseFilterEnum.Ignore;
         }
 
         /// <summary>
@@ -74,7 +75,11 @@ namespace MD
             // Only the Primary layer has special visiblility functionality
             if (LayerType == MDScreenLayer.Primary)
             {
-
+                int LastIndex = (ScreenStack.Count - 1);
+                for (int i = 0; i < ScreenStack.Count; ++i)
+                {
+                    ScreenStack[i].Visible = (i == LastIndex);
+                }
             }
         }
     }
