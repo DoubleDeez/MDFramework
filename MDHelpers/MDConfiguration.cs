@@ -46,6 +46,7 @@ namespace MD
 
         // REPLICATOR
         public const string FRAME_INTERVAL = "FrameInterval";
+        public const string SHOULD_SHOW_BUFFER_SIZE = "ShouldShowBufferSize";
 
         /// <summary>
         /// First key string is the section, inner dictionary key is the key

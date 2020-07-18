@@ -15,6 +15,15 @@ namespace MD
         private Dictionary<uint, Dictionary<uint, object[]>> ClockedValueBuffer =
             new Dictionary<uint, Dictionary<uint, object[]>>();
 
+
+        public MDReplicatorNetworkKeyIdMap(bool ShowBufferSize)
+        {
+            if (ShowBufferSize)
+            {
+                MDOnScreenDebug.AddOnScreenDebugInfo("NetworkIDToKeyMap Buffer Size", () => ClockedValueBuffer.Count.ToString());
+            }
+        }
+
         /// <summary>
         /// Add a new id/key pair to our map
         /// </summary>
