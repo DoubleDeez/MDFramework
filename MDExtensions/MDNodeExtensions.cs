@@ -251,16 +251,21 @@ namespace MD
             return MDNetMode.Standalone;
         }
 
+        ///<summary>Removes this node from its parent</summary>
+        public static void RemoveFromParent(this Node Instance)
+        {
+            if (Godot.Object.IsInstanceValid(Instance) && Godot.Object.IsInstanceValid(Instance.GetParent()))
+            {
+                Instance.GetParent().RemoveChild(Instance);
+            }
+        }
+
         ///<summary>Removes this node from its parent and frees it</summary>
         public static void RemoveAndFree(this Node Instance)
         {
             if (Godot.Object.IsInstanceValid(Instance))
             {
-                if (Godot.Object.IsInstanceValid(Instance.GetParent()))
-                {
-                    Instance.GetParent().RemoveChild(Instance);
-                }
-
+                Instance.RemoveFromParent();
                 Instance.QueueFree();
             }
         }
