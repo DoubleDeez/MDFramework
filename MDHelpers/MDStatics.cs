@@ -12,6 +12,7 @@ namespace MD
     /// </summary>
     public static class MDStatics
     {
+        private const string LOG_CAT = "LogMDStatics";
         private static readonly Dictionary<string, MemberInfo> MemberInfoCache = new Dictionary<string, MemberInfo>();
 
         private static readonly Dictionary<string, MethodInfo> MethodInfoCache = new Dictionary<string, MethodInfo>();
@@ -53,6 +54,12 @@ namespace MD
         public static MDReplicator GetReplicator()
         {
             return GI.Replicator;
+        }
+        
+        /// <summary>Grabs the Interface Manager from the GameInstance</summary>
+        public static MDInterfaceManager GetInterfaceManager()
+        {
+            return GI.InterfaceManager;
         }
 
         /// <summary>
@@ -277,6 +284,22 @@ namespace MD
             }
 
             return DeDupedMembers;
+        }
+
+        /// <summary>
+        /// Creates an instance of the type based on the base class T
+        /// </summary>
+        /// <param name="Type">The type to instantiate</param>
+        /// <returns>The instance created or null if it fails</returns>
+        public static T CreateTypeInstance<T>(Type Type) where T : class
+        {
+            if (!IsSameOrSubclass(Type, typeof(T)))
+            {
+                MDLog.Error(LOG_CAT, $"Type [{Type.Name}] is not a subclass of [{typeof(T).Name}]");
+                return null;
+            }
+
+            return Activator.CreateInstance(Type) as T;
         }
 
         /// <summary>

@@ -27,7 +27,7 @@ namespace MD
     /// On screen debugger
     /// </summary>
     [MDAutoRegister]
-    public class MDOnScreenDebug : Control
+    public class MDOnScreenDebug : MDScreen
     {
         private const string LOG_CAT = "LogOnScreenDebug";
 
@@ -43,8 +43,6 @@ namespace MD
 
             MDLog.AddLogCategoryProperties(LOG_CAT, new MDLogProperties(MDLogLevel.Trace));
 
-            this.SetAnchor(0, 0, 1, 1);
-            this.SetMargin(10, 10, 0, 0);
             MouseFilter = MouseFilterEnum.Ignore;
 
             CreateControls();
@@ -142,18 +140,10 @@ namespace MD
         {
             if (DebugInfoList.ContainsKey(name))
             {
-                return DebugInfoList.Remove(name);;
+                return DebugInfoList.Remove(name);
             }
 
             return false;
-        }
-
-        /// <summary>
-        /// Closes the onscreen debug
-        /// </summary>
-        public void Close()
-        {
-            this.RemoveAndFree();
         }
 
         // Creates the UI control for the debug screen
