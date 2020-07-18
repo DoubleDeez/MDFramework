@@ -136,14 +136,12 @@ namespace MD
                 return Default;
             }
 
-            Dictionary<String, object> KeyValueDict = Configuration[Category];
-
-            if (!KeyValueDict.ContainsKey(Key))
+            if (!Configuration[Category].ContainsKey(Key))
             {
                 return Default;
             }
 
-            return KeyValueDict[Key];
+            return Configuration[Category][Key];
         }
 
         /// <summary>

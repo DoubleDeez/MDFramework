@@ -324,7 +324,7 @@ namespace MD
             Type DataConverterType = GetConverterType(MDReplicator.ParseParameters(typeof(MDReplicatedCommandReplicator.Settings), Settings));
             if (DataConverterType != null && DataConverterType.IsAssignableFrom(typeof(IMDDataConverter)))
             {
-                DataConverter = Activator.CreateInstance(DataConverterType) as IMDDataConverter;
+                DataConverter = MDStatics.CreateConverterOfType(DataConverterType);
                 return;
             }
             

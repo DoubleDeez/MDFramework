@@ -69,10 +69,7 @@ namespace MD
                         break;
                     case Settings.Converter:
                         Type DataConverterType = Type.GetType(setting.Value.ToString());
-                        if (DataConverterType != null && DataConverterType.IsAssignableFrom(typeof(IMDDataConverter)))
-                        {
-                            DataConverter = Activator.CreateInstance(DataConverterType) as IMDDataConverter;
-                        }
+                        DataConverter = MDStatics.CreateConverterOfType(DataConverterType);
                         break;
                 }
             }
