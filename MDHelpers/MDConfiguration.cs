@@ -74,12 +74,11 @@ namespace MD
             // Load internal config first
             #if DEBUG
                 LoadConfiguration("MDConfigDebug.ini");
+                LoadConfiguration("CustomMDConfigDebug.ini");
             #else
                 LoadConfiguration("MDConfigExport.ini");
+                LoadConfiguration("CustomMDConfigExport.ini");
             #endif
-
-            LoadConfiguration("CustomMDConfigDebug.ini");
-            LoadConfiguration("CustomMDConfigExport.ini");
         }
 
         /// <summary>
