@@ -29,6 +29,7 @@ namespace MD
         /// <summary>
         /// Add a screen to the top of the stack
         /// </summary>
+        /// <param name="Screen">The screen instance to add to this layer</param>
         public void AddScreen(MDScreen Screen)
         {
             if (Screen != null)
@@ -49,6 +50,7 @@ namespace MD
         /// <summary>
         /// Remove the provided screen from the stack
         /// </summary>
+        /// <param name="Screen">The screen instance to remove from this layer</param>
         public void RemoveScreen(MDScreen Screen)
         {
             if (Screen != null && ScreenStack.Contains(Screen))

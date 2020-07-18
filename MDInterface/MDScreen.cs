@@ -8,8 +8,15 @@ namespace MD
     /// </summary>
     public class MDScreen : Control
     {
+        /// <summary>
+        /// Generic Event Handler for Events from <c>MDScreen</c>
+        /// </summary>
+        /// <param name="Screen">The screen the event is triggered from</param>
         public delegate void ScreenEventHandler(MDScreen Screen);
-
+    
+        /// <summary>
+        /// Triggered right before the scene is removed from the Interface Manager
+        /// </summary>
         public event ScreenEventHandler OnScreenClosed = delegate { };
 
         public override void _Ready()
@@ -23,6 +30,7 @@ namespace MD
         /// <summary>
         /// Removes this screen from the screen stack
         /// </summary>
+        /// <param name="Free">Whether or not the Node should be freed (default: true)</param>
         public void CloseScreen(bool Free = true)
         {
             OnScreenClosed(this);

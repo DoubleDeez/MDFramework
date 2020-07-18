@@ -286,7 +286,11 @@ namespace MD
             return DeDupedMembers;
         }
 
-        /// <summary>Creates an instance of the type based on the base class T</summary>
+        /// <summary>
+        /// Creates an instance of the type based on the base class T
+        /// </summary>
+        /// <param name="Type">The type to instantiate</param>
+        /// <returns>The instance created or null if it fails</returns>
         public static T CreateTypeInstance<T>(Type Type) where T : class
         {
             if (!IsSameOrSubclass(Type, typeof(T)))

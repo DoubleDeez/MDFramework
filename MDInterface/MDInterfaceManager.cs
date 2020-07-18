@@ -61,6 +61,10 @@ namespace MD
         /// <summary>
         /// Opens a screen of the provided type with the specified name on the specified layer
         /// </summary>
+        /// <param name="ScreenName">The node name that will be given to the screen</param>
+        /// <param name="ScreenLayer">The layer to open this screen on</param>
+        /// <typeparam name="T">The type of the screen that will be instantiated</typeparam>
+        /// <returns>The intance of the screen or null if it fails</returns>
         public T OpenScreen<T>(string ScreenName, MDScreenLayer ScreenLayer) where T : MDScreen
         {
             return OpenScreen(typeof(T), ScreenName, ScreenLayer) as T;
@@ -69,6 +73,10 @@ namespace MD
         /// <summary>
         /// Opens a screen of the provided type with the specified name on the specified layer
         /// </summary>
+        /// <param name="ScreenType">The C# Type of the screen to instantiate</param>
+        /// <param name="ScreenName">The node name that will be given to the screen</param>
+        /// <param name="ScreenLayer">The layer to open this screen on</param>
+        /// <returns>The intance of the screen or null if it fails</returns>
         public MDScreen OpenScreen(Type ScreenType, string ScreenName, MDScreenLayer ScreenLayer)
         {
             MDScreen NewScreen = MDStatics.CreateTypeInstance<MDScreen>(ScreenType);
@@ -80,6 +88,10 @@ namespace MD
         /// <summary>
         /// Opens a screen of the provided type with the specified name on the specified layer
         /// </summary>
+        /// <param name="ScreenScene">The Screen's PackedScene to open</param>
+        /// <param name="ScreenName">The node name that will be given to the screen</param>
+        /// <param name="ScreenLayer">The layer to open this screen on</param>
+        /// <returns>The intance of the screen or null if it fails</returns>
         public MDScreen OpenScreen(PackedScene ScreenScene, string ScreenName, MDScreenLayer ScreenLayer)
         {
             MDScreen NewScreen = ScreenScene.Instance() as MDScreen;
