@@ -75,11 +75,25 @@ namespace MD
             // TODO - Get calling method's name automatically: https://stackoverflow.com/a/5443690
             bool LogFile = true;
             bool LogConsole = true;
-            if (LogProperties.ContainsKey(CategoryName))
+            MDConfiguration Config = MDStatics.GetGameInstance().GetConfiguration();
+
+            if (Config.HasValue(MDConfiguration.ConfigurationSections.Logging, CategoryName))
+            {
+                MDLogLevel ConfigLogLevel = Config.GetEnum<MDLogLevel>(MDConfiguration.ConfigurationSections.Logging, CategoryName, MDLogLevel.Trace);
+                LogFile = ConfigLogLevel <= LogLevel || LogLevel == MDLogLevel.Force;
+                LogConsole = ConfigLogLevel <= LogLevel || LogLevel == MDLogLevel.Force;
+            }
+            else if (LogProperties.ContainsKey(CategoryName))
             {
                 MDLogProperties LogProps = LogProperties[CategoryName];
                 LogFile = LogProps.FileLogLevel <= LogLevel || LogLevel == MDLogLevel.Force;
                 LogConsole = LogProps.ConsoleLogLevel <= LogLevel || LogLevel == MDLogLevel.Force;
+            }
+            else
+            {
+                MDLogLevel DefaultLogLevel = Config.GetEnum<MDLogLevel>(MDConfiguration.ConfigurationSections.Logging, MDConfiguration.DEFAULT_LOG_LEVEL, MDLogLevel.Trace);
+                LogFile = DefaultLogLevel <= LogLevel || LogLevel == MDLogLevel.Force;
+                LogConsole = DefaultLogLevel <= LogLevel || LogLevel == MDLogLevel.Force;
             }
 
             if (LogFile || LogConsole)

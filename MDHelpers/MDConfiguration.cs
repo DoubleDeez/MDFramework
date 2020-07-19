@@ -46,12 +46,16 @@ namespace MD
         // REPLICATOR
         public const string FRAME_INTERVAL = "FrameInterval";
 
+        // LOGGING
+        public const string DEFAULT_LOG_LEVEL = "Default";
+
         public enum ConfigurationSections
         {
             GameInstance,
             Replicator,
             GameSynchronizer,
-            GameClock
+            GameClock,
+            Logging
         }
 
         ConfigFile Configuration = new ConfigFile();
@@ -141,6 +145,49 @@ namespace MD
                 return returnType;
             }
             return Default;
+        }
+
+        /// <summary>
+        /// Get an enum value from the configuration
+        /// </summary>
+        /// <param name="Category">The category</param>
+        /// <param name="Key">The key</param>
+        /// <param name="Default">The default value</param>
+        /// <typeparam name="T">The enum type</typeparam>
+        /// <returns>The value if found, default if not</returns>
+        public T GetEnum<T>(ConfigurationSections Category, string Key, T Default) where T : struct, IConvertible
+        {
+            if (!typeof(T).IsEnum)
+            {
+                return Default;
+            }
+
+            string ValueAsString = GetString(Category, Key, "");
+            if (String.IsNullOrWhiteSpace(ValueAsString))
+            {
+                return Default;
+            }
+
+            foreach (T item in Enum.GetValues(typeof(T)))
+            {
+                if (item.ToString().ToLower().Equals(ValueAsString.Trim().ToLower()))
+                {
+                    return item;
+                }
+            }
+
+            return Default;
+        }
+
+        /// <summary>
+        /// Checks if the configuration has set a value for the given category and key
+        /// </summary>
+        /// <param name="Category">The category</param>
+        /// <param name="Key">The key</param>
+        /// <returns>True if the config has a value</returns>
+        public bool HasValue(ConfigurationSections Category, string Key)
+        {
+            return Configuration.HasSectionKey(Category.ToString(), Key);
         }
 
         /// <summary>
