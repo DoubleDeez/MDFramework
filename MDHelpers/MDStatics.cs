@@ -475,14 +475,13 @@ namespace MD
 
                         if (IsCompatible)
                         {
-                            MDLog.Force(LOG_CAT, $"Adding compatible method key {key}");
+                            MDLog.Debug(LOG_CAT, $"Adding compatible method key {key}");
                             MethodInfoCache.Add(key, CandidateMethod);
                         }
                     }
                 }
             }
 
-            MDLog.Force(LOG_CAT, $"Got method with key {key}");
             return MethodInfoCache[key];
         }
 
