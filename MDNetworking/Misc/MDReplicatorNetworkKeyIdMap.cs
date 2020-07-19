@@ -83,10 +83,12 @@ namespace MD
             {
                 return;
             }
+            
             Dictionary<uint, object[]> buffer = GetBufferForId(ID);
             foreach (uint tick in buffer.Keys)
             {
                 object[] value = buffer[tick];
+                MDLog.Trace(LOG_CAT, $"Updating value to {value} for {ID} on tick {tick}");
                 Member.SetValues(tick, value);
             }
 
@@ -113,6 +115,7 @@ namespace MD
         /// <returns>The string key</returns>
         public string GetValue(uint id)
         {
+            MDLog.CError(NetworkIDToKeyMap.ContainsKey(id) == false, LOG_CAT, $"NetworkIDToKeyMap does not contain id {id}");
             return NetworkIDToKeyMap.ContainsKey(id) ? NetworkIDToKeyMap[id] : null;
         }
 
@@ -123,6 +126,7 @@ namespace MD
         /// <returns>The uint id</returns>
         public uint GetValue(string key)
         {
+            MDLog.CError(KeyToNetworkIdMap.ContainsKey(key) == false, LOG_CAT, $"KeyToNetworkIdMap does not contain key {key}");
             return KeyToNetworkIdMap.ContainsKey(key) ? KeyToNetworkIdMap[key] : 0;
         }
 
@@ -163,6 +167,7 @@ namespace MD
         {
             if (KeyToNetworkIdMap.ContainsKey(key))
             {
+                MDLog.Trace(LOG_CAT, $"Removing key [{key}]");
                 NetworkIDToKeyMap.Remove(KeyToNetworkIdMap[key]);
                 RemoveBufferId(KeyToNetworkIdMap[key]);
                 KeyToNetworkIdMap.Remove(key);
@@ -177,6 +182,7 @@ namespace MD
         {
             if (NetworkIDToKeyMap.ContainsKey(id))
             {
+                MDLog.Trace(LOG_CAT, $"Removing id [{id}]");
                 KeyToNetworkIdMap.Remove(NetworkIDToKeyMap[id]);
                 RemoveBufferId(id);
                 NetworkIDToKeyMap.Remove(id);

@@ -78,7 +78,7 @@ namespace MD
         /// </summary>
         public event NetworkNodeEventHandler OnNetworkNodeAdded = delegate { };
         /// <summary>
-        /// Triggered on the server when a networked node is removed or right before the node is removed on clients
+        /// Triggered on all clients right before the node is removed
         /// </summary>
         public event NetworkNodeEventHandler OnNetworkNodeRemoved = delegate { };
 
@@ -464,7 +464,7 @@ namespace MD
         /// <param name="PeerId">The PeerId of the player that completed initialization</param>
         public void OnPlayerInfoInitializationCompleted(int PeerId)
         {
-            MDLog.Force(LOG_CAT, $"Player {PeerId} initialization completed");
+            MDLog.Debug(LOG_CAT, $"Player {PeerId} initialization completed");
             OnPlayerInitialized(PeerId);
             BroadcastNewPlayerInitialized(PeerId);
         }

@@ -10,10 +10,13 @@ namespace MD
     public class MDPlayerInfo : Node
     {
         private const string LOG_CAT = "LogPlayerInfo";
-        [MDReplicated()]
+        [MDReplicated]
         [MDReplicatedSetting(MDReplicatedMember.Settings.OnValueChangedEvent, nameof(OnPlayerNameChanged))]
         public string PlayerName { get; protected set; } = "";
 
+        /// <summary>
+        /// When the player name changes, this event will fire with the new name as the parameter
+        /// </summary>
         public event Action<string> OnPlayerNameChangedEvent = delegate { };
 
         /// <summary>
@@ -34,10 +37,6 @@ namespace MD
 
         public override void _Process(float delta)
         {
-            if (MDStatics.IsClient() && PlayerName != "" && PeerId == 1)
-            {
-                MDLog.Force(LOG_CAT, PlayerName);
-            }
         }
 
         /// <summary>
@@ -64,6 +63,9 @@ namespace MD
             }
         }
 
+        /// <summary>
+        /// Called on the corresponding client for this player info to begin initialization
+        /// </summary>
         [Remote]
         protected virtual void OnServerRequestedInitialization()
         {
@@ -79,6 +81,10 @@ namespace MD
             }
         }
 
+        /// <summary>
+        /// As part of initialization, this is call on the server from the client to initialize the player info with the name
+        /// </summary>
+        /// <param name="ClientName">The player name the client wants</param>
         [Remote]
         protected virtual void OnClientSentPlayerName(string ClientName)
         {
@@ -86,11 +92,39 @@ namespace MD
             if (HasInitialized == false)
             {
                 PlayerName = ClientName;
+                MarkPlayerInitializationCompleted();
+                OnPlayerNameChangedEvent(PlayerName);
+            }
+        }
+
+        /// <summary>
+        /// Notifies the server that initialization for this player has completed
+        /// </summary>
+        protected void MarkPlayerInitializationCompleted()
+        {
+            if (MDStatics.IsServer())
+            {
+                ServerMarkPlayerInitializationCompleted();
+            }
+            else
+            {
+                this.MDServerRpc(nameof(ServerMarkPlayerInitializationCompleted));
+            }
+        }
+
+        [Remote]
+        private void ServerMarkPlayerInitializationCompleted()
+        {   
+            if (HasInitialized == false)
+            {
                 this.GetGameSession().OnPlayerInfoInitializationCompleted(PeerId);
             }
         }
 
-        private void OnPlayerNameChanged()
+        /// <summary>
+        /// Called when the player name changes
+        /// </summary>
+        protected void OnPlayerNameChanged()
         {
             OnPlayerNameChangedEvent(PlayerName);
         }

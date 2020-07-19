@@ -186,7 +186,6 @@ namespace MD
             MDLog.AddLogCategoryProperties(LOG_CAT, new MDLogProperties(MDLogLevel.Info));
             MDOnScreenDebug.AddOnScreenDebugInfo("KeyToMemberMap Size", () => KeyToMemberMap.Count.ToString());
             MDOnScreenDebug.AddOnScreenDebugInfo("NetworkIDToKeyMap Size", () => NetworkIdKeyMap.GetCount().ToString());
-            this.GetGameSession().OnSessionStartedEvent += OnSessionStarted;
             this.GetGameSession().OnSessionEndedEvent += OnSessionEnded;
             this.GetGameSession().OnPlayerJoinedEvent += OnPlayerJoined;
             PauseMode = PauseModeEnum.Process;
@@ -198,7 +197,6 @@ namespace MD
 
         public override void _ExitTree()
         {
-            this.GetGameSession().OnSessionStartedEvent -= OnSessionStarted;
             this.GetGameSession().OnSessionEndedEvent -= OnSessionEnded;
             this.GetGameSession().OnPlayerJoinedEvent -= OnPlayerJoined;
         }
@@ -208,14 +206,9 @@ namespace MD
             TickReplication();
         }
 
-        private void OnSessionStarted()
-        {
-            // Reset the NetworkKeyIdMap on new session started
-            NetworkIdKeyMap = new MDReplicatorNetworkKeyIdMap();
-        }
-
         private void OnSessionEnded()
         {
+            NetworkIdKeyMap = new MDReplicatorNetworkKeyIdMap();
             KeyToMemberMap = new Dictionary<string, MDReplicatedMember>();
         }
 
@@ -274,7 +267,7 @@ namespace MD
 
                 GroupManager.AddReplicatedMember(NodeMember);
 
-                MDLog.Trace(LOG_CAT, $"Adding Replicated Node {Instance.Name} Member {Member.Name}");
+                MDLog.Debug(LOG_CAT, $"Adding Replicated Node {Instance.Name} Member {Member.Name}");
 
                 if (HasRPCModeSet(Member) == false)
                 {
@@ -288,12 +281,21 @@ namespace MD
                 List<object> networkIdUpdates = new List<object>();
                 foreach (MDReplicatedMember member in NodeMembers)
                 {
-                    KeyToMemberMap.Add(member.GetUniqueKey(), member);
+                    string MemberUniqueKey = member.GetUniqueKey();
+                    KeyToMemberMap.Add(MemberUniqueKey, member);
+
+                    // Check if we have a buffer waiting for this member
+                    if (NetworkIdKeyMap.ContainsKey(MemberUniqueKey))
+                    {
+                        NetworkIdKeyMap.CheckBuffer(NetworkIdKeyMap.GetValue(MemberUniqueKey), member);
+                    }
+
                     if (MDStatics.IsServer())
                     {
                         if (!NetworkIdKeyMap.ContainsKey(member.GetUniqueKey()))
                         {
                             uint networkid = GetReplicationId();
+                            MDLog.Trace(LOG_CAT, $"Adding NetworkIdKeyMap key [{member.GetUniqueKey()}] with id [{networkid}]");
                             NetworkIdKeyMap.AddNetworkKeyIdPair(networkid, member.GetUniqueKey());
                             NetworkIdKeyMap.CheckBuffer(networkid, member);
                             networkIdUpdates.Add(networkid);
@@ -414,6 +416,7 @@ namespace MD
                                 continue;
                             }
 
+                            MDLog.CTrace(JIPPeerId != -1, LOG_CAT, $"Replicating {RepMember.GetUniqueKey()} to JIP Player {JIPPeerId}");
                             RepMember.Replicate(JIPPeerId, CurrentReplicationList.Contains(RepMember));
                         }
                     }
@@ -463,10 +466,15 @@ namespace MD
             {
                 string key = (string) updates[i + 1];
                 uint id = (uint) long.Parse(updates[i].ToString());
+                MDLog.Debug(LOG_CAT, $"Received Network Map Update with id {id} and key [{key}]");
                 NetworkIdKeyMap.AddNetworkKeyIdPair(id, key);
                 if (KeyToMemberMap.ContainsKey(key))
                 {
                     NetworkIdKeyMap.CheckBuffer(id, KeyToMemberMap[key]);
+                }
+                else
+                {
+                    MDLog.Trace(LOG_CAT, $"KeyToMemberMap does not contain key {key}");
                 }
             }
         }
@@ -483,6 +491,7 @@ namespace MD
             string key = NetworkIdKeyMap.GetValue(ID);
             if (key == null || !KeyToMemberMap.ContainsKey(key))
             {
+                MDLog.Debug(LOG_CAT, $"Received replication for id {ID} and tick {Tick} not in map");
                 // We got no key so add it to our buffer
                 NetworkIdKeyMap.AddToBuffer(ID, Tick, Parameters);
                 return;

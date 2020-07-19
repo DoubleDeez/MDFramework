@@ -63,14 +63,7 @@ namespace MD
                 {
                     case Settings.OnValueChangedEvent:
                         Node Node = NodeRef.GetRef() as Node;
-                        Type CurType = Node.GetType();
-                        while (CurType != null && OnValueChangedCallback == null)
-                        {
-                            OnValueChangedCallback = CurType.GetMethod(setting.Value.ToString(),
-                                BindingFlags.Public | BindingFlags.NonPublic | 
-                                BindingFlags.FlattenHierarchy | BindingFlags.Instance);
-                            CurType = CurType.BaseType;
-                        }
+                        OnValueChangedCallback = Node.GetType().GetMethodRecursive(setting.Value.ToString());
                         break;
                     case Settings.Converter:
                         Type DataConverterType = Type.GetType(setting.Value.ToString());
@@ -267,19 +260,10 @@ namespace MD
         public void CheckIfShouldReplicate()
         {
             MasterAttribute MasterAtr = Member.GetCustomAttribute(typeof(MasterAttribute)) as MasterAttribute;
-            MasterSyncAttribute MasterSyncAtr =
-                Member.GetCustomAttribute(typeof(MasterSyncAttribute)) as MasterSyncAttribute;
+            MasterSyncAttribute MasterSyncAtr = Member.GetCustomAttribute(typeof(MasterSyncAttribute)) as MasterSyncAttribute;
             Node Node = NodeRef.GetRef() as Node;
             bool IsMaster = MDStatics.GetPeerId() == Node.GetNetworkMaster();
-            if (!(IsMaster && MasterAtr == null && MasterSyncAtr == null) &&
-                !(IsMaster == false && (MasterAtr != null || MasterSyncAtr != null)))
-            {
-                IsShouldReplicate = false;
-            }
-            else
-            {
-                IsShouldReplicate = true;
-            }
+            IsShouldReplicate = (IsMaster && MasterAtr == null && MasterSyncAtr == null) || (IsMaster == false && (MasterAtr != null || MasterSyncAtr != null));
         }
 
         /// <summary>
