@@ -158,7 +158,8 @@ namespace MD
         {
             ProcessWhilePaused,
             GroupName,
-            ReplicatedMemberType
+            ReplicatedMemberType,
+            Interpolate
         }
 
         public const String REPLICATE_METHOD_NAME = nameof(ReplicateClockedValues);
@@ -515,8 +516,9 @@ namespace MD
         protected virtual MDReplicatedMember CreateReplicatedMember(MemberInfo Member, MDReplicated RepAttribute,
             Node Instance, MDReplicatedSetting[] Settings)
         {
+            MDReplicatedSetting[] ParsedSettings = ParseParameters(typeof(Settings), Settings);
             Type ReplicatedMemberTypeOverride =
-                GetReplicatedMemberOverrideType(ParseParameters(typeof(Settings), Settings));
+                GetReplicatedMemberOverrideType(ParsedSettings);
             if (ReplicatedMemberTypeOverride != null &&
                 ReplicatedMemberTypeOverride.IsAssignableFrom(typeof(MDReplicatedMember)))
             {
@@ -536,7 +538,8 @@ namespace MD
             }
 
             // Check if game clock is active, if so use it
-            if (MDStatics.GetGameSynchronizer() != null && MDStatics.IsGameClockActive())
+            bool AllowInterpolation = GetAllowsInterpolation(ParsedSettings);
+            if (MDStatics.GetGameSynchronizer() != null && MDStatics.IsGameClockActive() && AllowInterpolation)
             {
                 if (Member.GetUnderlyingType() == typeof(float))
                 {
@@ -572,6 +575,19 @@ namespace MD
             }
 
             return null;
+        }
+
+        private bool GetAllowsInterpolation(MDReplicatedSetting[] Settings)
+        {
+            foreach (MDReplicatedSetting setting in Settings)
+            {
+                if ((Settings) setting.Key == MDReplicator.Settings.Interpolate)
+                {
+                    return setting.Value != null ? Convert.ToBoolean(setting.Value) : true;
+                }
+            }
+
+            return true;
         }
 
 
