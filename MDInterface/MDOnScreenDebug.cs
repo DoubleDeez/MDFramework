@@ -41,7 +41,7 @@ namespace MD
         {
             base._Ready();
 
-            MDLog.AddLogCategoryProperties(LOG_CAT, new MDLogProperties(MDLogLevel.Trace));
+            MDLog.AddLogCategoryProperties(LOG_CAT, new MDLogProperties(MDLogLevel.Info));
 
             MouseFilter = MouseFilterEnum.Ignore;
 

@@ -512,6 +512,16 @@ namespace MD
             return false;
         }
 
+        /// <summary>
+        /// Shortcut for GetTree().GetRpcSenderId()
+        /// </summary>
+        /// <param name="Instance">The Instance from where this function called</param>
+        /// <returns>The RPC sender PeerId</returns>
+        public static int GetRpcSenderId(this Node Instance)
+        {
+            return Instance.GetTree().GetRpcSenderId();
+        }
+
         /// <summary>Creates a timer as a child of the current node</summary>
         /// <param name="Instance">The Instance from where this function called</param>
         /// <param name="Name">The name of the timer</param>

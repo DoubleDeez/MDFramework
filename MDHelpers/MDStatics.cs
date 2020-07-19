@@ -424,7 +424,7 @@ namespace MD
         /// <param name="Method">The name of the method</param>
         /// <param name="Parameters">The parameters you intend to send to the method</param>
         /// <returns>The MethodInfo or null if it does not exist</returns>
-        public static MethodInfo GetMethodInfo(Node Node, String Method, params object[] Parameters)
+        public static MethodInfo GetMethodInfo(Node Node, string Method, params object[] Parameters)
         {
             Type nodeType = Node.GetType();
             List<Type> Signature = MDStatics.GetSignatureFromParameters(Parameters);
@@ -435,9 +435,51 @@ namespace MD
 
             if (!MethodInfoCache.ContainsKey(key))
             {
-                MethodInfo newInfo = nodeType.GetMethod(Method,
-                    MDStatics.BindFlagsAllMembers, null, Signature.ToArray(), null);
-                MethodInfoCache.Add(key, newInfo);
+                MethodInfo newInfo = nodeType.GetMethod(Method, MDStatics.BindFlagsAllMembers, null, Signature.ToArray(), null);
+                if (newInfo != null)
+                {
+                    MethodInfoCache.Add(key, newInfo);
+                }
+                else
+                {
+                    // Couldn't find anything with direct compare so we will search for the method manually and cache it if found
+                    MethodInfo[] Methods = nodeType.GetAllMethods();
+                    foreach (MethodInfo CandidateMethod in Methods)
+                    {
+                        if (CandidateMethod.Name != Method)
+                        {
+                            continue;
+                        }
+
+                        ParameterInfo[] CandidateParams = CandidateMethod.GetParameters();
+                        if (CandidateParams.Count() != Signature.Count)
+                        {
+                            continue;
+                        }
+
+                        List<Type> CandidateSignature = new List<Type>();
+                        CandidateParams.ToList().ForEach(param => CandidateSignature.Add(param.ParameterType));
+
+                        bool IsCompatible = true;
+
+                        for (int i = 0; i < Signature.Count; ++i)
+                        {
+                            Type SignatureType = Signature[i];
+                            Type CandidateType = CandidateSignature[i];
+                            if (SignatureType.IsCastableTo(CandidateType) == false)
+                            {
+                                IsCompatible = false;
+                                break;
+                            }
+                        }
+
+                        if (IsCompatible)
+                        {
+                            MDLog.Debug(LOG_CAT, $"Adding compatible method key {key}");
+                            MethodInfoCache.Add(key, CandidateMethod);
+                        }
+                    }
+                }
             }
 
             return MethodInfoCache[key];
@@ -449,9 +491,9 @@ namespace MD
         /// <param name="Node">The node to look this up for</param>
         /// <param name="Name">The name of the member</param>
         /// <returns>The MemberInfo or null if it does not exist</returns>
-        public static MemberInfo GetMemberInfo(Node Node, String Name)
+        public static MemberInfo GetMemberInfo(Node Node, string Name)
         {
-            String key = $"{Node.GetType().ToString()}#{Name}";
+            string key = $"{Node.GetType().ToString()}#{Name}";
             if (!MemberInfoCache.ContainsKey(key))
             {
                 MemberInfo newMember = MDStatics.GetMemberByName(Node, Name);
