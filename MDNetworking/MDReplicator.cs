@@ -302,7 +302,7 @@ namespace MD
                     }
                 }
 
-                if (networkIdUpdates.Count > 0)
+                if (MDStatics.IsNetworkActive() && networkIdUpdates.Count > 0)
                 {
                     Rpc(nameof(UpdateNetworkIdMap), networkIdUpdates);
                 }

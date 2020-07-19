@@ -78,8 +78,8 @@ namespace MD
             if (LogProperties.ContainsKey(CategoryName))
             {
                 MDLogProperties LogProps = LogProperties[CategoryName];
-                LogFile = LogProps.FileLogLevel <= LogLevel;
-                LogConsole = LogProps.ConsoleLogLevel <= LogLevel;
+                LogFile = LogProps.FileLogLevel <= LogLevel || LogLevel == MDLogLevel.Force;
+                LogConsole = LogProps.ConsoleLogLevel <= LogLevel || LogLevel == MDLogLevel.Force;
             }
 
             if (LogFile || LogConsole)
@@ -326,11 +326,14 @@ namespace MD
         // Prints the message to the console
         private static void LogToConsole(string Message)
         {
-            Console.WriteLine(Message);
 
             if (ShouldLogToGDPrint())
             {
                 Godot.GD.Print(Message);
+            }
+            else
+            {
+                Console.WriteLine(Message);
             }
         }
 

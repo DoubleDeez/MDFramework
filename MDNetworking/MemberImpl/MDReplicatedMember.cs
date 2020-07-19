@@ -63,9 +63,14 @@ namespace MD
                 {
                     case Settings.OnValueChangedEvent:
                         Node Node = NodeRef.GetRef() as Node;
-                        OnValueChangedCallback = Node.GetType().GetMethod(setting.Value.ToString(),
-                            BindingFlags.Public | BindingFlags.NonPublic | 
-                            BindingFlags.FlattenHierarchy | BindingFlags.Instance);
+                        Type CurType = Node.GetType();
+                        while (CurType != null && OnValueChangedCallback == null)
+                        {
+                            OnValueChangedCallback = CurType.GetMethod(setting.Value.ToString(),
+                                BindingFlags.Public | BindingFlags.NonPublic | 
+                                BindingFlags.FlattenHierarchy | BindingFlags.Instance);
+                            CurType = CurType.BaseType;
+                        }
                         break;
                     case Settings.Converter:
                         Type DataConverterType = Type.GetType(setting.Value.ToString());

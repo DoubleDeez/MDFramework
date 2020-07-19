@@ -30,22 +30,56 @@ namespace MD
 
         public string ExternalAddress { get; protected set; } = "";
 
+        /// <summary>
+        /// Event handler for events related to a specific player
+        /// </summary>
+        /// <param name="PeerId">The peerId of the affected player</param>
         public delegate void PlayerEventHandler(int PeerId);
 
-        // Triggered whenever a player joined, includes self and existing players when initially joining
+        /// <summary>
+        /// Triggered on all clients whenever a player joins before initializing the player, including for the local player and existing players when joining in progress
+        /// </summary>
         public event PlayerEventHandler OnPlayerJoinedEvent = delegate { };
+        /// <summary>
+        /// Triggered on all clients when a player has completed initialization
+        /// </summary>
+        public event PlayerEventHandler OnPlayerInitializedEvent = delegate { };
+        /// <summary>
+        /// Triggered on all clients when a player leaves, right before the PlayerInfo is destroyed, also fires locally for each player when disconnecting from the server
+        /// </summary>
         public event PlayerEventHandler OnPlayerLeftEvent = delegate { };
-        public event PlayerEventHandler OnPlayerNameChanged = delegate { };
 
+        /// <summary>
+        /// Event handler for game session events
+        /// </summary>
         public delegate void SessionEventHandler();
 
+        /// <summary>
+        /// Triggered when the session begins for any mode (standalone, server, client)
+        /// </summary>
         public event SessionEventHandler OnSessionStartedEvent = delegate { };
+        /// <summary>
+        /// Triggered when the session cannot start for server or client
+        /// </summary>
         public event SessionEventHandler OnSessionFailedEvent = delegate { };
+        /// <summary>
+        /// Triggered when the session ends (disconnects)
+        /// </summary>
         public event SessionEventHandler OnSessionEndedEvent = delegate { };
 
+        /// <summary>
+        /// Event handler for networked node events
+        /// </summary>
+        /// <param name="node">The affected networked node</param>
         public delegate void NetworkNodeEventHandler(Node node);
 
+        /// <summary>
+        /// Triggered on all clients when a networked node is spawned
+        /// </summary>
         public event NetworkNodeEventHandler OnNetworkNodeAdded = delegate { };
+        /// <summary>
+        /// Triggered on the server when a networked node is removed or right before the node is removed on clients
+        /// </summary>
         public event NetworkNodeEventHandler OnNetworkNodeRemoved = delegate { };
 
         public MDReplicator Replicator { get; set; }
@@ -79,6 +113,11 @@ namespace MD
         {
             MDLog.Info(LOG_CAT, "Starting Standalone Game Session");
             OnPlayerJoined_Internal(STANDALONE_ID);
+            MDPlayerInfo PlayerInfo = GetPlayerInfo(STANDALONE_ID);
+            if (PlayerInfo != null)
+            {
+                PlayerInfo.BeginInitialization();
+            }
             OnSessionStartedEvent();
             IsSessionStarted = true;
             return true;
@@ -167,8 +206,8 @@ namespace MD
             foreach (int PeerId in Players.Keys)
             {
                 MDPlayerInfo Player = Players[PeerId];
-                Player.RemoveAndFree();
                 OnPlayerLeftEvent(PeerId);
+                Player.RemoveAndFree();
             }
 
             NetworkedMultiplayerENet peer = GetPeer();
@@ -182,6 +221,7 @@ namespace MD
             Players.Clear();
             ClearNetworkedNodes();
             OnSessionEndedEvent();
+            SceneBuffer.Clear();
         }
 
         /// <summary>
@@ -209,6 +249,11 @@ namespace MD
             MDLog.Info(LOG_CAT, "Server started");
 #if !GODOT_SERVER
             OnPlayerJoined_Internal(SERVER_ID);
+            MDPlayerInfo PlayerInfo = GetPlayerInfo(SERVER_ID);
+            if (PlayerInfo != null)
+            {
+                PlayerInfo.BeginInitialization();
+            }
 #endif
             OnSessionStartedEvent();
             IsSessionStarted = true;
@@ -240,8 +285,15 @@ namespace MD
         {
             MDLog.Info(LOG_CAT, $"Peer [ID: {PeerId}] connected");
             OnPlayerJoined_Internal(PeerId);
+            
+            MDPlayerInfo PlayerInfo = GetPlayerInfo(PeerId);
+            if (PlayerInfo != null)
+            {
+                PlayerInfo.BeginInitialization();
+            }
+
+            SynchronizeCurrentPlayers(PeerId);
             BroadcastNewPlayerJoined(PeerId);
-            SendConnectionDataToClient(PeerId);
             SynchronizeNetworkedNodes(PeerId);
         }
 
@@ -254,41 +306,10 @@ namespace MD
         }
 
         /// <summary>
-        /// Called on the server when a client first connects
-        /// </summary>
-        /// <param name="Joiner">The PeerID of the joining client</param>
-        protected virtual void SendConnectionDataToClient(int Joiner)
-        {
-            foreach (int PeerId in Players.Keys.Where(PeerId => PeerId != Joiner))
-            {
-                MDLog.Debug(LOG_CAT, $"Notifying Peer [{Joiner}] that Peer [{PeerId}] exists");
-                RpcId(Joiner, nameof(ClientOnPlayerJoined), PeerId);
-                if (PeerId == MDStatics.GetPeerId())
-                {
-                    Players[PeerId].PerformFullSync(Joiner);
-                }
-                else
-                {
-                    RpcId(PeerId, nameof(ClientSendConnectionDataToClient), Joiner);
-                }
-            }
-        }
-
-        /// <summary>
-        /// Tells the network master of a player info to sync a new player
-        /// </summary>
-        /// <param name="Joiner">The PeerID of the joining client</param>
-        [Puppet]
-        protected virtual void ClientSendConnectionDataToClient(int Joiner)
-        {
-            GetPlayerInfo(MDStatics.GetPeerId()).PerformFullSync(Joiner);
-        }
-
-        /// <summary>
         /// Notifies all clients (except the new one) that a new player has joined
         /// </summary>
         /// <param name="Joiner">The PeerID of the joining client</param>
-        protected virtual void BroadcastNewPlayerJoined(int Joiner)
+        protected void BroadcastNewPlayerJoined(int Joiner)
         {
             foreach (int PeerId in Players.Keys)
             {
@@ -299,6 +320,24 @@ namespace MD
 
                 MDLog.Debug(LOG_CAT, $"Notifying Peer [{PeerId}] that Peer [{Joiner}] joined");
                 RpcId(PeerId, nameof(ClientOnPlayerJoined), Joiner);
+            }
+        }
+
+        /// <summary>
+        /// Notifies all clients (except the new one) that a new player has initialized
+        /// </summary>
+        /// <param name="Joiner">The PeerID of the joining client</param>
+        protected void BroadcastNewPlayerInitialized(int Joiner)
+        {
+            foreach (int PeerId in Players.Keys)
+            {
+                if (PeerId == SERVER_ID)
+                {
+                    continue;
+                }
+
+                MDLog.Debug(LOG_CAT, $"Notifying Peer [{PeerId}] that Peer [{Joiner}] has initialized");
+                RpcId(PeerId, nameof(OnPlayerInitialized), Joiner);
             }
         }
 
@@ -320,11 +359,51 @@ namespace MD
             }
         }
 
+        private void SynchronizeCurrentPlayers(int Joiner)
+        {
+            foreach (int PeerId in Players.Keys)
+            {
+                if (PeerId == Joiner)
+                {
+                    continue;
+                }
+
+                MDPlayerInfo PlayerInfo = GetPlayerInfo(PeerId);
+                if (PlayerInfo != null)
+                {
+                    this.MDRpcId(Joiner, nameof(OnSynchronizePlayer), PeerId, PlayerInfo.HasInitialized);
+                }
+            }
+        }
+
+        [Puppet]
+        private void OnSynchronizePlayer(int PeerId, bool IsInitialized)
+        {
+            ClientOnPlayerJoined(PeerId);
+            if (IsInitialized)
+            {
+                OnPlayerInitialized(PeerId);
+            }
+        }
+
         // Called on a client, notifying them that a player joined
         [Puppet]
         private void ClientOnPlayerJoined(int PeerId)
         {
+            MDLog.Debug(LOG_CAT, $"Player {PeerId} Joined");
             OnPlayerJoined_Internal(PeerId);
+        }
+
+        [Puppet]
+        private void OnPlayerInitialized(int PeerId)
+        {
+            MDPlayerInfo PlayerInfo = GetPlayerInfo(PeerId);
+            if (PlayerInfo != null)
+            {
+                PlayerInfo.HasInitialized = true;
+                OnPlayerInitializedEvent(PeerId);
+                MDLog.Debug(LOG_CAT, $"Player {PeerId} Initialized");
+            }
         }
 
         private void OnPlayerJoined_Internal(int PeerId)
@@ -362,22 +441,32 @@ namespace MD
             }
 
             MDPlayerInfo Player = Activator.CreateInstance(PlayerType) as MDPlayerInfo;
-
-            // Needs to be in list and in tree before init
-            Players.Add(PeerId, Player);
+            Player.SetPeerId(PeerId);
             AddChild(Player);
-            Player.InitPlayerInfo(PeerId);
-            InitializePlayerInfo(Player);
+            Players.Add(PeerId, Player);
+
+            OnPlayerInfoCreated(Player);
 
             return Player;
         }
 
         /// <summary>
-        /// Called to initialize the player info
+        /// Called on all clients to perform any initialization on a new player info when a player joins, include self
         /// </summary>
         /// <param name="PlayerInfo">The player info for the joining client</param>
-        protected virtual void InitializePlayerInfo(MDPlayerInfo PlayerInfo)
+        protected virtual void OnPlayerInfoCreated(MDPlayerInfo PlayerInfo)
         {
+        }
+
+        /// <summary>
+        /// Call this when a Player Info is done initializing
+        /// </summary>
+        /// <param name="PeerId">The PeerId of the player that completed initialization</param>
+        public void OnPlayerInfoInitializationCompleted(int PeerId)
+        {
+            MDLog.Force(LOG_CAT, $"Player {PeerId} initialization completed");
+            OnPlayerInitialized(PeerId);
+            BroadcastNewPlayerInitialized(PeerId);
         }
 
         /// <summary>
@@ -775,6 +864,7 @@ namespace MD
                 return;
             }
 
+            OnNetworkNodeRemoved(NetworkedNode);
             NetworkedNode.RemoveAndFree();
         }
 
@@ -860,15 +950,6 @@ namespace MD
         protected void SetNetworkPeer(NetworkedMultiplayerPeer InPeer)
         {
             GameInstance.GetTree().NetworkPeer = InPeer;
-        }
-
-        /// <summary>
-        /// Notify that a player has changed their name
-        /// </summary>
-        /// <param name="peerId">The peerid of the client that changed their name</param>
-        public void NotifyPlayerNameChanged(int peerId)
-        {
-            OnPlayerNameChanged(peerId);
         }
 
         /// <summary>
