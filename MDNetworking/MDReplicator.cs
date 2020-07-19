@@ -538,9 +538,21 @@ namespace MD
             // Check if game clock is active, if so use it
             if (MDStatics.GetGameSynchronizer() != null && MDStatics.IsGameClockActive())
             {
+                if (Member.GetUnderlyingType() == typeof(float))
+                {
+                    return new MDCRMInterpolatedFloat(Member, RepAttribute.Reliability == MDReliability.Reliable,
+                        RepAttribute.ReplicatedType, WeakRef(Instance), Settings);
+                }
+
                 if (Member.GetUnderlyingType() == typeof(Vector2))
                 {
                     return new MDCRMInterpolatedVector2(Member, RepAttribute.Reliability == MDReliability.Reliable,
+                        RepAttribute.ReplicatedType, WeakRef(Instance), Settings);
+                }
+                
+                if (Member.GetUnderlyingType() == typeof(Vector3))
+                {
+                    return new MDCRMInterpolatedVector3(Member, RepAttribute.Reliability == MDReliability.Reliable,
                         RepAttribute.ReplicatedType, WeakRef(Instance), Settings);
                 }
             }
