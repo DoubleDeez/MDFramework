@@ -34,6 +34,13 @@ namespace MD
         /// <param name="CurrentValue">The new value of the object</param>
         /// <returns></returns>
         bool ShouldObjectBeReplicated(object LastValue, object CurrentValue);
+
+        /// <summary>
+        /// This decides if we allow buffering of this converter.
+        /// Only reason not to allow buffer is if the converter holds a state for the particular object
+        /// </summary>
+        /// <returns>True if we allow buffering, false if not</returns>
+        bool AllowBufferingOfConverter();
     }
 
     ///<summary> This default implementation should work on any godot base type that can be sent with rpc calls</summary>
@@ -57,6 +64,11 @@ namespace MD
         public bool ShouldObjectBeReplicated(object LastValue, object CurrentValue)
         {
             return Equals(LastValue, CurrentValue) == false;
+        }
+
+        public bool AllowBufferingOfConverter()
+        {
+            return true;
         }
     }
 
@@ -90,6 +102,11 @@ namespace MD
             }
             return Equals((int)LastValue, (int)CurrentValue) == false;
         }
+
+        public bool AllowBufferingOfConverter()
+        {
+            return true;
+        }
     }
 
     /// <summary>
@@ -98,7 +115,10 @@ namespace MD
     /// <typeparam name="T">The custom class type</typeparam>
     public class MDCustomClassDataConverter<T> : IMDDataConverter
     {
+        private const String SEPARATOR = "#";
         private List<MemberInfo> Members = null;
+
+        private List<IMDDataConverter> DataConverters = null;
 
         private List<object> LastValues = new List<object>();
 
@@ -107,6 +127,7 @@ namespace MD
             if (Members == null)
             {
                 Members = new List<MemberInfo>();
+                DataConverters = new List<IMDDataConverter>();
                 List<MemberInfo> MemberInfos = MDStatics.GetTypeMemberInfos(typeof(T));
                 foreach (MemberInfo Member in MemberInfos)
                 {
@@ -116,6 +137,7 @@ namespace MD
                         continue;
                     }
                     Members.Add(Member);
+                    DataConverters.Add(MDStatics.GetConverterForType(Member.GetUnderlyingType()));
                 }
             }
         }
@@ -134,10 +156,20 @@ namespace MD
             for (int i = 0; i < Members.Count; i++)
             {
                 object value = Members[i].GetValue(Item);
-                if (Complete || LastValues.Count == 0 || Equals(LastValues[i], value) == false)
+                IMDDataConverter Converter = DataConverters[i];
+                if (Complete || LastValues.Count == 0 || Converter.ShouldObjectBeReplicated(LastValues[i], value))
                 {
-                    ObjectArray.Add(i);
-                    ObjectArray.Add(value);
+                    object[] dataArray = Converter.ConvertForSending(value, Complete);
+                    if (dataArray != null)
+                    {
+                        ObjectArray.Add($"{i}{SEPARATOR}{dataArray.Length}");
+                        ObjectArray.AddRange(dataArray);
+                    }
+                    else
+                    {
+                        ObjectArray.Add($"{i}{SEPARATOR}{1}");
+                        ObjectArray.Add(null);
+                    }
                 }
                 newLastValues.Add(value);
             }
@@ -149,6 +181,11 @@ namespace MD
         public object CovertBackToObject(object CurrentObject, object[] Parameters)
         {
             ExtractMembers();
+
+            if (Parameters.Length == 1 && Parameters[0] == null)
+            {
+                return null;
+            }
 
             T obj;
             if (CurrentObject != null)
@@ -162,9 +199,21 @@ namespace MD
                 obj = (T)Activator.CreateInstance(typeof(T));
             }
 
-            for (int i = 0; i < Parameters.Length; i = i + 2)
+            for (int i = 0; i < Parameters.Length; i++)
             {
-                Members[(int)Parameters[i]].SetValue(obj, Parameters[i+1]);
+                // key0 = index, key1 = length
+                object[] keys = Parameters[i].ToString().Split(SEPARATOR);
+                int index = Convert.ToInt32(keys[0].ToString());
+                int length = Convert.ToInt32(keys[1].ToString());
+
+                // Extract parameters and use data converter
+                object[] converterParams = Parameters.SubArray(i+1, i+length);
+                object lastValue = LastValues.Count > index ? LastValues[index] : null;
+                object convertedValue = DataConverters[index].CovertBackToObject(lastValue, converterParams);
+
+                // Set the value and increase i based on length of data
+                Members[index].SetValue(obj, convertedValue);
+                i += length;
             }
             return obj;
         }
@@ -200,6 +249,11 @@ namespace MD
                 }
             }
             
+            return false;
+        }
+
+        public bool AllowBufferingOfConverter()
+        {
             return false;
         }
     }

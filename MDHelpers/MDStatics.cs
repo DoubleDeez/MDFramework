@@ -531,7 +531,14 @@ namespace MD
                 if (!DataConverterTypeCache.ContainsKey(DataConverterType))
                 {
                     IMDDataConverter converter = Activator.CreateInstance(DataConverterType) as IMDDataConverter;
-                    DataConverterTypeCache.Add(DataConverterType, converter);
+                    if (converter.AllowBufferingOfConverter())
+                    {
+                        DataConverterTypeCache.Add(DataConverterType, converter);
+                    }
+                    else
+                    {
+                        return converter;
+                    }
                 }
                 return DataConverterTypeCache[DataConverterType];
             }
@@ -547,7 +554,15 @@ namespace MD
         {
             if (!DataConverterCache.ContainsKey(Type))
             {
-                DataConverterCache.Add(Type, _InternalGetConverterForType(Type));
+                IMDDataConverter converter = _InternalGetConverterForType(Type);
+                if (converter.AllowBufferingOfConverter())
+                {
+                    DataConverterCache.Add(Type, converter);
+                }
+                else
+                {
+                    return converter;
+                }
             }
             return DataConverterCache[Type];
         }
