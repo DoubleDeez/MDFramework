@@ -574,6 +574,11 @@ namespace MD
             {
                 return Activator.CreateInstance(Type) as IMDDataConverter;
             }
+            else if (Type.GetInterface(nameof(IMDCommandReplicator)) != null)
+            {
+                Type constructedType = typeof(MDCommandReplicatorDataConverter<>).MakeGenericType(Type);
+                return Activator.CreateInstance(constructedType) as IMDDataConverter;
+            }
             else if (Type.IsEnum)
             {
                 Type constructedType = typeof(MDEnumDataConverter<>).MakeGenericType(Type);

@@ -23,9 +23,6 @@ namespace MD
         /// <returns>The new object</returns>
         object CovertBackToObject(object CurrentObject, object[] Parameters);
 
-        ///<Summary>Return how many parameters were used by the last ConvertFromObject call</summary>
-        int GetParametersConsumedByLastConversion();
-
         /// <summary>
         /// Check if the object has changed. If your object is a class or struct you need to track when you change it yourself.
         /// You should reset the changed status each time this method is called
@@ -56,11 +53,6 @@ namespace MD
             return Parameters[0];
         }
 
-        public int GetParametersConsumedByLastConversion()
-        {
-            return 1;
-        }
-
         public bool ShouldObjectBeReplicated(object LastValue, object CurrentValue)
         {
             return Equals(LastValue, CurrentValue) == false;
@@ -85,9 +77,82 @@ namespace MD
             return (T)Parameters[0];
         }
 
-        public int GetParametersConsumedByLastConversion()
+        public bool ShouldObjectBeReplicated(object LastValue, object CurrentValue)
         {
-            return 1;
+            if (LastValue == null && CurrentValue == null)
+            {
+                return false;
+            }
+            else if (LastValue == null || CurrentValue == null)
+            {
+                return true;
+            }
+            return Equals((int)LastValue, (int)CurrentValue) == false;
+        }
+
+        public bool AllowBufferingOfConverter()
+        {
+            return true;
+        }
+    }
+
+    ///<summary> Data converter for IMDCommandReplicator</summary>
+    public class MDCommandReplicatorDataConverter<T> : IMDDataConverter where T : IMDCommandReplicator
+    {
+        public object[] ConvertForSending(object Item, bool Complete)
+        {
+            if (Item == null)
+            {
+                return null;
+            }
+
+            // Get commands
+            T CReplicator = (T)Item;
+            List<object[]> commands = Complete ? CReplicator.MDGetCommandsForNewPlayer() : CReplicator.MDGetCommands();
+
+            List<object> ReturnList = new List<object>();
+
+            foreach (object[] command in commands)
+            {
+                // Add length
+                ReturnList.Add(command.Length);
+                ReturnList.AddRange(command);
+            }
+
+            return ReturnList.ToArray();
+        }
+
+        public object CovertBackToObject(object CurrentObject, object[] Parameters)
+        {
+            if (Parameters.Length == 1 && Parameters[0] == null)
+            {
+                return null;
+            }
+
+            T obj;
+            if (CurrentObject != null)
+            {
+                // Replace values in existing object
+                obj = (T)CurrentObject;
+            }
+            else
+            {
+                // Return a new object
+                obj = (T)Activator.CreateInstance(typeof(T));
+            }
+            
+            for (int i=0; i < Parameters.Length; i++)
+            {
+                // Get the length of the data
+                int length = Convert.ToInt32(Parameters[i].ToString());
+
+                // Extract parameters and apply to the command replicator
+                object[] converterParams = Parameters.SubArray(i+1, i+length);
+                obj.MDProcessCommand(converterParams);
+                i += length;
+            }
+
+            return (T)obj;
         }
 
         public bool ShouldObjectBeReplicated(object LastValue, object CurrentValue)
@@ -100,7 +165,7 @@ namespace MD
             {
                 return true;
             }
-            return Equals((int)LastValue, (int)CurrentValue) == false;
+            return ((T)CurrentValue).MDHasCommandsInQueue();
         }
 
         public bool AllowBufferingOfConverter()
@@ -216,12 +281,6 @@ namespace MD
                 i += length;
             }
             return obj;
-        }
-
-        public int GetParametersConsumedByLastConversion()
-        {
-            ExtractMembers();
-            return Members.Count;
         }
 
         public bool ShouldObjectBeReplicated(object LastValue, object CurrentValue)
