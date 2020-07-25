@@ -153,7 +153,7 @@ namespace MD
         {
             if (Replicator == null)
             {
-                Replicator = CreateTypeInstance<MDReplicator>(GetReplicatorType());
+                Replicator = MDStatics.CreateTypeInstance<MDReplicator>(GetReplicatorType());
                 Replicator.Name = "Replicator";
                 this.AddNodeToRoot(Replicator, true);
                 Replicator.Initialize();
@@ -166,7 +166,7 @@ namespace MD
         {
             if (Configuration == null)
             {
-                Configuration = CreateTypeInstance<MDConfiguration>(GetConfigurationType());
+                Configuration = MDStatics.CreateTypeInstance<MDConfiguration>(GetConfigurationType());
                 Configuration.Name = "MDConfiguration";
                 Configuration.LoadConfiguration();
                 this.AddNodeToRoot(Configuration, true);
@@ -178,7 +178,7 @@ namespace MD
         {
             if (GameSession == null)
             {
-                GameSession = CreateTypeInstance<MDGameSession>(GetGameSessionType());
+                GameSession = MDStatics.CreateTypeInstance<MDGameSession>(GetGameSessionType());
                 GameSession.Name = "GameSession";
                 GameSession.GameInstance = this;
                 this.AddNodeToRoot(GameSession, true);
@@ -189,7 +189,7 @@ namespace MD
         {
             if (GameSynchronizer == null && UseGameSynchronizer())
             {
-                GameSynchronizer = CreateTypeInstance<MDGameSynchronizer>(GetGameSynchronizerType());
+                GameSynchronizer = MDStatics.CreateTypeInstance<MDGameSynchronizer>(GetGameSynchronizerType());
                 GameSynchronizer.Name = "GameSynchronizer";
                 GameSynchronizer.GameInstance = this;
                 this.AddNodeToRoot(GameSynchronizer, true);
@@ -203,23 +203,11 @@ namespace MD
         {
             if (GameClock == null && IsGameClockActive())
             {
-                GameClock = CreateTypeInstance<MDGameClock>(GetGameClockType());
+                GameClock = MDStatics.CreateTypeInstance<MDGameClock>(GetGameClockType());
                 GameClock.Name = "GameClock";
                 GameSynchronizer.GameClock = GameClock;
                 this.AddNodeToRoot(GameClock, true);
             }
-        }
-
-        // Creates an instance of the type based on the base class T
-        private T CreateTypeInstance<T>(Type Type) where T : class
-        {
-            if (!MDStatics.IsSameOrSubclass(Type, typeof(T)))
-            {
-                MDLog.Error(LOG_CAT, $"Type [{Type.Name}] is not a subclass of [{typeof(T).Name}]");
-                return null;
-            }
-
-            return Activator.CreateInstance(Type) as T;
         }
 
         // Ensure InterfaceManager is created

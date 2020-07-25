@@ -6,7 +6,7 @@ namespace MD
     /// <summary>
     /// Class that allows the user to enter console commands that have been registered with MDCommand
     /// </summary>
-    public class MDConsole : Control
+    public class MDConsole : MDScreen
     {
         private const int HISTORY_DISPLAY_COUNT = 10;
 
@@ -27,9 +27,6 @@ namespace MD
         public override void _Ready()
         {
             base._Ready();
-
-            this.SetAnchor(0, 0, 1, 1);
-            this.SetMargin(0, 0, 0, 0);
 
             CommandHistory = MDCommands.GetCommandHistory();
             CommandList = MDCommands.GetCommandList();
@@ -81,14 +78,6 @@ namespace MD
                     this.SetInputHandled();
                 }
             }
-        }
-
-        /// <summary>
-        /// Closes and frees the console prompt
-        /// </summary>
-        public void Close()
-        {
-            this.RemoveAndFree();
         }
 
         // Navigates up/down the command history
@@ -215,7 +204,7 @@ namespace MD
                 MDCommands.InvokeCommand(Command);
             }
 
-            Close();
+            CloseScreen();
         }
 
         // Called when the text in the console box is changed
