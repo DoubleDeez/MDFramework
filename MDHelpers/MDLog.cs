@@ -4,6 +4,7 @@ using System.Diagnostics;
 using Directory = Godot.Directory;
 using GDError = Godot.Error;
 using File = Godot.File;
+using RandomNumberGenerator = Godot.RandomNumberGenerator;
 
 namespace MD
 {
@@ -362,7 +363,9 @@ namespace MD
         // Creates our time-stamped log file and opens it for writing
         private static void InitLogFile(string LogDir)
         {
-            FullLogFilePath = LogDir + DateTime.Now.ToString("yyyy.MM.dd-HH.mm.ss") + EXT_LOG;
+            RandomNumberGenerator rnd = new RandomNumberGenerator();
+            rnd.Randomize();
+            FullLogFilePath = $"{LogDir}{DateTime.Now.ToString("yyyy.MM.dd-HH.mm.ss")}_{rnd.RandiRange(10000,99999).ToString()}{EXT_LOG}";
             if (CreateLogDirectoryIfNotExists(LogDir))
             {
                 LogFile = new File();
