@@ -47,6 +47,13 @@ namespace MD
             return GI.GameClock;
         }
 
+        /// <summary>Grabs the Interface Manager from the GameInstance</summary>
+        public static MDInterfaceManager GetInterfaceManager(this Node Instance)
+        {
+            MDGameInstance GI = Instance.GetGameInstance();
+            return GI.InterfaceManager;
+        }
+
         /// <summary>Gets the ping of the given peer</summary>
         public static int GetPlayerPing(this Node Instance, int PeerId)
         {
@@ -251,23 +258,28 @@ namespace MD
             return MDNetMode.Standalone;
         }
 
+        ///<summary>Removes this node from its parent</summary>
+        public static void RemoveFromParent(this Node Instance)
+        {
+            if (Godot.Object.IsInstanceValid(Instance) && Godot.Object.IsInstanceValid(Instance.GetParent()))
+            {
+                Instance.GetParent().RemoveChild(Instance);
+            }
+        }
+
         ///<summary>Removes this node from its parent and frees it</summary>
         public static void RemoveAndFree(this Node Instance)
         {
             if (Godot.Object.IsInstanceValid(Instance))
             {
-                if (Godot.Object.IsInstanceValid(Instance.GetParent()))
-                {
-                    Instance.GetParent().RemoveChild(Instance);
-                }
-
+                Instance.RemoveFromParent();
                 Instance.QueueFree();
             }
         }
 
         // 
         /// <summary>
-        /// Same as Rpc except it checks if the network is activate first and takes game clock into account
+        /// Same as Rpc except it checks if the network is activate first and takes game clock 1o account
         /// </summary>
         /// <param name="Method">The method to call</param>
         /// <param name="Args">Arguments</param>
@@ -498,6 +510,16 @@ namespace MD
             }
 
             return false;
+        }
+
+        /// <summary>
+        /// Shortcut for GetTree().GetRpcSenderId()
+        /// </summary>
+        /// <param name="Instance">The Instance from where this function called</param>
+        /// <returns>The RPC sender PeerId</returns>
+        public static int GetRpcSenderId(this Node Instance)
+        {
+            return Instance.GetTree().GetRpcSenderId();
         }
 
         /// <summary>Creates a timer as a child of the current node</summary>
