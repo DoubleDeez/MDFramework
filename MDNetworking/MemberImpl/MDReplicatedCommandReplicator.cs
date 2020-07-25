@@ -31,6 +31,12 @@ namespace MD
         /// </summary>
         /// <param name="Settings">List of settings</param>
         void MDSetSettings(MDReplicatedSetting[] Settings);
+
+        /// <summary>
+        /// Check if there are any commands in the queue
+        /// </summary>
+        /// <returns>Returns true if there are, false if not</returns>
+        bool MDHasCommandsInQueue();
     }
 
     /// <summary>

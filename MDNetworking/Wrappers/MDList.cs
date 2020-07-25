@@ -86,8 +86,9 @@ namespace MD
 
         public MDList()
         {
-            MDLog.AddLogCategoryProperties(LOG_CAT, new MDLogProperties(MDLogLevel.Info));
+            MDLog.AddLogCategoryProperties(LOG_CAT, new MDLogProperties(MDLogLevel.Trace));
             this.Replicator = MDStatics.GetReplicator();
+            DataConverter = MDStatics.GetConverterForType(typeof(T));
         }
 
     #region PUBLIC METHODS
@@ -123,6 +124,11 @@ namespace MD
         {
             SetConverter(Settings);
             LoadSettings(Settings);
+        }
+
+        public bool MDHasCommandsInQueue()
+        {
+            return CommandHistory.Count > 0;
         }
 
         ///<summary>Do not call this! This should only be used by the MDReplicator</summary>
@@ -324,7 +330,7 @@ namespace MD
             Type DataConverterType = GetConverterType(MDReplicator.ParseParameters(typeof(MDReplicatedCommandReplicator.Settings), Settings));
             if (DataConverterType != null && DataConverterType.IsAssignableFrom(typeof(IMDDataConverter)))
             {
-                DataConverter = Activator.CreateInstance(DataConverterType) as IMDDataConverter;
+                DataConverter = MDStatics.CreateConverterOfType(DataConverterType);
                 return;
             }
             

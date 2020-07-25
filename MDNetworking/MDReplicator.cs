@@ -167,7 +167,7 @@ namespace MD
         private List<ReplicatedNode> NodeList = new List<ReplicatedNode>();
         private Queue<NewPlayer> JIPPlayers = new Queue<NewPlayer>();
 
-        private MDReplicatorNetworkKeyIdMap NetworkIdKeyMap = new MDReplicatorNetworkKeyIdMap();
+        private MDReplicatorNetworkKeyIdMap NetworkIdKeyMap = null;
 
         private MDReplicatorGroupManager GroupManager;
 
@@ -192,6 +192,7 @@ namespace MD
             PauseMode = PauseModeEnum.Process;
 
             GroupManager = new MDReplicatorGroupManager(GetReplicationFrameInterval());
+            NetworkIdKeyMap = new MDReplicatorNetworkKeyIdMap(ShouldShowBufferSize());
 
             GameClock = this.GetGameClock();
         }
@@ -207,6 +208,12 @@ namespace MD
             TickReplication();
         }
 
+        private void OnSessionStarted()
+        {
+            // Reset the NetworkKeyIdMap on new session started
+            NetworkIdKeyMap = new MDReplicatorNetworkKeyIdMap(ShouldShowBufferSize());
+        }
+        
         private void OnSessionEnded()
         {
             NetworkIdKeyMap = new MDReplicatorNetworkKeyIdMap();
@@ -598,6 +605,11 @@ namespace MD
         protected virtual int GetReplicationFrameInterval()
         {
             return this.GetConfiguration().GetInt(MDConfiguration.ConfigurationSections.Replicator, MDConfiguration.FRAME_INTERVAL, 6);
+        }
+
+        public virtual bool ShouldShowBufferSize()
+        {
+            return this.GetConfiguration().GetBool(MDConfiguration.ConfigurationSections.Replicator, MDConfiguration.SHOULD_SHOW_BUFFER_SIZE, false);
         }
 
         #endregion

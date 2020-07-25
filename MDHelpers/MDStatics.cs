@@ -19,6 +19,8 @@ namespace MD
 
         private static readonly Dictionary<Type, IMDDataConverter> DataConverterCache = new Dictionary<Type, IMDDataConverter>();
 
+        private static readonly Dictionary<Type, IMDDataConverter> DataConverterTypeCache = new Dictionary<Type, IMDDataConverter>();
+
         public static BindingFlags BindFlagsAllMembers =
             BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance;
 
@@ -537,6 +539,78 @@ namespace MD
         }
 
         /// <summary>
+        /// Adds a data converter to the cache for the given type. This converter will be returned when using 
+        /// MDstatics.GetConverterForType() once it is in the cache.
+        /// </summary>
+        /// <param name="Type">The type to add the converter for, include generic typing</param>
+        /// <param name="DataConverterType">The type of the data converter</param>
+        /// <returns>True if added, false if not</returns>
+        public static bool AddDataConverterForTypeToCache(Type Type, Type DataConverterType)
+        {
+            if (Type == null || DataConverterType == null)
+            {
+                return false;
+            }
+
+            if (DataConverterType.IsAssignableFrom(typeof(IMDDataConverter)) 
+                && !DataConverterCache.ContainsKey(Type))
+            {
+                IMDDataConverter converter = Activator.CreateInstance(DataConverterType) as IMDDataConverter;
+                DataConverterCache.Add(Type, converter);
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Adds a data converter to the cache for the given type. This converter will be returned when using 
+        /// MDstatics.GetConverterForType() once it is in the cache.
+        /// </summary>
+        /// <param name="Type">The type to add the converter for, include generic typing</param>
+        /// <param name="DataConverter">The data converter</param>
+        /// <returns>True if added, false if not</returns>
+        public static bool AddDataConverterForTypeToCache(Type Type, IMDDataConverter DataConverter)
+        {
+            if (Type == null || DataConverter == null)
+            {
+                return false;
+            }
+
+            if (!DataConverterCache.ContainsKey(Type))
+            {
+                DataConverterCache.Add(Type, DataConverter);
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Create a data converter of the given type or get it from the buffer if it already exists
+        /// </summary>
+        /// <param name="ConverterType">The data converter type to create</param>
+        /// <returns>The data convert for that type or null if it is not a valid data converter</returns>
+        public static IMDDataConverter CreateConverterOfType(Type DataConverterType)
+        {
+            if (DataConverterType != null && DataConverterType.IsAssignableFrom(typeof(IMDDataConverter)))
+            {
+                if (!DataConverterTypeCache.ContainsKey(DataConverterType))
+                {
+                    IMDDataConverter converter = Activator.CreateInstance(DataConverterType) as IMDDataConverter;
+                    if (converter.AllowBufferingOfConverter())
+                    {
+                        DataConverterTypeCache.Add(DataConverterType, converter);
+                    }
+                    else
+                    {
+                        return converter;
+                    }
+                }
+                return DataConverterTypeCache[DataConverterType];
+            }
+            return null;
+        }
+
+        /// <summary>
         /// Get the data converter for the given type
         /// </summary>
         /// <param name="Type">The type to get the data converter for</param>
@@ -545,7 +619,15 @@ namespace MD
         {
             if (!DataConverterCache.ContainsKey(Type))
             {
-                DataConverterCache.Add(Type, _InternalGetConverterForType(Type));
+                IMDDataConverter converter = _InternalGetConverterForType(Type);
+                if (converter.AllowBufferingOfConverter())
+                {
+                    DataConverterCache.Add(Type, converter);
+                }
+                else
+                {
+                    return converter;
+                }
             }
             return DataConverterCache[Type];
         }
@@ -556,6 +638,11 @@ namespace MD
             if (Type.GetInterface(nameof(IMDDataConverter)) != null)
             {
                 return Activator.CreateInstance(Type) as IMDDataConverter;
+            }
+            else if (Type.GetInterface(nameof(IMDCommandReplicator)) != null)
+            {
+                Type constructedType = typeof(MDCommandReplicatorDataConverter<>).MakeGenericType(Type);
+                return Activator.CreateInstance(constructedType) as IMDDataConverter;
             }
             else if (Type.IsEnum)
             {
