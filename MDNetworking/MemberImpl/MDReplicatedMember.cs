@@ -300,7 +300,7 @@ namespace MD
         /// <returns>The updated / new value</returns>
         protected object ConvertFromObject(object CurrentObject, object[] Parameters)
         {
-            return DataConverter.CovertBackToObject(CurrentObject, (object[])Parameters);
+            return DataConverter.ConvertBackToObject(CurrentObject, (object[])Parameters);
         }
 
         /// <summary>

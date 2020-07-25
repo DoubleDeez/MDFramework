@@ -521,6 +521,22 @@ namespace MD
         }
 
         /// <summary>
+        /// Gets a string containing the parameter values
+        /// </summary>
+        /// <param name="Parameters">Array of parameters</param>
+        /// <returns>A string containing all parameters and their values</returns>
+        public static string GetParametersAsString(params object[] Parameters)
+        {
+            string ReturnString = "";
+            foreach (object obj in Parameters)
+            {
+                string toAdd = obj == null ? "null" : obj.ToString();
+                ReturnString += ReturnString == "" ? toAdd : $", {toAdd}";
+            }
+            return ReturnString;
+        }
+
+        /// <summary>
         /// Converts a size in bytes such as the one from OS.GetStaticMemoryUsage() into a more human readable format
         /// </summary>
         /// <param name="len">The value to convert</param>

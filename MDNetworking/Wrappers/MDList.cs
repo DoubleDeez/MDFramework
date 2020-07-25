@@ -30,6 +30,25 @@ namespace MD
     }
     public class MDList<T> : IMDCommandReplicator
     {
+        internal class CustomComparer : IComparer<KeyValuePair<T, IMDDataConverter>>
+        {
+            private IComparer<T> Comparer;
+
+            public CustomComparer(IComparer<T> comparer)
+            {
+                this.Comparer = comparer;
+            }
+
+            public int Compare(KeyValuePair<T, IMDDataConverter> x, KeyValuePair<T, IMDDataConverter> y)
+            {
+                if (Comparer == null)
+                {
+                    return x.Key.ToString().CompareTo(y.Key.ToString());
+                }
+                return Comparer.Compare(x.Key, y.Key);
+            }
+        }
+
         public enum MDListActions
         {
             UNKOWN,
@@ -64,7 +83,7 @@ namespace MD
             public object[] Parameters;
         }
         
-        protected List<T> RealList = new List<T>();
+        protected List<KeyValuePair<T, IMDDataConverter>> RealList = new List<KeyValuePair<T, IMDDataConverter>>();
 
         protected Queue<ListCommandRecord> CommandHistory = new Queue<ListCommandRecord>();
 
@@ -74,7 +93,7 @@ namespace MD
 
         protected int CommandCounter = 0;
 
-        protected IMDDataConverter DataConverter;
+        protected Type DataConverterType = null;
 
         protected MDReplicator Replicator;
 
@@ -88,7 +107,6 @@ namespace MD
         {
             MDLog.AddLogCategoryProperties(LOG_CAT, new MDLogProperties(MDLogLevel.Trace));
             this.Replicator = MDStatics.GetReplicator();
-            DataConverter = MDStatics.GetConverterForType(typeof(T));
         }
 
     #region PUBLIC METHODS
@@ -103,7 +121,7 @@ namespace MD
             CompleteMode = true;
 
             // Add all items to the command list
-            foreach (T item in RealList)
+            foreach (KeyValuePair<T, IMDDataConverter> item in RealList)
             {
                 record = new ListCommandRecord(CurrentAction, MDListActions.ADD, new object[] {item});
                 Commands.Add(AsObjectArray(record));
@@ -126,9 +144,39 @@ namespace MD
             LoadSettings(Settings);
         }
 
-        public bool MDHasCommandsInQueue()
+        public bool MDShouldBeReplicated()
         {
-            return CommandHistory.Count > 0;
+            if (CommandHistory.Count > 0)
+            {
+                return true;
+            }
+
+            if (RealList.Count == 0)
+            {
+                return false;
+            }
+
+            Type ConverterType = RealList[0].Value.GetType();
+            bool hasChanges = false;
+
+            if (ConverterType.IsGenericType && 
+                (ConverterType.GetGenericTypeDefinition() == typeof(MDCommandReplicatorDataConverter<>)
+                || ConverterType.GetGenericTypeDefinition() == typeof(MDCustomClassDataConverter<>)))
+            {
+                // We also need to check each item in case they are custom classes or another MDList
+                for (int index = 0; index < RealList.Count; index++)
+                {
+                    T item = RealList[index].Key;
+                    IMDDataConverter Converter = RealList[index].Value;
+                    if (Converter.ShouldObjectBeReplicated(item, item))
+                    {
+                        hasChanges = true;
+                        RecordAction(MDListActions.MODIFICATION, index, RealList[index]);
+                    }
+                }
+            }
+            
+            return hasChanges;
         }
 
         ///<summary>Do not call this! This should only be used by the MDReplicator</summary>
@@ -154,7 +202,7 @@ namespace MD
                 FullResynch = false;
                 Commands.AddRange(MDGetCommandsForNewPlayer());
             }
-
+            
             return Commands;
         }
 
@@ -166,14 +214,11 @@ namespace MD
             MDListActions Type = (MDListActions)Enum.Parse(typeof(MDListActions), Params[1].ToString());
             object[] Parameters = Params.SubArray(2);
 
-            MDLog.Trace(LOG_CAT, $"Recieved command [{CmdNumber.ToString()}] {Type.ToString()}");
-            foreach(object obj in Parameters)
-            {
-                MDLog.Trace(LOG_CAT, $"Parameter: {obj.ToString()}");
-            }
+            MDLog.Trace(LOG_CAT, $"Recieved command [{CmdNumber.ToString()}] {Type.ToString()} ({MDStatics.GetParametersAsString(Parameters)})");
 
             if (CmdNumber > CommandCounter)
             {
+                MDLog.Trace(LOG_CAT, $"Added command to queue since counter is only {CommandCounter}");
                 CommandQueue.Add(new ListCommandRecord(CmdNumber, Type, Parameters));
                 return;
             }
@@ -198,10 +243,10 @@ namespace MD
                     RealList[index] = ConvertFromObject(RealList[index], Parameters.SubArray(1));
                     break;
                 case MDListActions.ADD:
-                    RealList.Add(ConvertFromObject(null, Parameters));
+                    RealList.Add(CreateNewObject(Parameters));
                     break;
                 case MDListActions.INSERT:
-                    RealList.Insert(Convert.ToInt32(Parameters[0]), ConvertFromObject(null, Parameters.SubArray(1)));
+                    RealList.Insert(Convert.ToInt32(Parameters[0]), CreateNewObject(Parameters.SubArray(1)));
                     break;
                 case MDListActions.REMOVE_AT:
                     RealList.RemoveAt(Convert.ToInt32(Parameters[0]));
@@ -219,14 +264,15 @@ namespace MD
                     RealList.Clear();
                     break;
                 case MDListActions.SORT:
-                    RealList.Sort();
+                    RealList.Sort(new CustomComparer(null));
                     break;
                 case MDListActions.SORT_COMPARATOR:
-                    RealList.Sort(GetComparatorByIndex(Convert.ToInt32(Parameters[0])));
+                    RealList.Sort(new CustomComparer(GetComparatorByIndex(Convert.ToInt32(Parameters[0]))));
                     break;
                 case MDListActions.SORT_INDEX:
+                    IComparer<T> comparer = GetComparatorByIndex(Convert.ToInt32(Parameters[2]));
                     RealList.Sort(Convert.ToInt32(Parameters[0]), Convert.ToInt32(Parameters[1]), 
-                                    GetComparatorByIndex(Convert.ToInt32(Parameters[2])));
+                                    new CustomComparer(comparer));
                     break;
                 case MDListActions.RESYNCH_START:
                     RealList.Clear();
@@ -330,11 +376,18 @@ namespace MD
             Type DataConverterType = GetConverterType(MDReplicator.ParseParameters(typeof(MDReplicatedCommandReplicator.Settings), Settings));
             if (DataConverterType != null && DataConverterType.IsAssignableFrom(typeof(IMDDataConverter)))
             {
-                DataConverter = MDStatics.CreateConverterOfType(DataConverterType);
-                return;
+                this.DataConverterType = DataConverterType;
+            }
+        }
+
+        protected IMDDataConverter GetNewConverter()
+        {
+            if (DataConverterType != null)
+            {
+                return MDStatics.CreateConverterOfType(DataConverterType);
             }
             
-            DataConverter = MDStatics.GetConverterForType(typeof(T));
+            return MDStatics.GetConverterForType(typeof(T));
         }
 
         protected Type GetConverterType(MDReplicatedSetting[] Settings)
@@ -364,16 +417,19 @@ namespace MD
 
         protected object[] ParseParameters(ListCommandRecord ActionRecord)
         {
+            KeyValuePair<T, IMDDataConverter> pair;
             // Any ListAction that has a T object in it needs to be converted, for anything else just pass along the parameters
             switch (ActionRecord.Type)
             {
                 case MDListActions.ADD:
-                    return ConvertToObject(ActionRecord.Parameters[0]);
+                    pair = (KeyValuePair<T, IMDDataConverter>)ActionRecord.Parameters[0];
+                    return pair.Value.ConvertForSending(pair.Key, CompleteMode);
                 case MDListActions.MODIFICATION:
                 case MDListActions.INSERT:
                     List<object> ObjectList = new List<object>();
                     ObjectList.Add(ActionRecord.Parameters[0]);
-                    ObjectList.AddRange(ConvertToObject(ActionRecord.Parameters[1]));
+                    pair = (KeyValuePair<T, IMDDataConverter>)ActionRecord.Parameters[1];
+                    ObjectList.AddRange(pair.Value.ConvertForSending(pair.Key, CompleteMode));
                     return ObjectList.ToArray();
                 default:
                     return ActionRecord.Parameters;
@@ -381,16 +437,24 @@ namespace MD
         }
 
         // Just for convenience
-        protected object[] ConvertToObject(object Item)
+        protected object[] ConvertToObject(KeyValuePair<T, IMDDataConverter> Item)
         {
-            return DataConverter.ConvertForSending(Item, CompleteMode);
+            return Item.Value.ConvertForSending(Item.Key, CompleteMode);
         }
         
         // Just for convenience
-        protected T ConvertFromObject(object CurrentObject, object[] Parameters)
+        protected KeyValuePair<T, IMDDataConverter> ConvertFromObject(KeyValuePair<T, IMDDataConverter> CurrentObject, object[] Parameters)
         {
-            return (T)DataConverter.CovertBackToObject(CurrentObject, Parameters);
+            MDLog.Trace(LOG_CAT, $"Our values are {CurrentObject.Key} and {CurrentObject.Value.GetType().ToString()} ({MDStatics.GetParametersAsString(Parameters)})");
+            return CreateNewItem((T)CurrentObject.Value.ConvertBackToObject(CurrentObject.Key, Parameters), CurrentObject.Value);
         }
+
+        protected KeyValuePair<T, IMDDataConverter> CreateNewObject(object[] Parameters)
+        {
+            IMDDataConverter Converter = GetNewConverter();
+            return CreateNewItem((T)Converter.ConvertBackToObject(null, Parameters), Converter);
+        }
+
 
         // Get the current command from the queue and remove it if it exists
         protected ListCommandRecord GetCurrentCommandFromQueue()
@@ -434,6 +498,16 @@ namespace MD
             }
         }
 
+        protected KeyValuePair<T, IMDDataConverter> CreateNewItem(T value)
+        {
+            return new KeyValuePair<T, IMDDataConverter>(value, GetNewConverter());
+        }
+
+        protected KeyValuePair<T, IMDDataConverter> CreateNewItem(T value, IMDDataConverter Converter)
+        {
+            return new KeyValuePair<T, IMDDataConverter>(value, Converter);
+        }
+
     #endregion
 
     #region MODIFYING METHODS
@@ -441,19 +515,21 @@ namespace MD
         { 
             get
             {
-                return RealList[index];
+                return RealList[index].Key;
             } 
             set
             {
-                RecordAction(MDListActions.MODIFICATION, index, value);
-                RealList[index] = value;
+                KeyValuePair<T, IMDDataConverter> pair = CreateNewItem(value, RealList[index].Value);
+                RecordAction(MDListActions.MODIFICATION, index, pair);
+                RealList[index] = pair;
             } 
         }
 
         public void Add(T item)
         {
-            RecordAction(MDListActions.ADD, item);
-            RealList.Add(item);
+            KeyValuePair<T, IMDDataConverter> pair = CreateNewItem(item, GetNewConverter());
+            RecordAction(MDListActions.ADD, pair);
+            RealList.Add(pair);
         }
         
         public void AddRange(IEnumerable<T> collection)
@@ -472,8 +548,9 @@ namespace MD
 
         public void Insert(int index, T item)
         {
-            RecordAction(MDListActions.INSERT, index, item);
-            RealList.Insert(index, item);
+            KeyValuePair<T, IMDDataConverter> pair = CreateNewItem(item);
+            RecordAction(MDListActions.INSERT, index, pair);
+            RealList.Insert(index, pair);
         }
         
         public void InsertRange(int index, IEnumerable<T> collection)
@@ -490,7 +567,7 @@ namespace MD
         public bool Remove(T item)
         {
             // We always remove by index internally since this is easier to pass across the network
-            int index = RealList.FindIndex((T x) => x.Equals(item));
+            int index = RealList.FindIndex((KeyValuePair<T, IMDDataConverter> x) => x.Key.Equals(item));
             if (index >= 0)
             {
                 RemoveAt(index);
@@ -502,8 +579,8 @@ namespace MD
         
         public int RemoveAll(Predicate<T> match)
         {
-            List<T> items = RealList.FindAll(match);
-            items.ForEach(item => Remove(item));
+            List<KeyValuePair<T, IMDDataConverter>> items = RealList.FindAll((KeyValuePair<T, IMDDataConverter> x) => match.Invoke(x.Key));
+            items.ForEach(item => Remove(item.Key));
             return items.Count;
         }
         
@@ -533,7 +610,7 @@ namespace MD
 
         public void Sort()
         {
-            RealList.Sort();
+            RealList.Sort(new CustomComparer(null));
             RecordAction(MDListActions.SORT);
         }
 
@@ -546,7 +623,7 @@ namespace MD
                 return;
             }
 
-            RealList.Sort(index, count, Comparer);
+            RealList.Sort(index, count, new CustomComparer(Comparer));
             RecordAction(MDListActions.SORT_INDEX, index, count, GetComparatorIndexFromType(ComparatorType));
         }
         
@@ -559,7 +636,7 @@ namespace MD
                 return;
             }
 
-            RealList.Sort(Comparer);
+            RealList.Sort(new CustomComparer(Comparer));
             RecordAction(MDListActions.SORT_COMPARATOR, GetComparatorIndexFromType(ComparatorType));
         }
 
@@ -571,7 +648,7 @@ namespace MD
         public MDDisposableList<T> GetRawList()
         {
             CheckIfUnsafeMode();
-            return new MDDisposableList<T>(RealList, this);
+            return new MDDisposableList<T>(this.AsList(), this);
         }
 
         /// <summary>
@@ -581,8 +658,9 @@ namespace MD
         public void DoFullResynch(List<T> NewList)
         {
             CheckIfUnsafeMode();
-            RealList = new List<T>(NewList);
-            FullResynch = true;
+            // TODO: Fix this again
+            //RealList = new List<T>(NewList);
+            //FullResynch = true;
         }
 
     #endregion
@@ -593,152 +671,172 @@ namespace MD
 
         public ReadOnlyCollection<T> AsReadOnly()
         {
-            return RealList.AsReadOnly();
+            return AsList().AsReadOnly();
+        }
+
+        protected List<T> AsList()
+        {
+            List<T> ReadOnlyList = new List<T>();
+            RealList.ForEach((KeyValuePair<T, IMDDataConverter> Pair) => ReadOnlyList.Add(Pair.Key));
+            return ReadOnlyList;
         }
         
         public int BinarySearch(int index, int count, T item, IComparer<T> comparer)
         {
-            return RealList.BinarySearch(index, count, item, comparer);
+            return RealList.BinarySearch(index, count, CreateNewItem(item), new CustomComparer(comparer));
         }
 
         public int BinarySearch(T item)
         {
-            return RealList.BinarySearch(item);
+            return RealList.BinarySearch(CreateNewItem(item), new CustomComparer(null));
         }
         
         public int BinarySearch(T item, IComparer<T> comparer)
         {
-            return RealList.BinarySearch(item, comparer);
+            return RealList.BinarySearch(CreateNewItem(item), new CustomComparer(comparer));
         }
         
         public bool Contains(T item)
         {
-            return RealList.Contains(item);
+            foreach (KeyValuePair<T, IMDDataConverter> listItem in RealList)
+            {
+                if (listItem.Key == null)
+                {
+                    if (item == null)
+                    {
+                        return true;
+                    }
+                }
+                else if (listItem.Key.Equals(item))
+                {
+                    return true;
+                }
+            }
+            return false;
         }
         
         public List<TOutput> ConvertAll<TOutput>(Converter<T, TOutput> converter)
         {
-            return RealList.ConvertAll(converter);
+            return this.AsList().ConvertAll(converter);
         }
-        
         public void CopyTo(T[] array, int arrayIndex)
         {
-            RealList.CopyTo(array, arrayIndex);
+            this.AsList().CopyTo(array, arrayIndex);
         }
         
         public void CopyTo(int index, T[] array, int arrayIndex, int count)
         {
-            RealList.CopyTo(index, array, arrayIndex, count);
+            this.AsList().CopyTo(index, array, arrayIndex, count);
         }
         
         public void CopyTo(T[] array)
         {
-            RealList.CopyTo(array);
+            this.AsList().CopyTo(array);
         }
         
         public bool Exists(Predicate<T> match)
         {
-            return RealList.Exists(match);
+            return this.AsList().Exists(match);
         }
         
         public T Find(Predicate<T> match)
         {
-            return RealList.Find(match);
+            return this.AsList().Find(match);
         }
         
         public List<T> FindAll(Predicate<T> match)
         {
-            return RealList.FindAll(match);
+            return this.AsList().FindAll(match);
         }
         
         public int FindIndex(Predicate<T> match)
         {
-            return RealList.FindIndex(match);
+            return this.AsList().FindIndex(match);
         }
         
         public int FindIndex(int startIndex, Predicate<T> match)
         {
-            return RealList.FindIndex(startIndex, match);
+            return this.AsList().FindIndex(startIndex, match);
         }
         
         public int FindIndex(int startIndex, int count, Predicate<T> match)
         {
-            return RealList.FindIndex(startIndex, count, match);
+            return this.AsList().FindIndex(startIndex, count, match);
         }
         
         public T FindLast(Predicate<T> match)
         {
-            return RealList.FindLast(match);
+            return this.AsList().FindLast(match);
         }
         
         public int FindLastIndex(Predicate<T> match)
         {
-            return RealList.FindLastIndex(match);
+            return this.AsList().FindLastIndex(match);
         }
         
         public int FindLastIndex(int startIndex, Predicate<T> match)
         {
-            return RealList.FindLastIndex(startIndex, match);
+            return this.AsList().FindLastIndex(startIndex, match);
         }
         
         public int FindLastIndex(int startIndex, int count, Predicate<T> match)
         {
-            return RealList.FindLastIndex(startIndex, count, match);
+            return this.AsList().FindLastIndex(startIndex, count, match);
         }
         
         ///<summary>Be careful not to modify the list itself from this method</summary>
         public void ForEach(Action<T> action)
         {
-            RealList.ForEach(action);
+            this.AsList().ForEach(action);
         }
         
         ///<summary>Be careful not to modify the list itself from this method</summary>
         public IEnumerable<T> GetEnumerator()
         {
-            foreach (T item in RealList)
+            foreach (KeyValuePair<T, IMDDataConverter> item in RealList)
             {
-                yield return item;
+                yield return item.Key;
             }
         }
         
         public List<T> GetRange(int index, int count)
         {
-            return RealList.GetRange(index, count);
+            return this.AsList().GetRange(index, count);
         }
         
         public int IndexOf(T item, int index, int count)
         {
-            return RealList.IndexOf(item, index, count);
+            return this.AsList().IndexOf(item, index, count);
         }
         
         public int IndexOf(T item, int index)
         {
-            return RealList.IndexOf(item, index);
+            return this.AsList().IndexOf(item, index);
         }
         
         public int IndexOf(T item)
         {
-            return RealList.IndexOf(item);
+            return this.AsList().IndexOf(item);
         }
         
         public int LastIndexOf(T item)
         {
-            return RealList.LastIndexOf(item);
+            return this.AsList().LastIndexOf(item);
         }
         
         public int LastIndexOf(T item, int index)
         {
-            return RealList.LastIndexOf(item, index);
+            return this.AsList().LastIndexOf(item, index);
         }
         
         public int LastIndexOf(T item, int index, int count)
         {
-            return RealList.LastIndexOf(item, index, count);
+            return this.AsList().LastIndexOf(item, index, count);
         }
         
         public T[] ToArray()
         {
-            return RealList.ToArray();
+            return this.AsList().ToArray();
         }
         
         public void TrimExcess()
@@ -749,7 +847,7 @@ namespace MD
         
         public bool TrueForAll(Predicate<T> match)
         {
-            return RealList.TrueForAll(match);
+            return this.AsList().TrueForAll(match);
         }
 
     #endregion

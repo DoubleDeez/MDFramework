@@ -21,7 +21,7 @@ namespace MD
         /// <param name="CurrentObject">The object that we are about to replace</param>
         /// <param name="Parameters">The parameters for conversion</param>
         /// <returns>The new object</returns>
-        object CovertBackToObject(object CurrentObject, object[] Parameters);
+        object ConvertBackToObject(object CurrentObject, object[] Parameters);
 
         /// <summary>
         /// Check if the object has changed. If your object is a class or struct you need to track when you change it yourself.
@@ -48,7 +48,7 @@ namespace MD
             return new object[] { Item };
         }
 
-        public object CovertBackToObject(object CurrentObject, object[] Parameters)
+        public object ConvertBackToObject(object CurrentObject, object[] Parameters)
         {
             return Parameters[0];
         }
@@ -72,7 +72,7 @@ namespace MD
             return new object[] { (int)Item };
         }
 
-        public object CovertBackToObject(object CurrentObject, object[] Parameters)
+        public object ConvertBackToObject(object CurrentObject, object[] Parameters)
         {
             return (T)Parameters[0];
         }
@@ -99,6 +99,8 @@ namespace MD
     ///<summary> Data converter for IMDCommandReplicator</summary>
     public class MDCommandReplicatorDataConverter<T> : IMDDataConverter where T : IMDCommandReplicator
     {
+        private const string LOG_CAT = "LogCommandReplicatorDataConverter";
+
         public object[] ConvertForSending(object Item, bool Complete)
         {
             if (Item == null)
@@ -119,11 +121,15 @@ namespace MD
                 ReturnList.AddRange(command);
             }
 
+            MDLog.Trace(LOG_CAT, $"MDCommandReplicator converting for sending ({MDStatics.GetParametersAsString(ReturnList.ToArray())})");
+
             return ReturnList.ToArray();
         }
 
-        public object CovertBackToObject(object CurrentObject, object[] Parameters)
+        public object ConvertBackToObject(object CurrentObject, object[] Parameters)
         {
+            MDLog.Trace(LOG_CAT, $"MDCommandReplicator converting back ({MDStatics.GetParametersAsString(Parameters)})");
+
             if (Parameters.Length == 1 && Parameters[0] == null)
             {
                 return null;
@@ -163,9 +169,16 @@ namespace MD
             }
             else if (LastValue == null || CurrentValue == null)
             {
+                MDLog.Trace(LOG_CAT, "We should be replicated because something is null");
                 return true;
             }
-            return ((T)CurrentValue).MDHasCommandsInQueue();
+            else if (((T)CurrentValue).MDShouldBeReplicated())
+            {
+                MDLog.Trace(LOG_CAT, "We should be replicated because we have updates");
+                return true;
+            }
+
+            return false;
         }
 
         public bool AllowBufferingOfConverter()
@@ -180,6 +193,7 @@ namespace MD
     /// <typeparam name="T">The custom class type</typeparam>
     public class MDCustomClassDataConverter<T> : IMDDataConverter
     {
+        private const string LOG_CAT = "LogCustomClassDataConverter";
         private const String SEPARATOR = "#";
         private List<MemberInfo> Members = null;
 
@@ -212,7 +226,7 @@ namespace MD
             ExtractMembers();
             if (Item == null)
             {
-                return null;
+                return new object[] { null };
             }
 
             List<object> ObjectArray = new List<object>();
@@ -239,13 +253,16 @@ namespace MD
                 newLastValues.Add(value);
             }
 
+            MDLog.Trace(LOG_CAT, $"MDCustomClass converting for sending ({MDStatics.GetParametersAsString(ObjectArray.ToArray())})");
+
             LastValues = newLastValues;
             return ObjectArray.ToArray();
         }
 
-        public object CovertBackToObject(object CurrentObject, object[] Parameters)
+        public object ConvertBackToObject(object CurrentObject, object[] Parameters)
         {
             ExtractMembers();
+            MDLog.Trace(LOG_CAT, $"MDCustomClass converting back ({MDStatics.GetParametersAsString(Parameters)})");
 
             if (Parameters.Length == 1 && Parameters[0] == null)
             {
@@ -273,8 +290,8 @@ namespace MD
 
                 // Extract parameters and use data converter
                 object[] converterParams = Parameters.SubArray(i+1, i+length);
-                object lastValue = LastValues.Count > index ? LastValues[index] : null;
-                object convertedValue = DataConverters[index].CovertBackToObject(lastValue, converterParams);
+                object currentValue = Members[index].GetValue(obj);
+                object convertedValue = DataConverters[index].ConvertBackToObject(currentValue, converterParams);
 
                 // Set the value and increase i based on length of data
                 Members[index].SetValue(obj, convertedValue);
@@ -302,12 +319,13 @@ namespace MD
             for (int i = 0; i < Members.Count; i++)
             {
                 object value = Members[i].GetValue(CurrentValue);
-                if (Equals(LastValues[i], value) == false)
+                if (DataConverters[i].ShouldObjectBeReplicated(LastValues[i], value))
                 {
+                    MDLog.Trace(LOG_CAT, "We should be replicated");
                     return true;
                 }
             }
-            
+
             return false;
         }
 
