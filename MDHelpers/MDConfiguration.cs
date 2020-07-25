@@ -262,7 +262,8 @@ namespace MD
         /// <returns>True if the config has a value</returns>
         public bool HasValue(ConfigurationSections Category, string Key)
         {
-            return Configuration.HasSectionKey(Category.ToString(), Key);
+            String CatKey = Category.ToString();
+            return Configuration.ContainsKey(CatKey) && Configuration[CatKey].ContainsKey(Key);
         }
 
         /// <summary>

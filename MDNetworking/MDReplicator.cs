@@ -216,7 +216,7 @@ namespace MD
         
         private void OnSessionEnded()
         {
-            NetworkIdKeyMap = new MDReplicatorNetworkKeyIdMap();
+            NetworkIdKeyMap = new MDReplicatorNetworkKeyIdMap(ShouldShowBufferSize());
             KeyToMemberMap = new Dictionary<string, MDReplicatedMember>();
         }
 
