@@ -612,7 +612,7 @@ namespace MD
                 if (!DataConverterTypeCache.ContainsKey(DataConverterType))
                 {
                     IMDDataConverter converter = Activator.CreateInstance(DataConverterType) as IMDDataConverter;
-                    if (converter.AllowBufferingOfConverter())
+                    if (converter.AllowCachingOfConverter())
                     {
                         DataConverterTypeCache.Add(DataConverterType, converter);
                     }
@@ -636,7 +636,7 @@ namespace MD
             if (!DataConverterCache.ContainsKey(Type))
             {
                 IMDDataConverter converter = _InternalGetConverterForType(Type);
-                if (converter.AllowBufferingOfConverter())
+                if (converter.AllowCachingOfConverter())
                 {
                     DataConverterCache.Add(Type, converter);
                 }

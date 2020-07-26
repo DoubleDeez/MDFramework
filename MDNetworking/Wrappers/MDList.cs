@@ -25,7 +25,8 @@ namespace MD
         public enum Settings
         {
             COMPARATOR,
-            UNSAFE_MODE
+            UNSAFE_MODE,
+            MANUAL_CHECK_FOR_UPDATE_MODE
         }
     }
     public class MDList<T> : IMDCommandReplicator
@@ -99,6 +100,8 @@ namespace MD
 
         protected bool UnsafeMode = false;
 
+        protected bool ManualCheckForUpdateMode = false;
+
         protected bool FullResynch = false;
 
         protected bool CompleteMode = false;
@@ -155,7 +158,16 @@ namespace MD
             {
                 return false;
             }
+            
+            return ManualCheckForUpdateMode ? false : MDCheckForUpdates();
+        }
 
+        /// <summary>
+        /// Can be manually called to check for updates in case you got a list containing another list or custom classes.
+        /// </summary>
+        /// <returns>True if update was found, false if not</returns>
+        public bool MDCheckForUpdates()
+        {
             Type ConverterType = RealList[0].Value.GetType();
             bool hasChanges = false;
 
@@ -175,7 +187,7 @@ namespace MD
                     }
                 }
             }
-            
+
             return hasChanges;
         }
 
@@ -353,6 +365,16 @@ namespace MD
                         else
                         {
                             UnsafeMode = Boolean.Parse(setting.Value.ToString());
+                        }
+                        break;
+                    case MDList.Settings.MANUAL_CHECK_FOR_UPDATE_MODE:
+                        if (setting.Value.GetType() == typeof(Boolean))
+                        {
+                            ManualCheckForUpdateMode = (bool)setting.Value;
+                        }
+                        else
+                        {
+                            ManualCheckForUpdateMode = Boolean.Parse(setting.Value.ToString());
                         }
                         break;
                 }
@@ -702,6 +724,8 @@ namespace MD
             {
                 if (listItem.Key == null)
                 {
+                    // We can't do these two if's in one line.
+                    // If listItem.Key == null and item != null then the .Equals check in the else if would crash
                     if (item == null)
                     {
                         return true;

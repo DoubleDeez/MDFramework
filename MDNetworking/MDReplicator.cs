@@ -208,12 +208,6 @@ namespace MD
             TickReplication();
         }
 
-        private void OnSessionStarted()
-        {
-            // Reset the NetworkKeyIdMap on new session started
-            NetworkIdKeyMap = new MDReplicatorNetworkKeyIdMap(ShouldShowBufferSize());
-        }
-        
         private void OnSessionEnded()
         {
             NetworkIdKeyMap = new MDReplicatorNetworkKeyIdMap(ShouldShowBufferSize());

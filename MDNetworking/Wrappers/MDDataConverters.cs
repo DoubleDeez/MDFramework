@@ -33,11 +33,11 @@ namespace MD
         bool ShouldObjectBeReplicated(object LastValue, object CurrentValue);
 
         /// <summary>
-        /// This decides if we allow buffering of this converter.
-        /// Only reason not to allow buffer is if the converter holds a state for the particular object
+        /// This decides if we allow caching of this converter.
+        /// Only reason not to allow caching is if the converter holds a state for the particular object
         /// </summary>
-        /// <returns>True if we allow buffering, false if not</returns>
-        bool AllowBufferingOfConverter();
+        /// <returns>True if we allow caching, false if not</returns>
+        bool AllowCachingOfConverter();
     }
 
     ///<summary> This default implementation should work on any godot base type that can be sent with rpc calls</summary>
@@ -58,7 +58,7 @@ namespace MD
             return Equals(LastValue, CurrentValue) == false;
         }
 
-        public bool AllowBufferingOfConverter()
+        public bool AllowCachingOfConverter()
         {
             return true;
         }
@@ -90,7 +90,7 @@ namespace MD
             return Equals((int)LastValue, (int)CurrentValue) == false;
         }
 
-        public bool AllowBufferingOfConverter()
+        public bool AllowCachingOfConverter()
         {
             return true;
         }
@@ -181,7 +181,7 @@ namespace MD
             return false;
         }
 
-        public bool AllowBufferingOfConverter()
+        public bool AllowCachingOfConverter()
         {
             return true;
         }
@@ -329,7 +329,7 @@ namespace MD
             return false;
         }
 
-        public bool AllowBufferingOfConverter()
+        public bool AllowCachingOfConverter()
         {
             return false;
         }
