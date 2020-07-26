@@ -37,6 +37,8 @@ namespace MD
         /// </summary>
         /// <returns>Returns true if it should, false if not</returns>
         bool MDShouldBeReplicated();
+
+        void MDDoFullResynch(object list);
     }
 
     /// <summary>

@@ -7,16 +7,16 @@ namespace MD
 {
     public class MDDisposableList<T> : List<T>, IDisposable
     {
-        protected MDList<T> MDListRef;
+        protected IMDCommandReplicator MDListRef;
 
-        public MDDisposableList(IEnumerable<T> collection, MDList<T> ListRef) : base(collection)
+        public MDDisposableList(IEnumerable<T> collection, IMDCommandReplicator ListRef) : base(collection)
         {
             MDListRef = ListRef;
         }
 
         public void Dispose()
         {
-            MDListRef.DoFullResynch(this);
+            MDListRef.MDDoFullResynch(this);
         }
     }
     public static class MDList
@@ -667,22 +667,25 @@ namespace MD
         /// Before using this method please read the wiki.
         /// </summary>
         /// <returns>A disposable list</returns>
-        public MDDisposableList<T> GetRawList()
+        public MDDisposableList<KeyValuePair<T, IMDDataConverter>> GetRawList()
         {
             CheckIfUnsafeMode();
-            return new MDDisposableList<T>(this.AsList(), this);
+            return new MDDisposableList<KeyValuePair<T, IMDDataConverter>>(RealList, this);
         }
 
         /// <summary>
         /// Do not call this method directly, this is called by MDDisposableList.Dispose()
         /// </summary>
         /// <param name="NewList">The new list to replace this list with</param>
-        public void DoFullResynch(List<T> NewList)
+        public void MDDoFullResynch(object NewList)
         {
             CheckIfUnsafeMode();
-            // TODO: Fix this again
-            //RealList = new List<T>(NewList);
-            //FullResynch = true;
+            if (NewList is List<KeyValuePair<T, IMDDataConverter>>)
+            {
+                List<KeyValuePair<T, IMDDataConverter>> asList = (List<KeyValuePair<T, IMDDataConverter>>)NewList;
+                RealList = new List<KeyValuePair<T, IMDDataConverter>>(asList);
+                FullResynch = true;
+            }
         }
 
     #endregion
