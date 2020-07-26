@@ -15,6 +15,15 @@ namespace MD
         private Dictionary<uint, Dictionary<uint, object[]>> ClockedValueBuffer =
             new Dictionary<uint, Dictionary<uint, object[]>>();
 
+
+        public MDReplicatorNetworkKeyIdMap(bool ShowBufferSize)
+        {
+            if (ShowBufferSize)
+            {
+                MDOnScreenDebug.AddOnScreenDebugInfo("NetworkIDToKeyMap Buffer Size", () => ClockedValueBuffer.Count.ToString());
+            }
+        }
+
         /// <summary>
         /// Add a new id/key pair to our map
         /// </summary>
@@ -88,7 +97,7 @@ namespace MD
             foreach (uint tick in buffer.Keys)
             {
                 object[] value = buffer[tick];
-                MDLog.Trace(LOG_CAT, $"Updating value to {value} for {ID} on tick {tick}");
+                MDLog.Trace(LOG_CAT, $"Updating value to {MDStatics.GetParametersAsString(value)} for {ID} on tick {tick}");
                 Member.SetValues(tick, value);
             }
 

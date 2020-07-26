@@ -1,6 +1,7 @@
 using Godot;
 using System;
 using System.Reflection;
+using System.Collections.Generic;
 
 namespace MD
 {
@@ -45,6 +46,12 @@ namespace MD
 
         // REPLICATOR
         public const string FRAME_INTERVAL = "FrameInterval";
+        public const string SHOULD_SHOW_BUFFER_SIZE = "ShouldShowBufferSize";
+
+        /// <summary>
+        /// First key string is the section, inner dictionary key is the key
+        /// </summary>
+        private Dictionary<string, Dictionary<string, object>> Configuration = new Dictionary<string, Dictionary<string, object>>();
 
         // LOGGING
         public const string DEFAULT_LOG_LEVEL = "Default";
@@ -58,8 +65,6 @@ namespace MD
             Logging
         }
 
-        ConfigFile Configuration = new ConfigFile();
-
         public override void _Ready()
         {
             
@@ -70,7 +75,77 @@ namespace MD
         /// </summary>
         public void LoadConfiguration()
         {
-            Error err = Configuration.Load(GetConfigFilePath());
+            // Load internal config first
+            #if DEBUG
+                LoadConfiguration("MDConfigDebug.ini");
+                LoadConfiguration("CustomMDConfigDebug.ini");
+            #else
+                LoadConfiguration("MDConfigExport.ini");
+                LoadConfiguration("CustomMDConfigExport.ini");
+            #endif
+        }
+
+        /// <summary>
+        /// Finds and loads the file with the given name. 
+        /// This will overwrite any existing section+keys with the same value already in our configuration.
+        /// </summary>
+        /// <param name="name">The name of the file to load</param>
+        /// <returns>True if it could be found and loaded, false if not</returns>
+        public bool LoadConfiguration(string name)
+        {
+            String path = FindFile(name);
+            if (path == "")
+            {
+                return false;
+            }
+
+            ConfigFile conFile = new ConfigFile();
+            conFile.Load(path);
+            foreach (string section in conFile.GetSections())
+            {
+                foreach (string key in conFile.GetSectionKeys(section))
+                {
+                    if (!Configuration.ContainsKey(section))
+                    {
+                        // Add a new section
+                        Configuration.Add(section, new Dictionary<string, object>());
+                    }
+
+                    if (!Configuration[section].ContainsKey(key))
+                    {
+                        // Add a new key
+                        Configuration[section].Add(key, conFile.GetValue(section, key));
+                    }
+                    else
+                    {
+                        // Overwrite existing key
+                        Configuration[section][key] = conFile.GetValue(section, key);
+                    }
+                }
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// Get the value from our configuration or default if we don't have it
+        /// </summary>
+        /// <param name="Category">The category to get</param>
+        /// <param name="Key">The key to get</param>
+        /// <param name="Default">The default value</param>
+        /// <returns>If found the value or the default value if not found</returns>
+        private object GetValue(string Category, string Key, object Default)
+        {
+            if (!Configuration.ContainsKey(Category))
+            {
+                return Default;
+            }
+
+            if (!Configuration[Category].ContainsKey(Key))
+            {
+                return Default;
+            }
+
+            return Configuration[Category][Key];
         }
 
         /// <summary>
@@ -82,7 +157,7 @@ namespace MD
         /// <returns>The value if found, default if not</returns>
         public string GetString(ConfigurationSections Category, string Key, string Default)
         {
-            return Configuration.GetValue(Category.ToString(), Key, Default).ToString();
+            return GetValue(Category.ToString(), Key, Default).ToString();
         }
 
         /// <summary>
@@ -94,7 +169,7 @@ namespace MD
         /// <returns>The value if found, default if not</returns>
         public int GetInt(ConfigurationSections Category, string Key, int Default)
         {
-            object value = Configuration.GetValue(Category.ToString(), Key, Default);
+            object value = GetValue(Category.ToString(), Key, Default);
             if (value.GetType() == typeof(Int32))
             {
                 return (int)value;
@@ -114,7 +189,7 @@ namespace MD
         /// <returns>The value if found, default if not</returns>
         public bool GetBool(ConfigurationSections Category, string Key, bool Default)
         {
-            object value = Configuration.GetValue(Category.ToString(), Key, Default);
+            object value = GetValue(Category.ToString(), Key, Default);
             if (value.GetType() == typeof(Boolean))
             {
                 return (bool)value;
@@ -134,7 +209,7 @@ namespace MD
         /// <returns>The value if found, default if not</returns>
         public Type GetType(ConfigurationSections Category, string Key, Type Default)
         {
-            object value = Configuration.GetValue(Category.ToString(), Key, null);
+            object value = GetValue(Category.ToString(), Key, null);
             if (value == null)
             {
                 return null;
@@ -187,35 +262,8 @@ namespace MD
         /// <returns>True if the config has a value</returns>
         public bool HasValue(ConfigurationSections Category, string Key)
         {
-            return Configuration.HasSectionKey(Category.ToString(), Key);
-        }
-
-        /// <summary>
-        /// Get the path of the configuration file
-        /// </summary>
-        /// <returns>The path to the file</returns>
-        protected virtual String GetConfigFilePath()
-        {
-            // Attempt to load custom export config
-            String configPath = FindFile("CustomMDConfigExport.ini");
-            if (configPath == null || configPath == "")
-            {
-                // Attempt to load custom debug config
-                configPath = FindFile("CustomMDConfigDebug.ini");
-            }
-
-            // If any custom config was found use it
-            if (configPath != null && configPath != "")
-            {
-                return configPath;
-            }
-
-            // Use internal default configs
-            #if DEBUG
-                return FindFile("MDConfigDebug.ini");
-            #else
-                return FindFile("MDConfigExport.ini");
-            #endif
+            String CatKey = Category.ToString();
+            return Configuration.ContainsKey(CatKey) && Configuration[CatKey].ContainsKey(Key);
         }
 
         /// <summary>

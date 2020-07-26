@@ -31,6 +31,14 @@ namespace MD
         /// </summary>
         /// <param name="Settings">List of settings</param>
         void MDSetSettings(MDReplicatedSetting[] Settings);
+
+        /// <summary>
+        /// Check if there are any commands in the queue or if any subclass has changes
+        /// </summary>
+        /// <returns>Returns true if it should, false if not</returns>
+        bool MDShouldBeReplicated();
+
+        void MDDoFullResynch(object list);
     }
 
     /// <summary>
@@ -130,6 +138,8 @@ namespace MD
 
             if ((GetReplicatedType() == MDReplicatedType.Interval && IsIntervalReplicationTime) || (GetReplicatedType() == MDReplicatedType.OnChange))
             {
+                // We do a check here to see if anything has updated
+                GetCommandReplicator().MDShouldBeReplicated();
                 List<object[]> commands = GetCommandReplicator().MDGetCommands();
                 if (commands.Count > 0)
                 {
