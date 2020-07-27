@@ -531,12 +531,8 @@ namespace MD
                             Type SignatureType = Signature[i];
                             Type CandidateType = CandidateSignature[i];
                             bool isNullable = CandidateType.IsNullable();
-                            if (CandidateType.IsNullable() && (Parameters == null || Parameters[i] == null))
-                            {
-                                // If the parameter is null and type is nullable that is fine
-                                continue;
-                            }
-                            else if (SignatureType.IsCastableTo(CandidateType) == false)
+                            if ((CandidateType.IsNullable() && (Parameters == null || Parameters[i] == null)) == false
+                                && (SignatureType.IsCastableTo(CandidateType) == false))
                             {
                                 MDLog.Debug(LOG_CAT, $"CandidateMethod.Name: {CandidateMethod.Name} SignatureType: {SignatureType.ToString()} does not cast to {CandidateType.ToString()}");
                                 IsCompatible = false;
@@ -604,7 +600,6 @@ namespace MD
             }
 
             ParameterInfo[] CandidateParams = MethodInfo.GetParameters();
-            //CandidateParams.ToList().ForEach(param => CandidateSignature.Add(param.ParameterType));
 
             List<object> ConvertedParams = new List<object>();
             for (int i = 0; i < Parameters.Length; i++)

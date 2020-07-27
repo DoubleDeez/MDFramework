@@ -341,14 +341,20 @@ namespace MD
             if (IsPauseOnJoin())
             {
                 PauseGame();
-                foreach (int peerid in GameSession.GetAllPeerIds().Where(peerid => peerid != MDStatics.GetServerId()))
+                foreach (int peerid in GameSession.GetAllPeerIds().Where(peerid => peerid != MDStatics.GetServerId() && PeerId != peerid))
                 {
                     // Don't do this for the connecting peer or the server
-                    if (PeerId != peerid)
-                    {
-                        RpcId(peerid, nameof(PauseGame));
-                    }
+                    RpcId(peerid, nameof(PauseGame));
                 }
+            }
+
+            // Start synch check timer
+            Timer timer = (Timer) GetNodeOrNull(ALL_PLAYERS_SYNCHED_TIMER_NAME);
+            if (timer == null)
+            {
+                timer = this.CreateUnpausableTimer(ALL_PLAYERS_SYNCHED_TIMER_NAME, false, SYNCH_TIMER_CHECK_INTERVAL, true,
+                    this, nameof(CheckAllClientsSynched));
+                timer.Start();
             }
         }
 
@@ -366,15 +372,6 @@ namespace MD
                 // Synch just started so set everyone to 0%
                 OnPlayerSynchStatusUpdateEvent(peerid, 0f);
                 RpcId(peerid, nameof(RpcReceiveNodeCount), NodeList.Count);
-            }
-
-            // Start synch check timer
-            Timer timer = (Timer) GetNodeOrNull(ALL_PLAYERS_SYNCHED_TIMER_NAME);
-            if (timer == null)
-            {
-                timer = this.CreateUnpausableTimer(ALL_PLAYERS_SYNCHED_TIMER_NAME, false, SYNCH_TIMER_CHECK_INTERVAL, true,
-                    this, nameof(CheckAllClientsSynched));
-                timer.Start();
             }
         }
 

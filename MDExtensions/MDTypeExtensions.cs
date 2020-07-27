@@ -80,9 +80,7 @@ namespace MD
 
         public static bool IsNullable(this Type type)
         {
-            if (!type.IsValueType) return true; // ref-type
-            if (Nullable.GetUnderlyingType(type) != null) return true; // Nullable<T>
-            return false; // value-type
+            return !type.IsValueType || Nullable.GetUnderlyingType(type) != null;
         }
     }
 }
