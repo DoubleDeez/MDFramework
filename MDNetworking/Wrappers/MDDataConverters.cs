@@ -96,6 +96,46 @@ namespace MD
         }
     }
 
+    ///<summary> Data converter for types such as double or decimal</summary>
+    public class MDSendAsStringDataConverter<T> : IMDDataConverter
+    {
+        public object[] ConvertForSending(object Item, bool Complete)
+        {
+            if (Item == null)
+            {
+                return new object[] { null };
+            }
+            return new object[] { Item.ToString() };
+        }
+
+        public object ConvertBackToObject(object CurrentObject, object[] Parameters)
+        {
+            if (Parameters[0] == null)
+            {
+                return null;
+            }
+            return (T)Convert.ChangeType(Parameters[0], typeof(T));
+        }
+
+        public bool ShouldObjectBeReplicated(object LastValue, object CurrentValue)
+        {
+            if (LastValue == null && CurrentValue == null)
+            {
+                return false;
+            }
+            else if (LastValue == null || CurrentValue == null)
+            {
+                return true;
+            }
+            return Equals(LastValue, CurrentValue) == false;
+        }
+
+        public bool AllowCachingOfConverter()
+        {
+            return true;
+        }
+    }
+
     ///<summary> Data converter for IMDCommandReplicator</summary>
     public class MDCommandReplicatorDataConverter<T> : IMDDataConverter where T : IMDCommandReplicator
     {
@@ -105,7 +145,7 @@ namespace MD
         {
             if (Item == null)
             {
-                return null;
+                return new object[] { null };
             }
 
             // Get commands

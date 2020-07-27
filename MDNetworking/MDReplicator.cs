@@ -114,10 +114,21 @@ namespace MD
             switch (Type)
             {
                 case TypeOfCall.RPC:
-                    Target.Invoke(Name, Parameters);
+                    MethodInfo methodInfo = MDStatics.GetMethodInfo(Target, Convert.ToInt32(Name));
+                    if (methodInfo == null)
+                    {
+                        MDLog.Fatal(LOG_CAT, $"Could not find method {Target.GetType().ToString()}#{Name}");
+                        return;
+                    }
+                    object[] convertedParams = MDStatics.ConvertParametersBackToObject(methodInfo, Parameters);
+                    methodInfo.Invoke(Target, convertedParams);
                     break;
                 case TypeOfCall.RSET:
-                    Target.SetMemberValue(Name, Parameters[0]);
+                    MemberInfo memberInfo = MDStatics.GetMemberInfo(Target, Name);
+                    IMDDataConverter Converter = MDStatics.GetConverterForType(memberInfo.GetUnderlyingType());
+                    object value = Converter.ConvertBackToObject(memberInfo.GetValue(Target), Parameters);
+                    MDLog.Trace(LOG_CAT, $"Setting {Name} on {Target.Name} to value {value}");
+                    memberInfo.SetValue(Target, value);
                     break;
             }
         }
@@ -636,15 +647,30 @@ namespace MD
         public void SendClockedRpc(int PeerId, MDReliability Reliability, Node Target, string Method,
             params object[] Parameters)
         {
+            if (PeerId == MDStatics.GetPeerId())
+            {
+                // This is to ourselves so just invoke
+                Target.Invoke(Method, Parameters);
+                return;
+            }
             MDRemoteMode Mode = MDStatics.GetMethodRpcType(Target, Method, Parameters);
+            int MethodNumber = MDStatics.GetMethodNumber(Target, Method, Parameters);
+            if (MethodNumber == -1)
+            {
+                // Abort
+                MDLog.Fatal(LOG_CAT, $"Could not find method number for {Target.GetType().ToString()}#{Method}({MDStatics.GetParametersAsString(Parameters)})");
+                return;
+            }
+            MethodInfo MethodInfo = MDStatics.GetMethodInfo(Target, MethodNumber);
+            object[] SendingParams = MDStatics.ConvertParametersForSending(MethodInfo, Parameters);
             switch (Mode)
             {
                 case MDRemoteMode.Master:
                     if (!Target.IsNetworkMaster())
                     {
                         // Remote invoke master only
-                        SendClockedCall(PeerId, ClockedRemoteCall.TypeOfCall.RPC, Reliability, Target.GetPath(), Method,
-                            Mode, Parameters);
+                        SendClockedCall(PeerId, ClockedRemoteCall.TypeOfCall.RPC, Reliability, Target.GetPath(), MethodNumber.ToString(),
+                            Mode, SendingParams);
                     }
 
                     break;
@@ -652,8 +678,8 @@ namespace MD
                     if (!Target.IsNetworkMaster())
                     {
                         // Remote invoke master only
-                        SendClockedCall(PeerId, ClockedRemoteCall.TypeOfCall.RPC, Reliability, Target.GetPath(), Method,
-                            Mode, Parameters);
+                        SendClockedCall(PeerId, ClockedRemoteCall.TypeOfCall.RPC, Reliability, Target.GetPath(), MethodNumber.ToString(),
+                            Mode, SendingParams);
                     }
 
                     Target.Invoke(Method, Parameters);
@@ -661,14 +687,14 @@ namespace MD
                 case MDRemoteMode.Puppet:
                 case MDRemoteMode.Remote:
                     // Remote invoke
-                    SendClockedCall(PeerId, ClockedRemoteCall.TypeOfCall.RPC, Reliability, Target.GetPath(), Method,
-                        Mode, Parameters);
+                    SendClockedCall(PeerId, ClockedRemoteCall.TypeOfCall.RPC, Reliability, Target.GetPath(), MethodNumber.ToString(),
+                        Mode, SendingParams);
                     break;
                 case MDRemoteMode.PuppetSync:
                 case MDRemoteMode.RemoteSync:
                     // Remote invoke and local invoke
-                    SendClockedCall(PeerId, ClockedRemoteCall.TypeOfCall.RPC, Reliability, Target.GetPath(), Method,
-                        Mode, Parameters);
+                    SendClockedCall(PeerId, ClockedRemoteCall.TypeOfCall.RPC, Reliability, Target.GetPath(), MethodNumber.ToString(),
+                        Mode, SendingParams);
                     Target.Invoke(Method, Parameters);
                     break;
             }
@@ -684,7 +710,15 @@ namespace MD
         /// <param name="Value">The value to set</param>
         public void SendClockedRset(int PeerId, MDReliability Reliability, Node Target, string MemberName, object Value)
         {
+            if (PeerId == MDStatics.GetPeerId())
+            {
+                // This is to ourselves so just set
+                Target.SetMemberValue(MemberName, Value);
+                return;
+            }
             MDRemoteMode Mode = MDStatics.GetMemberRpcType(Target, MemberName);
+            MemberInfo info = MDStatics.GetMemberInfo(Target, MemberName);
+            IMDDataConverter Converter = MDStatics.GetConverterForType(info.GetUnderlyingType());
             switch (Mode)
             {
                 case MDRemoteMode.Master:
@@ -692,7 +726,7 @@ namespace MD
                     {
                         // Remote invoke master only
                         SendClockedCall(PeerId, ClockedRemoteCall.TypeOfCall.RSET, Reliability, Target.GetPath(),
-                            MemberName, Mode, Value);
+                            MemberName, Mode, Converter.ConvertForSending(Value, true));
                     }
 
                     break;
@@ -701,7 +735,7 @@ namespace MD
                     {
                         // Remote invoke master only
                         SendClockedCall(PeerId, ClockedRemoteCall.TypeOfCall.RSET, Reliability, Target.GetPath(),
-                            MemberName, Mode, Value);
+                            MemberName, Mode, Converter.ConvertForSending(Value, true));
                     }
 
                     Target.SetMemberValue(MemberName, Value);
@@ -710,13 +744,13 @@ namespace MD
                 case MDRemoteMode.Remote:
                     // Remote invoke
                     SendClockedCall(PeerId, ClockedRemoteCall.TypeOfCall.RSET, Reliability, Target.GetPath(),
-                        MemberName, Mode, Value);
+                        MemberName, Mode, Converter.ConvertForSending(Value, true));
                     break;
                 case MDRemoteMode.PuppetSync:
                 case MDRemoteMode.RemoteSync:
                     // Remote invoke and local invoke
                     SendClockedCall(PeerId, ClockedRemoteCall.TypeOfCall.RSET, Reliability, Target.GetPath(),
-                        MemberName, Mode, Value);
+                        MemberName, Mode, Converter.ConvertForSending(Value, true));
                     Target.SetMemberValue(MemberName, Value);
                     break;
             }
@@ -725,6 +759,7 @@ namespace MD
         private void SendClockedCall(int PeerId, ClockedRemoteCall.TypeOfCall Type, MDReliability Reliability,
             string NodePath, string Method, MDRemoteMode Mode, params object[] Parameters)
         {
+            MDLog.Trace(LOG_CAT, $"Sending clocked call {Method} on {NodePath} with parameters ({MDStatics.GetParametersAsString(Parameters)})");
             if (Reliability == MDReliability.Reliable)
             {
                 if (PeerId != -1)
@@ -760,7 +795,7 @@ namespace MD
                 MDLog.Warn(LOG_CAT, $"Could not find target [{NodePath}] for ClockedRpcCall.");
                 return;
             }
-
+            MDLog.Trace(LOG_CAT, $"Got clocked call {Method} on {NodePath} with parameters ({MDStatics.GetParametersAsString(Parameters)})");
             ClockedRemoteCall RemoteCall = new ClockedRemoteCall(Tick, Type, WeakRef(Target), Method, Mode, Parameters);
 
             // Check if we should already invoke this (if the time has already passed)

@@ -77,5 +77,10 @@ namespace MD
                 m => (m.Name=="op_Implicit" || (!implicitly && m.Name=="op_Explicit"))
                     && baseType(m).IsAssignableFrom(derivedType(m)));
         }
+
+        public static bool IsNullable(this Type type)
+        {
+            return !type.IsValueType || Nullable.GetUnderlyingType(type) != null;
+        }
     }
 }
