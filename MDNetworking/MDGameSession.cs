@@ -97,7 +97,7 @@ namespace MD
 
         public override void _Ready()
         {
-            MDLog.AddLogCategoryProperties(LOG_CAT, new MDLogProperties(MDLogLevel.Info));
+            MDLog.AddLogCategoryProperties(LOG_CAT, new MDLogProperties(MDLogLevel.Trace));
             this.RegisterCommandAttributes();
 
             CheckArgsForConnectionInfo();
@@ -331,7 +331,7 @@ namespace MD
         {
             foreach (int PeerId in Players.Keys)
             {
-                if (PeerId == SERVER_ID)
+                if (PeerId == Joiner || PeerId == SERVER_ID)
                 {
                     continue;
                 }

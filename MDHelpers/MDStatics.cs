@@ -660,6 +660,11 @@ namespace MD
                 Type constructedType = typeof(MDCommandReplicatorDataConverter<>).MakeGenericType(Type);
                 return Activator.CreateInstance(constructedType) as IMDDataConverter;
             }
+            else if (Type == typeof(Double) || Type == typeof(Decimal))
+            {
+                Type constructedType = typeof(MDSendAsStringDataConverter<>).MakeGenericType(Type);
+                return Activator.CreateInstance(constructedType) as IMDDataConverter;
+            }
             else if (Type.IsEnum)
             {
                 Type constructedType = typeof(MDEnumDataConverter<>).MakeGenericType(Type);
