@@ -187,7 +187,7 @@ namespace MD
 
         private void CreateGameSynchronizer()
         {
-            if (GameSynchronizer == null && UseGameSynchronizer())
+            if (GameSynchronizer == null)
             {
                 GameSynchronizer = MDStatics.CreateTypeInstance<MDGameSynchronizer>(GetGameSynchronizerType());
                 GameSynchronizer.Name = "GameSynchronizer";
@@ -201,7 +201,7 @@ namespace MD
 
         private void CreateGameClock()
         {
-            if (GameClock == null && IsGameClockActive())
+            if (GameClock == null)
             {
                 GameClock = MDStatics.CreateTypeInstance<MDGameClock>(GetGameClockType());
                 GameClock.Name = "GameClock";
@@ -304,12 +304,6 @@ namespace MD
             return Configuration.GetInt(MDConfiguration.ConfigurationSections.GameInstance, MDConfiguration.ON_SCREEN_DEBUG_KEY, (int) KeyList.F12);
         }
 
-        ///<summary>Decides if the network synchronizer is used or not (Default: True)</summary>
-        public virtual bool UseGameSynchronizer()
-        {
-            return Configuration.GetBool(MDConfiguration.ConfigurationSections.GameInstance, MDConfiguration.GAME_SYNCHRONIZER_ENABLED, true);
-        }
-
         ///<summary>Get the directory for MDLog log files
         ///<para>Official documentation for the user path: https://docs.godotengine.org/en/stable/tutorials/io/data_paths.html</para></summary>
         public virtual string GetLogDirectory()
@@ -321,12 +315,6 @@ namespace MD
         public virtual bool UseSceneBuffer(string NodePath)
         {
             return Configuration.GetBool(MDConfiguration.ConfigurationSections.GameInstance, MDConfiguration.USE_SCENE_BUFFER, true);
-        }
-
-        /// <summary>Sets if we should use the MDGameClock or not, this requires IsActivePingEnabled to be true. (Default: true)</summary>
-        public virtual bool IsGameClockActive()
-        {
-            return Configuration.GetBool(MDConfiguration.ConfigurationSections.GameInstance, MDConfiguration.GAME_CLOCK_ACTIVE, true);
         }
 
         #endregion

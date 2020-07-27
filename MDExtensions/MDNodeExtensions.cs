@@ -292,12 +292,6 @@ namespace MD
                 return;
             }
 
-            if (!MDStatics.IsGameClockActive())
-            {
-                Instance.Rpc(Method, Args);
-                return;
-            }
-
             // Send through replicator
             MDStatics.GetReplicator().SendClockedRpc(-1, MDReliability.Reliable, Instance, Method, Args);
         }
@@ -315,12 +309,6 @@ namespace MD
                 return;
             }
 
-            if (!MDStatics.IsGameClockActive())
-            {
-                Instance.RpcId(PeerId, Method, Args);
-                return;
-            }
-
             // Send through replicator
             MDStatics.GetReplicator().SendClockedRpc(PeerId, MDReliability.Reliable, Instance, Method, Args);
         }
@@ -334,12 +322,6 @@ namespace MD
         {
             if (!MDStatics.IsNetworkActive())
             {
-                return;
-            }
-
-            if (!MDStatics.IsGameClockActive())
-            {
-                Instance.RpcUnreliable(Method, Args);
                 return;
             }
 
@@ -360,12 +342,6 @@ namespace MD
                 return;
             }
 
-            if (!MDStatics.IsGameClockActive())
-            {
-                Instance.RpcUnreliableId(PeerId, Method, Args);
-                return;
-            }
-
             // Send through replicator
             MDStatics.GetReplicator().SendClockedRpc(PeerId, MDReliability.Unreliable, Instance, Method, Args);
         }
@@ -382,14 +358,7 @@ namespace MD
                 return;
             }
 
-            if (MDStatics.IsGameClockActive())
-            {
-                // Send through replicator
-                MDStatics.GetReplicator().SendClockedRset(-1, MDReliability.Reliable, Instance, Property, Value);
-                return;
-            }
-
-            Instance.Rset(Property, Value);
+            MDStatics.GetReplicator().SendClockedRset(-1, MDReliability.Reliable, Instance, Property, Value);
         }
 
         /// <summary>
@@ -400,18 +369,12 @@ namespace MD
         /// <param name="Value">The value</param>
         public static void MDRsetId(this Node Instance, int PeerId, string Property, object Value)
         {
-            if (MDStatics.IsNetworkActive())
+            if (!MDStatics.IsNetworkActive())
             {
-                if (MDStatics.IsGameClockActive())
-                {
-                    // Send through replicator
-                    MDStatics.GetReplicator()
-                        .SendClockedRset(PeerId, MDReliability.Reliable, Instance, Property, Value);
-                    return;
-                }
-
-                Instance.RsetId(PeerId, Property, Value);
+                return;
             }
+
+            MDStatics.GetReplicator().SendClockedRset(PeerId, MDReliability.Reliable, Instance, Property, Value);
         }
 
         /// <summary>
@@ -421,17 +384,12 @@ namespace MD
         /// <param name="Value">The value</param>
         public static void MDRsetUnreliable(this Node Instance, string Property, object Value)
         {
-            if (MDStatics.IsNetworkActive())
+            if (!MDStatics.IsNetworkActive())
             {
-                if (MDStatics.IsGameClockActive())
-                {
-                    // Send through replicator
-                    MDStatics.GetReplicator().SendClockedRset(-1, MDReliability.Unreliable, Instance, Property, Value);
-                    return;
-                }
-
-                Instance.RsetUnreliable(Property, Value);
+                return;
             }
+            
+            MDStatics.GetReplicator().SendClockedRset(-1, MDReliability.Unreliable, Instance, Property, Value);
         }
 
         /// <summary>
@@ -442,18 +400,12 @@ namespace MD
         /// <param name="Value">The value</param>
         public static void MDRsetUnreliableId(this Node Instance, int PeerId, string Property, object Value)
         {
-            if (MDStatics.IsNetworkActive())
+            if (!MDStatics.IsNetworkActive())
             {
-                if (MDStatics.IsGameClockActive())
-                {
-                    // Send through replicator
-                    MDStatics.GetReplicator()
-                        .SendClockedRset(PeerId, MDReliability.Unreliable, Instance, Property, Value);
-                    return;
-                }
-
-                Instance.RsetUnreliableId(PeerId, Property, Value);
+                return;
             }
+
+            MDStatics.GetReplicator().SendClockedRset(PeerId, MDReliability.Unreliable, Instance, Property, Value);
         }
 
         /// <summary>
@@ -600,6 +552,19 @@ namespace MD
             return timer;
         }
 
+        /// <summary>
+        /// Get the sender ID of the current MDRpc call
+        /// </summary>
+        /// <returns>The sender ID or -1 if not inside an MDRpc call</returns>
+        public static int MDGetRpcSenderId(this Node Instance)
+        {
+            return MDStatics.GetReplicator().RpcSenderId;
+        }
+
+        /// <summary>
+        /// Changes the network master of the node, this only works on the server
+        /// </summary>
+        /// <param name="NewNetworkMaster">The new network master ID</param>
         public static void ChangeNetworkMaster(this Node Instance, int NewNetworkMaster)
         {
             MDGameSession GameSession = Instance.GetGameSession();

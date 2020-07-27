@@ -15,8 +15,7 @@ namespace MD
         public bool IsReadyForReplication()
         {
             MDGameInstance GameInstance = MDStatics.GetGameSession().GetGameInstance();
-            if (GameInstance.UseGameSynchronizer() &&
-                GameInstance.GetGameSynchronizer().IsDelayReplicatorUntilAllNodesAreSynched())
+            if (GameInstance.GetGameSynchronizer().IsDelayReplicatorUntilAllNodesAreSynched())
             {
                 // If synch is active check if peer has completed node synch
                 if (GameInstance.GetGameSynchronizer().HasPeerCompletedNodeSynch(PeerId))
@@ -55,8 +54,9 @@ namespace MD
         private MDRemoteMode Mode;
         private object[] Parameters;
         private TypeOfCall Type;
+        private int SenderPeerId = 0;
 
-        public ClockedRemoteCall(uint Tick, TypeOfCall Type, WeakRef Node, String Name, MDRemoteMode Mode,
+        public ClockedRemoteCall(uint Tick, TypeOfCall Type, WeakRef Node, String Name, MDRemoteMode Mode, int SenderPeerId,
             params object[] Parameters)
         {
             this.Tick = Tick;
@@ -65,6 +65,7 @@ namespace MD
             this.Name = Name;
             this.Mode = Mode;
             this.Parameters = Parameters;
+            this.SenderPeerId = SenderPeerId;
         }
 
         /// Returns true once we have invoked or if we can't invoke
@@ -121,7 +122,9 @@ namespace MD
                         return;
                     }
                     object[] convertedParams = MDStatics.ConvertParametersBackToObject(methodInfo, Parameters);
+                    MDStatics.GetReplicator().RpcSenderId = SenderPeerId;
                     methodInfo.Invoke(Target, convertedParams);
+                    MDStatics.GetReplicator().RpcSenderId = -1;
                     break;
                 case TypeOfCall.RSET:
                     MemberInfo memberInfo = MDStatics.GetMemberInfo(Target, Name);
@@ -193,6 +196,8 @@ namespace MD
 
         private MDGameClock GameClock;
 
+        public int RpcSenderId {get; set;}
+
         public void Initialize()
         {
             MDLog.AddLogCategoryProperties(LOG_CAT, new MDLogProperties(MDLogLevel.Info));
@@ -201,6 +206,7 @@ namespace MD
             this.GetGameSession().OnSessionEndedEvent += OnSessionEnded;
             this.GetGameSession().OnPlayerJoinedEvent += OnPlayerJoined;
             PauseMode = PauseModeEnum.Process;
+            RpcSenderId = -1;
 
             GroupManager = new MDReplicatorGroupManager(GetReplicationFrameInterval());
             NetworkIdKeyMap = new MDReplicatorNetworkKeyIdMap(ShouldShowBufferSize());
@@ -549,9 +555,8 @@ namespace MD
                             RepAttribute.ReplicatedType, WeakRef(Instance), Settings);
             }
 
-            // Check if game clock is active, if so use it
-            bool AllowInterpolation = GetAllowsInterpolation(ParsedSettings);
-            if (MDStatics.GetGameSynchronizer() != null && MDStatics.IsGameClockActive() && AllowInterpolation)
+            // Check if we allow interpolation
+            if (GetAllowsInterpolation(ParsedSettings))
             {
                 if (Member.GetUnderlyingType() == typeof(float))
                 {
@@ -650,7 +655,9 @@ namespace MD
             if (PeerId == MDStatics.GetPeerId())
             {
                 // This is to ourselves so just invoke
+                RpcSenderId = PeerId;
                 Target.Invoke(Method, Parameters);
+                RpcSenderId = -1;
                 return;
             }
             MDRemoteMode Mode = MDStatics.GetMethodRpcType(Target, Method, Parameters);
@@ -796,7 +803,7 @@ namespace MD
                 return;
             }
             MDLog.Trace(LOG_CAT, $"Got clocked call {Method} on {NodePath} with parameters ({MDStatics.GetParametersAsString(Parameters)})");
-            ClockedRemoteCall RemoteCall = new ClockedRemoteCall(Tick, Type, WeakRef(Target), Method, Mode, Parameters);
+            ClockedRemoteCall RemoteCall = new ClockedRemoteCall(Tick, Type, WeakRef(Target), Method, Mode, Multiplayer.GetRpcSenderId(), Parameters);
 
             // Check if we should already invoke this (if the time has already passed)
             if (!RemoteCall.Invoke(GameClock.GetRemoteTick()))
