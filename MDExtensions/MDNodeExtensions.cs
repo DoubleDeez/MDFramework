@@ -11,6 +11,8 @@ namespace MD
     /// </summary>
     public static class MDNodeExtensions
     {
+        private const string LOG_CAT = "LogNodeExtensions";
+
         /// <summary>
         /// Grabs the singleton game instance, doesn't rely on being in the tree
         /// </summary>
@@ -487,12 +489,35 @@ namespace MD
             MethodInfo Info = MDStatics.GetMethodInfo(Instance, Method, Parameters);
             if (Info != null)
             {
+                MDLog.Trace(LOG_CAT, $"Invoking {Info.Name} with parameters {MDStatics.GetParametersAsString(Parameters)}");
                 Info.Invoke(Instance, Parameters);
                 return true;
             }
 
+            MDLog.Trace(LOG_CAT, $"Failed to invoke {Method} with parameters {MDStatics.GetParametersAsString(Parameters)}");
             return false;
         }
+
+        /// /// <summary>
+        /// Invoke the method with the given number on the node
+        /// </summary>
+        /// <param name="MethodNumber">The method number to invoke</param>
+        /// <param name="Parameters">Parameters</param>
+        /// <returns>True if invoked, false if not found</returns>
+        public static bool Invoke(this Node Instance, int MethodNumber, params object[] Parameters)
+        {
+            MethodInfo Info = MDStatics.GetMethodInfo(Instance, MethodNumber);
+            if (Info != null)
+            {
+                MDLog.Trace(LOG_CAT, $"Invoking {Info.Name} with parameters {MDStatics.GetParametersAsString(Parameters)}");
+                Info.Invoke(Instance, Parameters);
+                return true;
+            }
+
+            MDLog.Trace(LOG_CAT, $"Failed to invoke method number {MethodNumber} with parameters {MDStatics.GetParametersAsString(Parameters)}");
+            return false;
+        }
+        
 
         /// <summary>
         /// Set the value of a member on the node

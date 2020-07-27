@@ -13,9 +13,12 @@ namespace MD
     public static class MDStatics
     {
         private const string LOG_CAT = "LogMDStatics";
+        private const string SEPARATOR = "#";
         private static readonly Dictionary<string, MemberInfo> MemberInfoCache = new Dictionary<string, MemberInfo>();
 
         private static readonly Dictionary<string, MethodInfo> MethodInfoCache = new Dictionary<string, MethodInfo>();
+
+        private static readonly Dictionary<Type, List<MethodInfo>> NumberedMethodInfoCache = new Dictionary<Type, List<MethodInfo>>();
 
         private static readonly Dictionary<Type, IMDDataConverter> DataConverterCache = new Dictionary<Type, IMDDataConverter>();
 
@@ -423,6 +426,63 @@ namespace MD
         /// Looks up the MethodInfo in our cache, if it does not exist it is resolved
         /// </summary>
         /// <param name="Node">The node to look this up for</param>
+        /// <param name="MethodNumber">The number of the method</param>
+        /// <returns>The MethodInfo or null if it does not exist</returns>
+        public static MethodInfo GetMethodInfo(Node Node, int MethodNumber)
+        {
+            Type nodeType = Node.GetType();
+            if (!NumberedMethodInfoCache.ContainsKey(nodeType))
+            {
+                NumberedMethodInfoCache.Add(nodeType, new List<MethodInfo>(nodeType.GetAllMethods()));
+            }
+
+            if (MethodNumber < NumberedMethodInfoCache[nodeType].Count)
+            {
+                return NumberedMethodInfoCache[nodeType][MethodNumber];
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Gets the number of a method
+        /// </summary>
+        /// <param name="Node">The node to look this up for</param>
+        /// <param name="MethodNumber">The name of the method</param>
+        /// <param name="Parameters">The parameters you intend to send to the method</param>
+        /// <returns>The MethodInfo or -1 if it is not found</returns>
+        public static int GetMethodNumber(Node Node, string Method, params object[] Parameters)
+        {
+            Type nodeType = Node.GetType();
+            if (!NumberedMethodInfoCache.ContainsKey(nodeType))
+            {
+                NumberedMethodInfoCache.Add(nodeType, new List<MethodInfo>(nodeType.GetAllMethods()));
+            }
+
+            MethodInfo info = GetMethodInfo(Node, Method, Parameters);
+
+            if (info != null)
+            {
+                List<MethodInfo> methodInfos = NumberedMethodInfoCache[nodeType];
+                for (int i = 0; i < methodInfos.Count; i++)
+                {
+                    if (methodInfos[i].Equals(info))
+                    {
+                        return i;
+                    }
+                }
+            }
+
+            MDLog.Warn(LOG_CAT, $"Method number could not be found for {nodeType.ToString()}#{Method}({GetParametersAsString(Parameters)})");
+            return -1;
+        }
+        
+        
+
+        /// <summary>
+        /// Looks up the MethodInfo in our cache, if it does not exist it is resolved
+        /// </summary>
+        /// <param name="Node">The node to look this up for</param>
         /// <param name="Method">The name of the method</param>
         /// <param name="Parameters">The parameters you intend to send to the method</param>
         /// <returns>The MethodInfo or null if it does not exist</returns>
@@ -462,14 +522,23 @@ namespace MD
                         List<Type> CandidateSignature = new List<Type>();
                         CandidateParams.ToList().ForEach(param => CandidateSignature.Add(param.ParameterType));
 
+                        MDLog.Debug(LOG_CAT, $"Evaluating {CandidateMethod.Name} ({GetParametersAsString(CandidateSignature.ToArray())})");
+
                         bool IsCompatible = true;
 
                         for (int i = 0; i < Signature.Count; ++i)
                         {
                             Type SignatureType = Signature[i];
                             Type CandidateType = CandidateSignature[i];
-                            if (SignatureType.IsCastableTo(CandidateType) == false)
+                            bool isNullable = CandidateType.IsNullable();
+                            if (CandidateType.IsNullable() && (Parameters == null || Parameters[i] == null))
                             {
+                                // If the parameter is null and type is nullable that is fine
+                                continue;
+                            }
+                            else if (SignatureType.IsCastableTo(CandidateType) == false)
+                            {
+                                MDLog.Debug(LOG_CAT, $"CandidateMethod.Name: {CandidateMethod.Name} SignatureType: {SignatureType.ToString()} does not cast to {CandidateType.ToString()}");
                                 IsCompatible = false;
                                 break;
                             }
@@ -484,8 +553,79 @@ namespace MD
                 }
             }
 
-            return MethodInfoCache[key];
+            if (MethodInfoCache.ContainsKey(key))
+            {
+                return MethodInfoCache[key];
+            }
+            return null;
         }
+
+        /// <summary>
+        /// Converts the parameters for sending
+        /// </summary>
+        /// <param name="MethodInfo">The method the parameters are for</param>
+        /// <param name="Parameters">The parameters</param>
+        /// <returns>List of converted parameters</returns>
+        public static object[] ConvertParametersForSending(MethodInfo MethodInfo, params object[] Parameters)
+        {
+            ParameterInfo[] CandidateParams = MethodInfo.GetParameters();
+
+            List<object> NewParams = new List<object>();
+            for (int i = 0; i < CandidateParams.Length; i++)
+            {
+                IMDDataConverter Converter = GetConverterForType(CandidateParams[i].ParameterType);
+                object[] paramsForSending = new object[] { null };
+                if (Parameters != null && i < Parameters.Length)
+                {
+                    paramsForSending = Converter.ConvertForSending(Parameters[i], true);
+                    NewParams.Add($"{i}{SEPARATOR}{paramsForSending.Length}");
+                }
+                else
+                {
+                    NewParams.Add($"{i}{SEPARATOR}{1}");
+                }
+                NewParams.AddRange(paramsForSending);
+            }
+
+            return NewParams.ToArray();
+        }
+
+        /// <summary>
+        /// Converts a set of parameters that were sent back to an object
+        /// </summary>
+        /// <param name="MethodInfo">The method info to convert for</param>
+        /// <param name="Parameters">The parameters</param>
+        /// <returns></returns>
+        public static object[] ConvertParametersBackToObject(MethodInfo MethodInfo, params object[] Parameters)
+        {
+            if (Parameters == null || Parameters.Length == 0)
+            {
+                return Parameters;
+            }
+
+            ParameterInfo[] CandidateParams = MethodInfo.GetParameters();
+            //CandidateParams.ToList().ForEach(param => CandidateSignature.Add(param.ParameterType));
+
+            List<object> ConvertedParams = new List<object>();
+            for (int i = 0; i < Parameters.Length; i++)
+            {
+                // key0 = index, key1 = length
+                object[] keys = Parameters[i].ToString().Split(SEPARATOR);
+                int index = Convert.ToInt32(keys[0].ToString());
+                int length = Convert.ToInt32(keys[1].ToString());
+
+                // Extract parameters and use data converter
+                object[] converterParams = Parameters.SubArray(i+1, i+length);
+                IMDDataConverter Converter = GetConverterForType(CandidateParams[index].ParameterType);
+                object convertedValue = Converter.ConvertBackToObject(null, converterParams);
+
+                // Add the value to our list
+                ConvertedParams.Add(convertedValue);
+                i += length;
+            }
+
+            return ConvertedParams.ToArray();
+        }        
 
         /// <summary>
         /// Looks up the MemberInfo from our cache, if it does not exist it is resolved
@@ -513,9 +653,23 @@ namespace MD
         public static List<Type> GetSignatureFromParameters(params object[] Parameters)
         {
             List<Type> Signature = new List<Type>();
-            foreach (object obj in Parameters)
+            if (Parameters == null)
             {
-                Signature.Add(obj.GetType());
+                Signature.Add(typeof(object));
+            }
+            else
+            {
+                foreach (object obj in Parameters)
+                {
+                    if (obj == null)
+                    {
+                        Signature.Add(typeof(object));
+                    }
+                    else
+                    {
+                        Signature.Add(obj.GetType());
+                    }
+                }
             }
             return Signature;
         }
@@ -527,6 +681,10 @@ namespace MD
         /// <returns>A string containing all parameters and their values</returns>
         public static string GetParametersAsString(params object[] Parameters)
         {
+            if (Parameters == null)
+            {
+                return "null";
+            }
             string ReturnString = "";
             foreach (object obj in Parameters)
             {

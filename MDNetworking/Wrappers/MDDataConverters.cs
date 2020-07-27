@@ -145,7 +145,7 @@ namespace MD
         {
             if (Item == null)
             {
-                return null;
+                return new object[] { null };
             }
 
             // Get commands
