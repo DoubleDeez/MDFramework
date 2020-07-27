@@ -97,7 +97,7 @@ namespace MD
 
         public override void _Ready()
         {
-            MDLog.AddLogCategoryProperties(LOG_CAT, new MDLogProperties(MDLogLevel.Info));
+            MDLog.AddLogCategoryProperties(LOG_CAT, new MDLogProperties(MDLogLevel.Trace));
             this.RegisterCommandAttributes();
 
             CheckArgsForConnectionInfo();
@@ -331,7 +331,7 @@ namespace MD
         {
             foreach (int PeerId in Players.Keys)
             {
-                if (PeerId == SERVER_ID)
+                if (PeerId == Joiner || PeerId == SERVER_ID)
                 {
                     continue;
                 }
@@ -401,9 +401,14 @@ namespace MD
             if (PlayerInfo != null)
             {
                 PlayerInfo.HasInitialized = true;
-                OnPlayerInitializedEvent(PeerId);
+                NotifyPlayerInitializedEvent(PeerId);
                 MDLog.Debug(LOG_CAT, $"Player {PeerId} Initialized");
             }
+        }
+
+        protected virtual void NotifyPlayerInitializedEvent(int PeerId)
+        {
+            OnPlayerInitializedEvent(PeerId);
         }
 
         private void OnPlayerJoined_Internal(int PeerId)
@@ -442,6 +447,7 @@ namespace MD
 
             MDPlayerInfo Player = Activator.CreateInstance(PlayerType) as MDPlayerInfo;
             Player.SetPeerId(PeerId);
+            Player.PauseMode = PauseModeEnum.Process;
             AddChild(Player);
             Players.Add(PeerId, Player);
 

@@ -78,6 +78,7 @@ namespace MD
             MDLog.AddLogCategoryProperties(LOG_CAT, new MDLogProperties(MDLogLevel.Info));
             GameSession = GameInstance.GetGameSession();
             GameSession.OnPlayerJoinedEvent += OnPlayerJoinedEvent;
+            GameSession.OnPlayerInitializedEvent += OnPlayerInitializedEvent;
             GameSession.OnPlayerLeftEvent += OnPlayerLeftEvent;
             GameSession.OnNetworkNodeAdded += OnNetworkNodeAdded;
             GameSession.OnNetworkNodeRemoved += OnNetworkNodeRemoved;
@@ -328,37 +329,24 @@ namespace MD
 
         private void OnPlayerJoinedEvent(int PeerId)
         {
-            // Check if this is our own join message
-            if (PeerId == MDStatics.GetPeerId())
+            // Check if this is our own join message or if we are a client
+            if (PeerId == MDStatics.GetPeerId() || MDStatics.IsClient())
             {
                 return;
             }
-
-            // Check if we are a client and leave
-            if (MDStatics.IsClient())
-            {
-                return;
-            }
-
+            
             MDGameSynchPeerInfo PeerInfo = new MDGameSynchPeerInfo(this, PeerId);
             PeerSynchInfo.Add(PeerId, PeerInfo);
 
-            PauseGame();
-            OnSynchStartedEvent(IsPauseOnJoin());
-            foreach (int peerid in GameSession.GetAllPeerIds().Where(peerid => peerid != MDStatics.GetServerId()))
+            if (IsPauseOnJoin())
             {
-                // Synch just started so set everyone to 0%
-                OnPlayerSynchStatusUpdateEvent(peerid, 0f);
-
-                // Don't do this for the connecting peer or the server
-                if (PeerId != peerid)
+                PauseGame();
+                foreach (int peerid in GameSession.GetAllPeerIds().Where(peerid => peerid != MDStatics.GetServerId() && PeerId != peerid))
                 {
+                    // Don't do this for the connecting peer or the server
                     RpcId(peerid, nameof(PauseGame));
-                    RpcId(peerid, nameof(RpcReceiveNodeCount), NodeList.Count);
                 }
             }
-
-            RpcId(PeerId, nameof(RpcReceiveNodeCount), NodeList.Count);
 
             // Start synch check timer
             Timer timer = (Timer) GetNodeOrNull(ALL_PLAYERS_SYNCHED_TIMER_NAME);
@@ -367,6 +355,23 @@ namespace MD
                 timer = this.CreateUnpausableTimer(ALL_PLAYERS_SYNCHED_TIMER_NAME, false, SYNCH_TIMER_CHECK_INTERVAL, true,
                     this, nameof(CheckAllClientsSynched));
                 timer.Start();
+            }
+        }
+
+        private void OnPlayerInitializedEvent(int PeerId)
+        {
+            // Check if this is our own join message or if we are a client
+            if (PeerId == MDStatics.GetPeerId() || MDStatics.IsClient())
+            {
+                return;
+            }
+
+            OnSynchStartedEvent(IsPauseOnJoin());
+            foreach (int peerid in GameSession.GetAllPeerIds().Where(peerid => peerid != MDStatics.GetServerId()))
+            {
+                // Synch just started so set everyone to 0%
+                OnPlayerSynchStatusUpdateEvent(peerid, 0f);
+                RpcId(peerid, nameof(RpcReceiveNodeCount), NodeList.Count);
             }
         }
 
