@@ -401,9 +401,14 @@ namespace MD
             if (PlayerInfo != null)
             {
                 PlayerInfo.HasInitialized = true;
-                OnPlayerInitializedEvent(PeerId);
+                NotifyPlayerInitializedEvent(PeerId);
                 MDLog.Debug(LOG_CAT, $"Player {PeerId} Initialized");
             }
+        }
+
+        protected virtual void NotifyPlayerInitializedEvent(int PeerId)
+        {
+            OnPlayerInitializedEvent(PeerId);
         }
 
         private void OnPlayerJoined_Internal(int PeerId)
@@ -442,6 +447,7 @@ namespace MD
 
             MDPlayerInfo Player = Activator.CreateInstance(PlayerType) as MDPlayerInfo;
             Player.SetPeerId(PeerId);
+            Player.PauseMode = PauseModeEnum.Process;
             AddChild(Player);
             Players.Add(PeerId, Player);
 

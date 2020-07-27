@@ -59,7 +59,7 @@ namespace MD
             else
             {
                 // Send message to owning client from server to request initialization data
-                this.MDRpcId(PeerId, nameof(OnServerRequestedInitialization));
+                RpcId(PeerId, nameof(OnServerRequestedInitialization));
             }
         }
 
@@ -77,7 +77,7 @@ namespace MD
             }
             else
             {
-                this.MDServerRpc(nameof(OnClientSentPlayerName), PlaceholderName);
+                RpcId(MDStatics.GetServerId(), nameof(OnClientSentPlayerName), PlaceholderName);
             }
         }
 
@@ -108,7 +108,7 @@ namespace MD
             }
             else
             {
-                this.MDServerRpc(nameof(ServerMarkPlayerInitializationCompleted));
+                RpcId(MDStatics.GetServerId(), nameof(ServerMarkPlayerInitializationCompleted));
             }
         }
 
