@@ -139,15 +139,6 @@ namespace MD
         }
 
         /// <summary>
-        /// Checks if the gameclock is active
-        /// </summary>
-        /// <returns>True if it is, false if not</returns>
-        public static bool IsGameClockActive()
-        {
-            return GetGameSynchronizer() != null && GI.IsGameClockActive();
-        }
-
-        /// <summary>
         /// Is the game session started in non-standalone?
         /// </summary>
         /// <returns>True if network is active, false if not</returns>

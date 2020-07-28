@@ -19,9 +19,7 @@ namespace MD
         public const string ON_SCREEN_DEBUG_ADD_BASIC_INFO = "OnScreenDebugAddBasicInfo";
         public const string USE_UPNP = "UseUPNP";
         public const string REQUIRE_AUTO_REGISTER = "RequireAutoRegister";
-        public const string GAME_SYNCHRONIZER_ENABLED = "GameSynchronizerEnabled";
         public const string USE_SCENE_BUFFER = "UseSceneBuffer";
-        public const string GAME_CLOCK_ACTIVE = "GameClockActive";
         public const string GAME_SESSION_TYPE = "GameSessionType";
         public const string GAME_SYNCHRONIZER_TYPE = "GameSynchronizerType";
         public const string GAME_CLOCK_TYPE = "GameClockType";

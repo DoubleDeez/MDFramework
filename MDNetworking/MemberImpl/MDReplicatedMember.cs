@@ -159,9 +159,9 @@ namespace MD
         /// <param name="Parameters">The value</param>
         public virtual void SetValues(uint Tick, params object[] Parameters)
         {
-            // If we got no GameClock or the tick this update is for is past the current tick
+            // If the tick this update is for is past the current tick
             // Or if we are currently synching
-            if (GameClock == null || GameClock.GetRemoteTick() >= Tick || IsSynchInProgress())
+            if (GameClock.GetRemoteTick() >= Tick || IsSynchInProgress())
             {
                 UpdateValue(Parameters);
             }
@@ -182,7 +182,7 @@ namespace MD
         public virtual void CheckForValueUpdate()
         {
             // Check if we are the owner of this
-            if (ShouldReplicate() || GameClock == null)
+            if (ShouldReplicate())
             {
                 return;
             }
@@ -234,12 +234,7 @@ namespace MD
         /// <returns>The current tick or 0 if game clock is not active</returns>
         protected uint GetGameTick()
         {
-            if (GameClock != null)
-            {
-                return GameClock.GetTick();
-            }
-
-            return 0;
+            return GameClock.GetTick();
         }
 
         /// <summary>
@@ -309,7 +304,7 @@ namespace MD
         /// <returns>True if we are being synched, false if not</returns>
         protected bool IsSynchInProgress()
         {
-            if (GameSynchronizer == null || GameSynchronizer.SynchronizationState == MDGameSynchronizer.SynchronizationStates.SYNCRHONIZED)
+            if (GameSynchronizer.SynchronizationState == MDGameSynchronizer.SynchronizationStates.SYNCRHONIZED)
             {
                 return false;
             } 
