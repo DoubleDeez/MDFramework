@@ -207,7 +207,7 @@ namespace MD
         /// <returns>The value if found, default if not</returns>
         public Type GetType(ConfigurationSections Category, string Key, Type Default)
         {
-            object value = GetValue(Category.ToString(), Key, null);
+            object value = GetValue(Category.ToString(), Key, Default);
             if (value == null)
             {
                 return null;
