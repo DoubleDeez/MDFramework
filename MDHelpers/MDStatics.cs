@@ -832,24 +832,6 @@ namespace MD
         return List;
     }
 
-    public static List<MemberInfo> FindAllMembersWithAttribute<T>(object Object) where T : Attribute
-    {
-        List<MemberInfo> Members = MDStatics.GetTypeMemberInfos(Object);
-        List<MemberInfo> ReturnList = new List<MemberInfo>();
-        foreach (MemberInfo Member in Members)
-        {
-            T RepAttribute = Member.GetCustomAttribute(typeof(T)) as T;
-            if (RepAttribute == null)
-            {
-                continue;
-            }
-
-            ReturnList.Add(Member);
-        }
-
-        return ReturnList;
-    }
-
 #region LOAD SCENES MATCHING COMPARATOR
 
     /// <summary>
