@@ -58,7 +58,7 @@ namespace MD
         /// <param name="Instance">The object to register for</param>
         public static void RegisterCommandAttributes(Type ObjType, object Instance = null)
         {
-            MethodInfo[] Methods = ObjType.GetAllMethods();
+            List<MethodInfo> Methods = ObjType.GetMethodInfos();
             foreach (MethodInfo Method in Methods)
             {
                 MDCommand CmdAttr = Method.GetCustomAttribute(typeof(MDCommand)) as MDCommand;

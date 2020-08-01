@@ -24,8 +24,7 @@ namespace MD
 
         private static readonly Dictionary<Type, IMDDataConverter> DataConverterTypeCache = new Dictionary<Type, IMDDataConverter>();
 
-        public static BindingFlags BindFlagsAllMembers =
-            BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance;
+        public static BindingFlags BindFlagsAll = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.FlattenHierarchy;
 
         // MDStatics needs a reference to a Godot object to really be useful, so the GameInstance sets a reference to itself here
         public static MDGameInstance GI { get; set; }
@@ -248,38 +247,7 @@ namespace MD
         /// <returns>List of member infos</returns>
         public static List<MemberInfo> GetTypeMemberInfos(object Object)
         {
-            return GetTypeMemberInfos(Object.GetType());
-        }
-
-        /// <summary>
-        /// Returns a list of all the unique members for a Node, including the hierarchy
-        /// </summary>
-        /// <param name="ObjectType">The object type to find for</param>
-        /// <returns>List of members</returns>
-        public static List<MemberInfo> GetTypeMemberInfos(Type ObjectType)
-        {
-            List<MemberInfo> Members = new List<MemberInfo>();
-            while (ObjectType != null && ObjectType != typeof(Node))
-            {
-                Members.AddRange(ObjectType.GetFields(BindFlagsAllMembers));
-                Members.AddRange(ObjectType.GetProperties(BindFlagsAllMembers));
-                ObjectType = ObjectType.BaseType;
-            }
-
-            List<MemberInfo> DeDupedMembers = new List<MemberInfo>();
-            foreach (MemberInfo Member in Members)
-            {
-                bool IsUnique = DeDupedMembers.All(
-                    DeDupedMember =>
-                        DeDupedMember.DeclaringType != Member.DeclaringType || DeDupedMember.Name != Member.Name);
-
-                if (IsUnique)
-                {
-                    DeDupedMembers.Add(Member);
-                }
-            }
-
-            return DeDupedMembers;
+            return Object.GetType().GetMemberInfos();
         }
 
         /// <summary>
@@ -307,13 +275,7 @@ namespace MD
         private static MemberInfo GetMemberByName(Node CurNode, string Name)
         {
             Type NodeType = CurNode.GetType();
-            MemberInfo Member = NodeType.GetField(Name, BindFlagsAllMembers);
-            if (Member == null)
-            {
-                Member = NodeType.GetProperty(Name, BindFlagsAllMembers);
-            }
-
-            return Member;
+            return NodeType.GetMemberRecursive(Name);
         }
 
         /// <summary>
@@ -424,7 +386,7 @@ namespace MD
             Type nodeType = Node.GetType();
             if (!NumberedMethodInfoCache.ContainsKey(nodeType))
             {
-                NumberedMethodInfoCache.Add(nodeType, new List<MethodInfo>(nodeType.GetAllMethods()));
+                NumberedMethodInfoCache.Add(nodeType, nodeType.GetMethodInfos());
             }
 
             if (MethodNumber < NumberedMethodInfoCache[nodeType].Count)
@@ -447,7 +409,7 @@ namespace MD
             Type nodeType = Node.GetType();
             if (!NumberedMethodInfoCache.ContainsKey(nodeType))
             {
-                NumberedMethodInfoCache.Add(nodeType, new List<MethodInfo>(nodeType.GetAllMethods()));
+                NumberedMethodInfoCache.Add(nodeType, nodeType.GetMethodInfos());
             }
 
             MethodInfo info = GetMethodInfo(Node, Method, Parameters);
@@ -488,7 +450,7 @@ namespace MD
 
             if (!MethodInfoCache.ContainsKey(key))
             {
-                MethodInfo newInfo = nodeType.GetMethod(Method, MDStatics.BindFlagsAllMembers, null, Signature.ToArray(), null);
+                MethodInfo newInfo = nodeType.GetMethodRecursive(Method, Signature.ToArray());
                 if (newInfo != null)
                 {
                     MethodInfoCache.Add(key, newInfo);
@@ -496,7 +458,7 @@ namespace MD
                 else
                 {
                     // Couldn't find anything with direct compare so we will search for the method manually and cache it if found
-                    MethodInfo[] Methods = nodeType.GetAllMethods();
+                    List<MethodInfo> Methods = nodeType.GetMethodInfos();
                     foreach (MethodInfo CandidateMethod in Methods)
                     {
                         if (CandidateMethod.Name != Method)
