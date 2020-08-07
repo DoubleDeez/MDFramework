@@ -841,53 +841,53 @@ namespace MD
     /// </summary>
     /// <param name="CompareFunc">A compare function used to check if we want this scene or not</param>
     /// <returns>A list of PackedScenes or an empty list if none were found</returns>
-	public static List<PackedScene> LoadScenes(Func<Node, bool> CompareFunc)
-	{
+    public static List<PackedScene> LoadScenes(Func<Node, bool> CompareFunc)
+    {
         List<PackedScene> List = new List<PackedScene>();
-		LoadScenes("res://", List, CompareFunc);
+        LoadScenes("res://", List, CompareFunc);
         return List;
-	}
+    }
 
-	private static void LoadScenes(string Path, List<PackedScene> List, Func<Node, bool> CompareFunc)
-	{
-		Directory dir = new Directory();
-		dir.Open(Path);
-		dir.ListDirBegin(true, true);
-		while (true)
-		{
-			String filePath = dir.GetNext();
-			if (filePath == "")
-			{
-				break;
-			}
-			if (dir.CurrentIsDir())
-			{
-				// Go into all subfolder except ignore folder
-				LoadScenes(Path + filePath + "/", List, CompareFunc);
-			}
-			else if (filePath.ToLower().EndsWith(".tscn"))
-			{
-				PackedScene Scene = LoadPackedScene(Path + filePath);
-				Node instance = Scene.Instance();
-				if (CompareFunc(instance))
-				{
-					List.Add(Scene);
-				}
-				instance.QueueFree();
-			}
-		}
-		dir.ListDirEnd();
-	}
+    private static void LoadScenes(string Path, List<PackedScene> List, Func<Node, bool> CompareFunc)
+    {
+        Directory dir = new Directory();
+        dir.Open(Path);
+        dir.ListDirBegin(true, true);
+        while (true)
+        {
+            String filePath = dir.GetNext();
+            if (filePath == "")
+            {
+                break;
+            }
+            if (dir.CurrentIsDir())
+            {
+                // Go into all subfolder except ignore folder
+                LoadScenes(Path + filePath + "/", List, CompareFunc);
+            }
+            else if (filePath.ToLower().EndsWith(".tscn"))
+            {
+                PackedScene Scene = LoadPackedScene(Path + filePath);
+                Node instance = Scene.Instance();
+                if (CompareFunc(instance))
+                {
+                    List.Add(Scene);
+                }
+                instance.QueueFree();
+            }
+        }
+        dir.ListDirEnd();
+    }
 
-	private static PackedScene LoadPackedScene(String path)
-	{
-		String full_path = path;
-		if (!ResourceLoader.Exists(full_path))
-		{
-			GD.Print("Can't find: " + full_path);
-		}
-		return (PackedScene)ResourceLoader.Load(full_path);
-	}
+    private static PackedScene LoadPackedScene(String path)
+    {
+        String full_path = path;
+        if (!ResourceLoader.Exists(full_path))
+        {
+            MDLog.Warn(LOG_CAT, $"Can't find: {full_path}");
+        }
+        return (PackedScene)ResourceLoader.Load(full_path);
+    }
 #endregion
 
     }
