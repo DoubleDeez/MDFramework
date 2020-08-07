@@ -2,6 +2,7 @@ using Godot;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 
 namespace MD
 {
@@ -876,6 +877,19 @@ namespace MD
         {
             return this.AsList().TrueForAll(match);
         }
+
+    #endregion
+
+    #region LINQ METHODS
+    public bool Any(Func<T, bool> predicate)
+    {
+        return this.AsList().Any(predicate);
+    }
+
+    public T Single(Func<T, bool> predicate)
+    {
+        return this.AsList().Single(predicate);
+    }
 
     #endregion
     }

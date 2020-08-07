@@ -142,6 +142,54 @@ namespace MD
         }
 
         /// <summary>
+        /// Get all members with the given attribute inside the type
+        /// </summary>
+        /// <param name="Type">The type to search inside</param>
+        /// <typeparam name="T">The attribute to search for</typeparam>
+        /// <returns>List of MemberInfos that has the attribute or an empty list</returns>
+        public static List<MemberInfo> GetAllMembersWithAttribute<T>(this Type Type) where T : Attribute
+        {
+            List<MemberInfo> Members = Type.GetMemberInfos();
+            List<MemberInfo> ReturnList = new List<MemberInfo>();
+            foreach (MemberInfo Member in Members)
+            {
+                T RepAttribute = Member.GetCustomAttribute(typeof(T)) as T;
+                if (RepAttribute == null)
+                {
+                    continue;
+                }
+
+                ReturnList.Add(Member);
+            }
+
+            return ReturnList;
+        }
+
+        /// <summary>
+        /// Find all methods with the given attribute inside the type
+        /// </summary>
+        /// <param name="Type">The type to search inside</param>
+        /// <typeparam name="T">The attribute to search for</typeparam>
+        /// <returns>List of MethodInfos that has the attribute or an empty list</returns>
+        public static List<MethodInfo> GetAllMethodsWithAttribute<T>(this Type Type) where T : Attribute
+        {
+            List<MethodInfo> Methods = Type.GetMethodInfos();
+            List<MethodInfo> ReturnList = new List<MethodInfo>();
+            foreach (MethodInfo Method in Methods)
+            {
+                T RepAttribute = Method.GetCustomAttribute(typeof(T)) as T;
+                if (RepAttribute == null)
+                {
+                    continue;
+                }
+
+                ReturnList.Add(Method);
+            }
+
+            return ReturnList;
+        }
+
+        /// <summary>
         /// Returns a list of all the unique methods for a Node, including the hierarchy
         /// </summary>
         /// <param name="Instance">The object type to find for</param>
