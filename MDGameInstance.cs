@@ -125,7 +125,7 @@ namespace MD
         // Registers a new node to MDFramework systems
         private void RegisterNewNode(Node Instance)
         {
-            MDAutoRegister AutoRegAtr = MDStatics.FindClassAttribute<MDAutoRegister>(Instance.GetType());
+            MDAutoRegister AutoRegAtr = MDStatics.FindClassAttributeInNode<MDAutoRegister>(Instance.GetType());
             if (RequireAutoRegister() && AutoRegAtr == null ||
                 AutoRegAtr != null && AutoRegAtr.RegisterType == MDAutoRegisterType.None)
             {

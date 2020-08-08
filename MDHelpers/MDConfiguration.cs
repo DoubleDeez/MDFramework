@@ -131,7 +131,7 @@ namespace MD
         /// <param name="Key">The key to get</param>
         /// <param name="Default">The default value</param>
         /// <returns>If found the value or the default value if not found</returns>
-        private object GetValue(string Category, string Key, object Default)
+        public object GetValue(string Category, string Key, object Default)
         {
             if (!Configuration.ContainsKey(Category))
             {

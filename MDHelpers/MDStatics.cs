@@ -219,7 +219,7 @@ namespace MD
         /// <param name="InstanceType">The type to search</param>
         /// <typeparam name="T">The type to find</typeparam>
         /// <returns>The attribute object for the specified type or null if not found</returns>
-        public static T FindClassAttribute<T>(Type InstanceType) where T : Attribute
+        public static T FindClassAttributeInNode<T>(Type InstanceType) where T : Attribute
         {
             if (IsSameOrSubclass(InstanceType, typeof(Node)) == false)
             {
@@ -232,7 +232,30 @@ namespace MD
                 return FoundAtr;
             }
 
-            if (InstanceType != typeof(Node))
+            if (InstanceType != typeof(Node) && InstanceType.BaseType != null)
+            {
+                return FindClassAttributeInNode<T>(InstanceType.BaseType);
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Returns the attribute object for the specified type, 
+        /// climbing the hierarchy until we got no parent or the attribute is found
+        /// </summary>
+        /// <param name="InstanceType">The type to search</param>
+        /// <typeparam name="T">The type to find</typeparam>
+        /// <returns>The attribute object for the specified type or null if not found</returns>
+        public static T FindClassAttribute<T>(Type InstanceType) where T : Attribute
+        {
+            T FoundAtr = Attribute.GetCustomAttribute(InstanceType, typeof(T)) as T;
+            if (FoundAtr != null)
+            {
+                return FoundAtr;
+            }
+
+            if (InstanceType != typeof(Node) && InstanceType.BaseType != null)
             {
                 return FindClassAttribute<T>(InstanceType.BaseType);
             }
@@ -789,5 +812,83 @@ namespace MD
                 return new MDObjectDataConverter();
             }
         }
+
+    /// <summary>
+    /// Find all types in the current assembly that implements the attribute
+    /// </summary>
+    /// <typeparam name="T">The attribute you want to look for</typeparam>
+    /// <returns>A list of types that implements the attribute or an empty list</returns>
+    public static List<Type> FindAllScriptsImplementingAttribute<T>() where T : Attribute
+    {
+        List<Type> List = new List<Type>();
+        Assembly assembly = Assembly.GetExecutingAssembly();
+        foreach (Type type in assembly.GetTypes())
+        {
+            if (FindClassAttribute<T>(type) != null)
+            {
+                List.Add(type);
+            }
+        }
+        return List;
+    }
+
+#region LOAD SCENES MATCHING COMPARATOR
+
+    /// <summary>
+    /// Find all PackedScenes in your project that matches the comparator.
+    /// Example: List<PackedScene> TestList = MDStatics.LoadScenes((Node n) => n.GetType().GetInterface("IAutomaticTest") != null);
+    /// This would find all scenes that implements the IAutomaticTest interface
+    /// </summary>
+    /// <param name="CompareFunc">A compare function used to check if we want this scene or not</param>
+    /// <returns>A list of PackedScenes or an empty list if none were found</returns>
+    public static List<PackedScene> LoadScenes(Func<Node, bool> CompareFunc)
+    {
+        List<PackedScene> List = new List<PackedScene>();
+        LoadScenes("res://", List, CompareFunc);
+        return List;
+    }
+
+    private static void LoadScenes(string Path, List<PackedScene> List, Func<Node, bool> CompareFunc)
+    {
+        Directory dir = new Directory();
+        dir.Open(Path);
+        dir.ListDirBegin(true, true);
+        while (true)
+        {
+            String filePath = dir.GetNext();
+            if (filePath == "")
+            {
+                break;
+            }
+            if (dir.CurrentIsDir())
+            {
+                // Go into all subfolder except ignore folder
+                LoadScenes(Path + filePath + "/", List, CompareFunc);
+            }
+            else if (filePath.ToLower().EndsWith(".tscn"))
+            {
+                PackedScene Scene = LoadPackedScene(Path + filePath);
+                Node instance = Scene.Instance();
+                if (CompareFunc(instance))
+                {
+                    List.Add(Scene);
+                }
+                instance.QueueFree();
+            }
+        }
+        dir.ListDirEnd();
+    }
+
+    private static PackedScene LoadPackedScene(String path)
+    {
+        String full_path = path;
+        if (!ResourceLoader.Exists(full_path))
+        {
+            MDLog.Warn(LOG_CAT, $"Can't find: {full_path}");
+        }
+        return (PackedScene)ResourceLoader.Load(full_path);
+    }
+#endregion
+
     }
 }
