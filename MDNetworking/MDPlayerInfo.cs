@@ -35,10 +35,6 @@ namespace MD
             MDLog.AddLogCategoryProperties(LOG_CAT, new MDLogProperties(MDLogLevel.Info));
         }
 
-        public override void _Process(float delta)
-        {
-        }
-
         /// <summary>
         /// Sets the node Name and stores the PeerId for the PlayerInfo
         /// </summary>
