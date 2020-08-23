@@ -36,6 +36,7 @@ namespace MD
         {
             SetProcessInput(true);
             ConstructLayers();
+            PauseMode = PauseModeEnum.Process;
         }
 
         public override void _Input(InputEvent InEvent)
