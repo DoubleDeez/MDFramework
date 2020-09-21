@@ -201,9 +201,9 @@ namespace MD
         public void Initialize()
         {
             MDLog.AddLogCategoryProperties(LOG_CAT, new MDLogProperties(MDLogLevel.Info));
+            MDOnScreenDebug.AddOnScreenDebugInfo("Replicated Nodes", () => NodeList.Count.ToString());
             MDOnScreenDebug.AddOnScreenDebugInfo("KeyToMemberMap Size", () => KeyToMemberMap.Count.ToString());
             MDOnScreenDebug.AddOnScreenDebugInfo("NetworkIDToKeyMap Size", () => NetworkIdKeyMap.GetCount().ToString());
-            this.GetGameSession().OnSessionEndedEvent += OnSessionEnded;
             this.GetGameSession().OnPlayerJoinedEvent += OnPlayerJoined;
             PauseMode = PauseModeEnum.Process;
             RpcSenderId = -1;
@@ -216,19 +216,12 @@ namespace MD
 
         public override void _ExitTree()
         {
-            this.GetGameSession().OnSessionEndedEvent -= OnSessionEnded;
             this.GetGameSession().OnPlayerJoinedEvent -= OnPlayerJoined;
         }
 
         public override void _PhysicsProcess(float delta)
         {
             TickReplication();
-        }
-
-        private void OnSessionEnded()
-        {
-            NetworkIdKeyMap = new MDReplicatorNetworkKeyIdMap(ShouldShowBufferSize());
-            KeyToMemberMap = new Dictionary<string, MDReplicatedMember>();
         }
 
         private void OnPlayerJoined(int PeerId)
@@ -362,9 +355,10 @@ namespace MD
             {
                 if (repNode.Instance.GetRef() != Instance)
                 {
-                    return;
+                    continue;
                 }
 
+                MDLog.Debug(LOG_CAT, $"Unregistering node {Instance.Name}");
                 NetworkIdKeyMap.RemoveMembers(repNode.Members);
                 foreach (MDReplicatedMember member in repNode.Members)
                 {
