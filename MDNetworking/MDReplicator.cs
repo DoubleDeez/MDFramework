@@ -78,7 +78,7 @@ namespace MD
 
             if (Node.GetRef() == null)
             {
-                MDLog.Warn(LOG_CAT, "Node no longer exists for call");
+                MDLog.Warn(LOG_CAT, $"Node {Name} no longer exists for call");
                 return true;
             }
 
@@ -144,18 +144,22 @@ namespace MD
             Instance = Godot.Object.WeakRef(InInstance);
             Members = InMembers;
             NetworkMaster = InInstance.GetNetworkMaster();
+            CheckedPeerId = MDStatics.GetPeerId();
         }
 
-        public void CheckIfNetworkMasterChanged(int CurrentMaster)
+        public void CheckForNetworkChanges(int CurrentMaster)
         {
-            if (CurrentMaster != NetworkMaster)
+            int CurrentPeerId = MDStatics.GetPeerId();
+            if (CurrentMaster != NetworkMaster || CheckedPeerId != CurrentPeerId)
             {
                 Members.ForEach(member => member.CheckIfShouldReplicate());
                 NetworkMaster = CurrentMaster;
+                CheckedPeerId = CurrentPeerId;
             }
         }
 
         protected int NetworkMaster;
+        protected int CheckedPeerId = -1;
 
         public WeakRef Instance;
 
@@ -307,7 +311,7 @@ namespace MD
                         if (!NetworkIdKeyMap.ContainsKey(member.GetUniqueKey()))
                         {
                             uint networkid = GetReplicationId();
-                            MDLog.Trace(LOG_CAT, $"Adding NetworkIdKeyMap key [{member.GetUniqueKey()}] with id [{networkid}]");
+                            MDLog.Debug(LOG_CAT, $"Adding NetworkIdKeyMap key [{member.GetUniqueKey()}] with id [{networkid}]");
                             NetworkIdKeyMap.AddNetworkKeyIdPair(networkid, member.GetUniqueKey());
                             NetworkIdKeyMap.CheckBuffer(networkid, member);
                             networkIdUpdates.Add(networkid);
@@ -417,7 +421,7 @@ namespace MD
                     }
                     else
                     {
-                        RepNode.CheckIfNetworkMasterChanged(Instance.GetNetworkMaster());
+                        RepNode.CheckForNetworkChanges(Instance.GetNetworkMaster());
 
                         foreach (MDReplicatedMember RepMember in RepNode.Members)
                         {
@@ -430,6 +434,7 @@ namespace MD
                             }
 
                             MDLog.CTrace(JIPPeerId != -1, LOG_CAT, $"Replicating {RepMember.GetUniqueKey()} to JIP Player {JIPPeerId}");
+                            MDLog.CTrace(JIPPeerId == -1, LOG_CAT, $"Replicating {RepMember.GetUniqueKey()}");
                             RepMember.Replicate(JIPPeerId, CurrentReplicationList.Contains(RepMember));
                         }
                     }

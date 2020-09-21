@@ -18,6 +18,7 @@ namespace MD
         /// <param name="Value">The value</param>
         public static void SetValue(this MemberInfo member, object Instance, object Value)
         {
+            MDLog.Trace(LOG_CAT, $"Setting {member.Name}");
             switch (member.MemberType)
             {
                 case MemberTypes.Field:
