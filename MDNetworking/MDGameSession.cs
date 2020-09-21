@@ -329,15 +329,18 @@ namespace MD
         /// <param name="Joiner">The PeerID of the joining client</param>
         protected void BroadcastNewPlayerInitialized(int Joiner)
         {
-            foreach (int PeerId in Players.Keys)
+            if (MDStatics.IsNetworkActive())
             {
-                if (PeerId == SERVER_ID)
+                foreach (int PeerId in Players.Keys)
                 {
-                    continue;
-                }
+                    if (PeerId == SERVER_ID)
+                    {
+                        continue;
+                    }
 
-                MDLog.Debug(LOG_CAT, $"Notifying Peer [{PeerId}] that Peer [{Joiner}] has initialized");
-                RpcId(PeerId, nameof(OnPlayerInitialized), Joiner);
+                    MDLog.Debug(LOG_CAT, $"Notifying Peer [{PeerId}] that Peer [{Joiner}] has initialized");
+                    RpcId(PeerId, nameof(OnPlayerInitialized), Joiner);
+                }
             }
         }
 

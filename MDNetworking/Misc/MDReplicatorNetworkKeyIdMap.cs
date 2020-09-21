@@ -38,7 +38,7 @@ namespace MD
             }
             else
             {
-                MDLog.Warn(LOG_CAT, $"Tried to add key {key} for id {id} but it already has key {NetworkIDToKeyMap[id]}");
+                MDLog.CError(!NetworkIDToKeyMap[id].Equals(key), LOG_CAT, $"Tried to add key {key} for id {id} but it already has key {NetworkIDToKeyMap[id]}");
             }
         }
 
