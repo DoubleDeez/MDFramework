@@ -39,6 +39,8 @@ GameInstance="*res://src/MDFramework/MDGameInstance.cs"
 
 4. Checkout the [wiki](https://github.com/DoubleDeez/MDFramework/wiki) for details on how to use MDFramework.
 
+5. When exporting, under the resources tab, make sure to include `*.ini` to package the config files.
+
 # Examples
 
 Checkout the [Examples Repo](https://github.com/DoubleDeez/MDFramework-Examples) for examples on how to use various features of MDFramework.
