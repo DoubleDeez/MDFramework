@@ -59,6 +59,11 @@ namespace MD
 
         private const string LOG_CAT = "LogConfiguration";
 
+        private const string FRAMEWORK_DEBUG_CONFIG = "BaseMDConfigDebug.ini";
+        private const string FRAMEWORK_EXPORT_CONFIG = "BaseMDConfigExport.ini";
+        private const string PROJECT_DEBUG_CONFIG = "CustomMDConfigDebug.ini";
+        private const string PROJECT_EXPORT_CONFIG = "CustomMDConfigExport.ini";
+
         private bool IsLoaded = false;
 
         public enum ConfigurationSections
@@ -73,6 +78,7 @@ namespace MD
 
         public override void _Ready()
         {
+            this.RegisterCommandAttributes();
         }
 
         /// <summary>
@@ -83,11 +89,11 @@ namespace MD
             MDLog.AddLogCategoryProperties(LOG_CAT, new MDLogProperties(MDLogLevel.Info));
             // Load internal config first
             #if DEBUG
-                LoadConfiguration("BaseMDConfigDebug.ini");
-                LoadConfiguration("CustomMDConfigDebug.ini");
+                LoadConfiguration(FRAMEWORK_DEBUG_CONFIG);
+                LoadConfiguration(PROJECT_DEBUG_CONFIG);
             #else
-                LoadConfiguration("BaseMDConfigExport.ini");
-                LoadConfiguration("CustomMDConfigExport.ini");
+                LoadConfiguration(FRAMEWORK_EXPORT_CONFIG);
+                LoadConfiguration(PROJECT_EXPORT_CONFIG);
             #endif
 
             IsLoaded = true;
@@ -101,7 +107,7 @@ namespace MD
         /// <returns>True if it could be found and loaded, false if not</returns>
         public bool LoadConfiguration(string name)
         {
-            String path = FindFile(name);
+            string path = FindFile(name);
             if (path == "")
             {
                 return false;
@@ -276,7 +282,7 @@ namespace MD
         /// <returns>True if the config has a value</returns>
         public bool HasValue(ConfigurationSections Category, string Key)
         {
-            String CatKey = Category.ToString();
+            string CatKey = Category.ToString();
             return Configuration.ContainsKey(CatKey) && Configuration[CatKey].ContainsKey(Key);
         }
 
@@ -285,19 +291,61 @@ namespace MD
         /// </summary>
         /// <param name="name">Name of the file to find</param>
         /// <returns>The path to the file</returns>
-        protected String FindFile(string name)
+        protected string FindFile(string name)
         {
             return FindFileInt(name, "res://");
         }
 
-        private String FindFileInt(string name, string path)
+        /// <summary>
+        /// Copies the framework-level config files to the resource root
+        /// </summary>
+        [MDCommand]
+        public void GenerateConfigFiles()
+        {
+            GenerateConfigFile(FRAMEWORK_DEBUG_CONFIG, PROJECT_DEBUG_CONFIG);
+            GenerateConfigFile(FRAMEWORK_EXPORT_CONFIG, PROJECT_EXPORT_CONFIG);
+        }
+
+        private void GenerateConfigFile(string Source, string Target)
+        {
+            string existingTarget = FindFile(Target);
+            if (existingTarget == "")
+            {
+                string SourceFilePath = FindFile(Source);
+                File SourceFile = new File();
+                SourceFile.Open(SourceFilePath, File.ModeFlags.Read);
+                string SourceText = SourceFile.GetAsText();
+                SourceFile.Close();
+
+                if (SourceText == "")
+                {
+                    MDLog.Error(LOG_CAT, $"Failed to read config from {SourceFilePath}");
+                    return;
+                }
+
+                string TargetFilePath = $"res://{Target}";
+                File TargetFile = new File();
+                TargetFile.Open(TargetFilePath, File.ModeFlags.Write);
+                
+                TargetFile.StoreString(SourceText);
+                TargetFile.Close();
+
+                MDLog.Info(LOG_CAT, $"Copied config file from {SourceFilePath} to {TargetFilePath}");
+            }
+            else
+            {
+                MDLog.Info(LOG_CAT, $"Config file {existingTarget} already exists");
+            }
+        }
+
+        private string FindFileInt(string name, string path)
         {
             Directory dir = new Directory();
             dir.Open(path);
             dir.ListDirBegin(true, true);
             while (true)
             {
-                String filePath = dir.GetNext();
+                string filePath = dir.GetNext();
                 if (filePath == "")
                 {
                     break;
@@ -308,7 +356,7 @@ namespace MD
                 }
                 else if (dir.CurrentIsDir())
                 {
-                    String fileName = FindFileInt(name, path + filePath + "/");
+                    string fileName = FindFileInt(name, path + filePath + "/");
                     if (fileName != "")
                     {
                         return fileName;
