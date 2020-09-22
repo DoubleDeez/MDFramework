@@ -10,7 +10,7 @@ namespace MD
     [MDAutoRegister]
     public class MDDebugScreen : MDScreen
     {
-        private const string LOG_CAT = "LogOnScreenDebug";
+        private const string LOG_CAT = "LogDebugScreen";
 
         private RichTextLabel DisplayLabel;
 

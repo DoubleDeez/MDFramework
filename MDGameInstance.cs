@@ -22,11 +22,12 @@ namespace MD
 
         public override void _Ready()
         {
+            MDStatics.GI = this;
+            
             // Configuration first
             CreateConfiguration();
 
             // Init static classes first
-            MDStatics.GI = this;
             MDLog.Initialize(GetLogDirectory());
             MDArguments.PopulateArgs();
             MDProfiler.Initialize();
@@ -273,12 +274,6 @@ namespace MD
         public virtual bool IsOnScreenDebugAvailable()
         {
             return Configuration.GetBool(MDConfiguration.ConfigurationSections.GameInstance, MDConfiguration.ON_SCREEN_DEBUG_ENABLED, false);
-        }
-
-        /// <summary>Should basic information like fps and such be added by default (Default: Only in debug mode)</summary>
-        public virtual bool IsOnScreenDebugAddBasicInformation()
-        {
-            return Configuration.GetBool(MDConfiguration.ConfigurationSections.GameInstance, MDConfiguration.ON_SCREEN_DEBUG_ADD_BASIC_INFO, false);
         }
 
         /// <summary>Override to change when UPNP is used for the server (Default: True)</summary>

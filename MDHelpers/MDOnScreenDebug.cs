@@ -24,6 +24,7 @@ namespace MD
     public delegate string OnScreenInfoFunction();
     public static class MDOnScreenDebug
     {
+        private const string LOG_CAT = "LogOnScreenDebug";
         private const string BASIC_DEBUG_CAT = "Basic Info";
         internal static List<string> HiddenCategories { get; private set; } = new List<string>();
         internal static Dictionary<string, Dictionary<string, OnScreenDebugInfo>> DebugInfoCategoryMap { get; private set; } = new Dictionary<string, Dictionary<string, OnScreenDebugInfo>>();
@@ -32,11 +33,11 @@ namespace MD
         {
             MDCommands.RegisterCommandAttributes(typeof(MDOnScreenDebug));
             AddBasicInfo();
-
-            if (MDStatics.GetGameInstance().IsOnScreenDebugAddBasicInformation() == false)
-            {
-                HiddenCategories.Add(BASIC_DEBUG_CAT);
-            }
+            
+            // Load hidden categories from config
+            string HiddenCategoryString = MDStatics.GetGameInstance().GetConfiguration().GetString(MDConfiguration.ConfigurationSections.OnScreenDebug, MDConfiguration.HIDDEN_CATEGORIES, "");
+            string[] HiddenCategoryArray = HiddenCategoryString.Replace(", ", ",").Replace(" ,", ",").Split(',');
+            HiddenCategories.AddRange(HiddenCategoryArray);
         }
 
         /// <summary>
@@ -95,7 +96,6 @@ namespace MD
         /// <returns>True if we removed it, false if not</returns>
         public static bool RemoveOnScreenDebugInfo(string DebugCategory)
         {
-            HiddenCategories.Remove(DebugCategory);
             return DebugInfoCategoryMap.Remove(DebugCategory);
         }
 
