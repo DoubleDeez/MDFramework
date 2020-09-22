@@ -29,6 +29,7 @@ namespace MD
         public const string METHOD_REQUEST_PING = nameof(RequestPing);
         
         private const string LOG_CAT = "LogGameSynchronizer";
+        private const string DEBUG_CAT = "GameSynchronizer";
 
         private const string RESUME_TIMER_NAME = "ResumeTimer";
 
@@ -391,8 +392,7 @@ namespace MD
                 // Add max ping information between this client and any other client
                 // Roundtrip is: client 1 -> server -> client 2 -> server -> client 1.
                 // TODO: Max ping should be not identical for each player we ping
-                MDOnScreenDebug.AddOnScreenDebugInfo($"MaxRoundtripPing: ",
-                    () => MaxPing.ToString());
+                MDOnScreenDebug.AddOnScreenDebugInfo(DEBUG_CAT, "MaxRoundtripPing: ", () => MaxPing.ToString());
                 PauseGame();
                 SynchronizationState = SynchronizationStates.SYNCHRONIZING_IN_PROGRESS;
             }

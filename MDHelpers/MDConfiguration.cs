@@ -46,13 +46,20 @@ namespace MD
         public const string FRAME_INTERVAL = "FrameInterval";
         public const string SHOULD_SHOW_BUFFER_SIZE = "ShouldShowBufferSize";
 
+        // LOGGING
+        public const string DEFAULT_LOG_LEVEL = "Default";
+
+        // ON SCREEN DEBUG
+        public const string HIDDEN_CATEGORIES = "HiddenCategories";
+
         /// <summary>
         /// First key string is the section, inner dictionary key is the key
         /// </summary>
         private Dictionary<string, Dictionary<string, object>> Configuration = new Dictionary<string, Dictionary<string, object>>();
 
-        // LOGGING
-        public const string DEFAULT_LOG_LEVEL = "Default";
+        private const string LOG_CAT = "LogConfiguration";
+
+        private bool IsLoaded = false;
 
         public enum ConfigurationSections
         {
@@ -60,12 +67,12 @@ namespace MD
             Replicator,
             GameSynchronizer,
             GameClock,
-            Logging
+            Logging,
+            OnScreenDebug
         }
 
         public override void _Ready()
         {
-            
         }
 
         /// <summary>
@@ -73,14 +80,17 @@ namespace MD
         /// </summary>
         public void LoadConfiguration()
         {
+            MDLog.AddLogCategoryProperties(LOG_CAT, new MDLogProperties(MDLogLevel.Info));
             // Load internal config first
             #if DEBUG
-                LoadConfiguration("MDConfigDebug.ini");
+                LoadConfiguration("BaseMDConfigDebug.ini");
                 LoadConfiguration("CustomMDConfigDebug.ini");
             #else
-                LoadConfiguration("MDConfigExport.ini");
+                LoadConfiguration("BaseMDConfigExport.ini");
                 LoadConfiguration("CustomMDConfigExport.ini");
             #endif
+
+            IsLoaded = true;
         }
 
         /// <summary>
@@ -97,6 +107,7 @@ namespace MD
                 return false;
             }
 
+            MDLog.Trace(LOG_CAT, $"Loading config file {path}");
             ConfigFile conFile = new ConfigFile();
             conFile.Load(path);
             foreach (string section in conFile.GetSections())
@@ -105,17 +116,20 @@ namespace MD
                 {
                     if (!Configuration.ContainsKey(section))
                     {
+                        MDLog.Trace(LOG_CAT, $"Adding section {section}");
                         // Add a new section
                         Configuration.Add(section, new Dictionary<string, object>());
                     }
 
                     if (!Configuration[section].ContainsKey(key))
                     {
+                        MDLog.Trace(LOG_CAT, $"Adding section {section} key {key}");
                         // Add a new key
                         Configuration[section].Add(key, conFile.GetValue(section, key));
                     }
                     else
                     {
+                        MDLog.Trace(LOG_CAT, $"Overwriting section {section} key {key}");
                         // Overwrite existing key
                         Configuration[section][key] = conFile.GetValue(section, key);
                     }
@@ -135,11 +149,13 @@ namespace MD
         {
             if (!Configuration.ContainsKey(Category))
             {
+                MDLog.CWarn(IsLoaded, LOG_CAT, $"Couldn't find category {Category}");
                 return Default;
             }
 
             if (!Configuration[Category].ContainsKey(Key))
             {
+                MDLog.CWarn(IsLoaded, LOG_CAT, $"Couldn't find key {Key} in category {Category}");
                 return Default;
             }
 

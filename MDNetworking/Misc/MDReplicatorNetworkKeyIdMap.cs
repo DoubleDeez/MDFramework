@@ -8,6 +8,7 @@ namespace MD
     class MDReplicatorNetworkKeyIdMap
     {
         private const string LOG_CAT = "LogReplicatorNetworkKeyIdMap";
+        private const string DEBUG_CAT = "ReplicatorNetworkKeyIdMap";
         private Dictionary<uint, string> NetworkIDToKeyMap = new Dictionary<uint, string>();
         private Dictionary<string, uint> KeyToNetworkIdMap = new Dictionary<string, uint>();
 
@@ -20,7 +21,7 @@ namespace MD
         {
             if (ShowBufferSize)
             {
-                MDOnScreenDebug.AddOnScreenDebugInfo("NetworkIDToKeyMap Buffer Size", () => ClockedValueBuffer.Count.ToString());
+                MDOnScreenDebug.AddOnScreenDebugInfo(DEBUG_CAT, "NetworkIDToKeyMap Buffer Size", () => ClockedValueBuffer.Count.ToString());
             }
         }
 
