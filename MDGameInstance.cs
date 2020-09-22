@@ -30,6 +30,7 @@ namespace MD
             MDLog.Initialize(GetLogDirectory());
             MDArguments.PopulateArgs();
             MDProfiler.Initialize();
+            MDOnScreenDebug.Initialize();
 
             // Hook up events
             GetTree().Connect("node_added", this, nameof(OnNodeAdded_Internal));

@@ -10,7 +10,8 @@ namespace MD
     [MDAutoRegister]
     public class MDGameClock : Node
     {
-        public static readonly string LOG_CAT = "LogGameClock";
+        private const string LOG_CAT = "LogGameClock";
+        private const string DEBUG_CAT = "GameClock";
 
         ///<summary>If we are calculating offset from ping this is the minimum offset we can have</summary>
         public int MinimumOffset = 5;
@@ -82,12 +83,12 @@ namespace MD
             GameSynchronizer.OnPlayerPingUpdatedEvent += OnPlayerPingUpdatedEvent;
 
             // TODO: Remove this, only here for debug
-            MDOnScreenDebug.AddOnScreenDebugInfo("GameClock Current Tick", () => CurrentTick.ToString());
-            MDOnScreenDebug.AddOnScreenDebugInfo("OS GetTickMsec", () => OS.GetTicksMsec().ToString());
-            MDOnScreenDebug.AddOnScreenDebugInfo("GameClock Remote Offset",
+            MDOnScreenDebug.AddOnScreenDebugInfo(DEBUG_CAT, "GameClock Current Tick", () => CurrentTick.ToString());
+            MDOnScreenDebug.AddOnScreenDebugInfo(DEBUG_CAT, "OS GetTickMsec", () => OS.GetTicksMsec().ToString());
+            MDOnScreenDebug.AddOnScreenDebugInfo(DEBUG_CAT, "GameClock Remote Offset",
                 () =>
                     $"{CurrentRemoteTickOffset} ({(int) (CurrentRemoteTickOffset * TICK_INTERVAL_MILLISECONDS)} Msec)");
-            MDOnScreenDebug.AddOnScreenDebugInfo("GameClock Remote Target Offset",
+            MDOnScreenDebug.AddOnScreenDebugInfo(DEBUG_CAT, "GameClock Remote Target Offset",
                 () =>
                     $"{CurrentRemoteTickOffsetTarget} ({(int) (CurrentRemoteTickOffsetTarget * TICK_INTERVAL_MILLISECONDS)} Msec)");
         }

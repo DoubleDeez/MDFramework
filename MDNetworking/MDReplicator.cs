@@ -194,6 +194,7 @@ namespace MD
         private List<ClockedRemoteCall> ClockedRemoteCallList = new List<ClockedRemoteCall>();
 
         private const string LOG_CAT = "LogReplicator";
+        private const string DEBUG_CAT = "Replicator";
         public const float JIPWaitTime = 1000f;
 
         private uint ReplicationIdCounter = 0;
@@ -205,9 +206,9 @@ namespace MD
         public void Initialize()
         {
             MDLog.AddLogCategoryProperties(LOG_CAT, new MDLogProperties(MDLogLevel.Info));
-            MDOnScreenDebug.AddOnScreenDebugInfo("Replicated Nodes", () => NodeList.Count.ToString());
-            MDOnScreenDebug.AddOnScreenDebugInfo("KeyToMemberMap Size", () => KeyToMemberMap.Count.ToString());
-            MDOnScreenDebug.AddOnScreenDebugInfo("NetworkIDToKeyMap Size", () => NetworkIdKeyMap.GetCount().ToString());
+            MDOnScreenDebug.AddOnScreenDebugInfo(DEBUG_CAT, "Replicated Nodes", () => NodeList.Count.ToString());
+            MDOnScreenDebug.AddOnScreenDebugInfo(DEBUG_CAT, "KeyToMemberMap Size", () => KeyToMemberMap.Count.ToString());
+            MDOnScreenDebug.AddOnScreenDebugInfo(DEBUG_CAT, "NetworkIDToKeyMap Size", () => NetworkIdKeyMap.GetCount().ToString());
             this.GetGameSession().OnPlayerJoinedEvent += OnPlayerJoined;
             PauseMode = PauseModeEnum.Process;
             RpcSenderId = -1;

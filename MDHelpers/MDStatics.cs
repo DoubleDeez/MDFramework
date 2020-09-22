@@ -670,7 +670,7 @@ namespace MD
         /// </summary>
         /// <param name="len">The value to convert</param>
         /// <returns>A human readable string</returns>
-        public static string HumanReadableSize(double len)
+        public static string HumanReadableMemorySize(double len)
         {
             string[] sizes = {"B", "KB", "MB", "GB", "TB"};
             int order = 0;
