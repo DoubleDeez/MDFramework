@@ -13,7 +13,8 @@ namespace MD
         public enum Settings
         {
             OnValueChangedEvent,
-            Converter
+            Converter,
+            CallOnValueChangedEventLocally
         }
 
         protected const string LOG_CAT = "LogReplicatedMember";
@@ -33,6 +34,8 @@ namespace MD
         protected MDGameClock GameClock;
         protected IMDDataConverter DataConverter = null;
         protected MethodInfo OnValueChangedCallback = null;
+
+        protected bool ShouldCallOnValueChangedCallbackLocally = false;
 
         public MDReplicatedMember(MemberInfo Member, bool Reliable, MDReplicatedType ReplicatedType, WeakRef NodeRef,
             MDReplicatedSetting[] Settings)
@@ -69,6 +72,9 @@ namespace MD
                         Type DataConverterType = Type.GetType(setting.Value.ToString());
                         DataConverter = MDStatics.CreateConverterOfType(DataConverterType);
                         break;
+                    case Settings.CallOnValueChangedEventLocally:
+                        ShouldCallOnValueChangedCallbackLocally = setting.Value as bool? ?? false;
+                        break;
                 }
             }
 
@@ -103,6 +109,7 @@ namespace MD
                 GetReplicatedType() == MDReplicatedType.OnChange && DataConverter.ShouldObjectBeReplicated(LastValue, CurrentValue))
             {
                 ReplicateToAll(CurrentValue);
+                CheckCallOnChangeCallback(CurrentValue);
             }
             else if (JoinInProgressPeerId != -1)
             {
@@ -222,10 +229,7 @@ namespace MD
             object value = ConvertFromObject(CurrentValue, Parameters);
             Member.SetValue(Instance, value);
             LastValue = value;
-            if (OnValueChangedCallback != null)
-            {
-                OnValueChangedCallback.Invoke(Instance, null);
-            }
+            CallOnChangeCallback(LastValue);
         }
 
         /// <summary>
@@ -310,6 +314,31 @@ namespace MD
             } 
 
             return true;
+        }
+
+        protected void CheckCallOnChangeCallback(object Value = null)
+        {
+            if (ShouldCallOnValueChangedCallbackLocally)
+            {
+                CallOnChangeCallback(Value);
+            }
+        }
+
+        protected void CallOnChangeCallback(object Value = null)
+        {
+            if (OnValueChangedCallback != null)
+            {
+                ParameterInfo[] Params = OnValueChangedCallback.GetParameters();
+                Node Instance = NodeRef.GetRef() as Node;
+                if (Params.Length > 0 && Value != null)
+                {
+                    OnValueChangedCallback.Invoke(Instance, new [] { Value });
+                }
+                else
+                {
+                    OnValueChangedCallback.Invoke(Instance, null);
+                }
+            }
         }
     }
 }

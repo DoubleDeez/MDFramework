@@ -12,6 +12,7 @@ namespace MD
         private const string LOG_CAT = "LogPlayerInfo";
         [MDReplicated]
         [MDReplicatedSetting(MDReplicatedMember.Settings.OnValueChangedEvent, nameof(OnPlayerNameChanged))]
+        [MDReplicatedSetting(MDReplicatedMember.Settings.CallOnValueChangedEventLocally, true)]
         public string PlayerName { get; protected set; } = "";
 
         /// <summary>
@@ -89,7 +90,6 @@ namespace MD
             {
                 PlayerName = ClientName;
                 MarkPlayerInitializationCompleted();
-                OnPlayerNameChangedEvent(PlayerName);
             }
         }
 
@@ -120,9 +120,9 @@ namespace MD
         /// <summary>
         /// Called when the player name changes
         /// </summary>
-        protected void OnPlayerNameChanged()
+        protected void OnPlayerNameChanged(string NewName)
         {
-            OnPlayerNameChangedEvent(PlayerName);
+            OnPlayerNameChangedEvent(NewName);
         }
     }
 }

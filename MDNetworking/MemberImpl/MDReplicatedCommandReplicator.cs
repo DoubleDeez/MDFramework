@@ -63,11 +63,7 @@ namespace MD
             if (GameClock.GetRemoteTick() >= Tick || IsSynchInProgress())
             {
                 GetCommandReplicator().MDProcessCommand(Parameters);
-                if (OnValueChangedCallback != null)
-                {
-                    Node Instance = NodeRef.GetRef() as Node;
-                    OnValueChangedCallback.Invoke(Instance, null);
-                }
+                CallOnChangeCallback();
             }
             else
             {
@@ -111,11 +107,7 @@ namespace MD
                 touchedKeys.ForEach(k => ValueList.Remove(k));
 
                 // Send event
-                if (OnValueChangedCallback != null)
-                {
-                    Node Instance = NodeRef.GetRef() as Node;
-                    OnValueChangedCallback.Invoke(Instance, null);
-                }
+                CallOnChangeCallback();
             }
         }
 
@@ -155,6 +147,8 @@ namespace MD
                         }
 
                     });
+
+                    CheckCallOnChangeCallback();
                 }
             }
 
