@@ -115,7 +115,7 @@ namespace MD
                 GetReplicatedType() == MDReplicatedType.OnChange && DataConverter.ShouldObjectBeReplicated(LastValue, CurrentValue))
             {
                 ReplicateToAll(CurrentValue);
-                CheckCallOnChangeCallback(CurrentValue);
+                CheckCallLocalOnChangeCallback(CurrentValue);
             }
             else if (JoinInProgressPeerId != -1)
             {
@@ -322,7 +322,7 @@ namespace MD
             return true;
         }
 
-        protected void CheckCallOnChangeCallback(object Value = null)
+        protected void CheckCallLocalOnChangeCallback(object Value = null)
         {
             if (ShouldCallOnValueChangedCallbackLocally)
             {

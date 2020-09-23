@@ -148,7 +148,7 @@ namespace MD
 
                     });
 
-                    CheckCallOnChangeCallback();
+                    CheckCallLocalOnChangeCallback();
                 }
             }
 
