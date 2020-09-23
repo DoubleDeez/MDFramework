@@ -11,7 +11,7 @@ namespace MD
     {
         private const string LOG_CAT = "LogPlayerInfo";
         [MDReplicated]
-        [MDReplicatedSetting(MDReplicatedMember.Settings.OnValueChangedEvent, nameof(OnPlayerNameChanged))]
+        [MDReplicatedSetting(MDReplicatedMember.Settings.OnValueChangedEvent, nameof(OnPlayerNameChangedEvent))]
         [MDReplicatedSetting(MDReplicatedMember.Settings.CallOnValueChangedEventLocally, true)]
         public string PlayerName { get; protected set; } = "";
 
@@ -115,14 +115,6 @@ namespace MD
             {
                 this.GetGameSession().OnPlayerInfoInitializationCompleted(PeerId);
             }
-        }
-
-        /// <summary>
-        /// Called when the player name changes
-        /// </summary>
-        protected void OnPlayerNameChanged(string NewName)
-        {
-            OnPlayerNameChangedEvent(NewName);
         }
     }
 }

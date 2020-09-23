@@ -33,7 +33,8 @@ namespace MD
         protected MDGameSynchronizer GameSynchronizer;
         protected MDGameClock GameClock;
         protected IMDDataConverter DataConverter = null;
-        protected MethodInfo OnValueChangedCallback = null;
+        protected MethodInfo OnValueChangedMethodCallback = null;
+        protected EventInfo OnValueChangedEventCallback = null;
 
         protected bool ShouldCallOnValueChangedCallbackLocally = false;
 
@@ -66,7 +67,12 @@ namespace MD
                 {
                     case Settings.OnValueChangedEvent:
                         Node Node = NodeRef.GetRef() as Node;
-                        OnValueChangedCallback = Node.GetType().GetMethodRecursive(setting.Value.ToString());
+                        OnValueChangedMethodCallback = Node.GetType().GetMethodRecursive(setting.Value.ToString());
+                        if (OnValueChangedMethodCallback == null)
+                        {
+                            OnValueChangedEventCallback = Node.GetType().GetEvent(setting.Value.ToString());
+                        }
+                        MDLog.CError(OnValueChangedMethodCallback == null && OnValueChangedEventCallback == null, LOG_CAT, $"Failed to find method or event with name {setting.Value.ToString()} on Node {Node.GetPath()}");
                         break;
                     case Settings.Converter:
                         Type DataConverterType = Type.GetType(setting.Value.ToString());
@@ -326,17 +332,18 @@ namespace MD
 
         protected void CallOnChangeCallback(object Value = null)
         {
-            if (OnValueChangedCallback != null)
+            MethodInfo CallbackMethod = OnValueChangedMethodCallback ?? OnValueChangedEventCallback?.GetRaiseMethod(true);
+            if (CallbackMethod != null)
             {
-                ParameterInfo[] Params = OnValueChangedCallback.GetParameters();
+                ParameterInfo[] Params = CallbackMethod.GetParameters();
                 Node Instance = NodeRef.GetRef() as Node;
                 if (Params.Length > 0 && Value != null)
                 {
-                    OnValueChangedCallback.Invoke(Instance, new [] { Value });
+                    CallbackMethod.Invoke(Instance, new [] { Value });
                 }
                 else
                 {
-                    OnValueChangedCallback.Invoke(Instance, null);
+                    CallbackMethod.Invoke(Instance, null);
                 }
             }
         }
