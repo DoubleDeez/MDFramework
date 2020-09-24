@@ -58,7 +58,8 @@ namespace MD
 
             // Set the value
             T Value = GetValueForTick(NextValue);
-            UpdateValue(LinearInterpolate(LastClockedValue.Value, Value, TicksSinceLastValue / TicksBetweenUpdates));
+            float Alpha = Mathf.Clamp(TicksSinceLastValue / TicksBetweenUpdates, 0f, 1f);
+            UpdateValue(LinearInterpolate(LastClockedValue.Value, Value, Alpha));
             LastTickValueWasChanged = GameClock.GetRemoteTick();
         }
 
