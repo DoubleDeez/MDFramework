@@ -11,7 +11,8 @@ namespace MD
     {
         private const string LOG_CAT = "LogPlayerInfo";
         [MDReplicated]
-        [MDReplicatedSetting(MDReplicatedMember.Settings.OnValueChangedEvent, nameof(OnPlayerNameChanged))]
+        [MDReplicatedSetting(MDReplicatedMember.Settings.OnValueChangedEvent, nameof(OnPlayerNameChangedEvent))]
+        [MDReplicatedSetting(MDReplicatedMember.Settings.CallOnValueChangedEventLocally, true)]
         public string PlayerName { get; protected set; } = "";
 
         /// <summary>
@@ -33,10 +34,6 @@ namespace MD
         public override void _Ready()
         {
             MDLog.AddLogCategoryProperties(LOG_CAT, new MDLogProperties(MDLogLevel.Info));
-        }
-
-        public override void _Process(float delta)
-        {
         }
 
         /// <summary>
@@ -93,7 +90,6 @@ namespace MD
             {
                 PlayerName = ClientName;
                 MarkPlayerInitializationCompleted();
-                OnPlayerNameChangedEvent(PlayerName);
             }
         }
 
@@ -119,14 +115,6 @@ namespace MD
             {
                 this.GetGameSession().OnPlayerInfoInitializationCompleted(PeerId);
             }
-        }
-
-        /// <summary>
-        /// Called when the player name changes
-        /// </summary>
-        protected void OnPlayerNameChanged()
-        {
-            OnPlayerNameChangedEvent(PlayerName);
         }
     }
 }

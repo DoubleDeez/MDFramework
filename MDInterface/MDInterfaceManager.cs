@@ -30,12 +30,13 @@ namespace MD
         private const string LOG_CAT = "InterfaceManager";
         private Dictionary<MDScreenLayer, MDLayerStack> LayerMap = new Dictionary<MDScreenLayer, MDLayerStack>();
         private MDConsole Console;
-        private MDOnScreenDebug OnScreenDebug;
+        private MDDebugScreen OnScreenDebug;
 
         public override void _Ready()
         {
             SetProcessInput(true);
             ConstructLayers();
+            PauseMode = PauseModeEnum.Process;
         }
 
         public override void _Input(InputEvent InEvent)
@@ -157,7 +158,7 @@ namespace MD
         {
             if (OnScreenDebug == null)
             {
-                OnScreenDebug = OpenScreen<MDOnScreenDebug>(OnScreenDebugName, MDScreenLayer.Debug);
+                OnScreenDebug = OpenScreen<MDDebugScreen>(OnScreenDebugName, MDScreenLayer.Debug);
                 OnScreenDebug.OnScreenClosed += OnOnScreenDebugClosed;
             }
             else

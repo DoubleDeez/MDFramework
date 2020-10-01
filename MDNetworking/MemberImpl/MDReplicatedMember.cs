@@ -13,7 +13,8 @@ namespace MD
         public enum Settings
         {
             OnValueChangedEvent,
-            Converter
+            Converter,
+            CallOnValueChangedEventLocally
         }
 
         protected const string LOG_CAT = "LogReplicatedMember";
@@ -32,7 +33,10 @@ namespace MD
         protected MDGameSynchronizer GameSynchronizer;
         protected MDGameClock GameClock;
         protected IMDDataConverter DataConverter = null;
-        protected MethodInfo OnValueChangedCallback = null;
+        protected MethodInfo OnValueChangedMethodCallback = null;
+        protected EventInfo OnValueChangedEventCallback = null;
+
+        protected bool ShouldCallOnValueChangedCallbackLocally = false;
 
         public MDReplicatedMember(MemberInfo Member, bool Reliable, MDReplicatedType ReplicatedType, WeakRef NodeRef,
             MDReplicatedSetting[] Settings)
@@ -63,11 +67,19 @@ namespace MD
                 {
                     case Settings.OnValueChangedEvent:
                         Node Node = NodeRef.GetRef() as Node;
-                        OnValueChangedCallback = Node.GetType().GetMethodRecursive(setting.Value.ToString());
+                        OnValueChangedMethodCallback = Node.GetType().GetMethodRecursive(setting.Value.ToString());
+                        if (OnValueChangedMethodCallback == null)
+                        {
+                            OnValueChangedEventCallback = Node.GetType().GetEvent(setting.Value.ToString());
+                        }
+                        MDLog.CError(OnValueChangedMethodCallback == null && OnValueChangedEventCallback == null, LOG_CAT, $"Failed to find method or event with name {setting.Value.ToString()} on Node {Node.GetPath()}");
                         break;
                     case Settings.Converter:
                         Type DataConverterType = Type.GetType(setting.Value.ToString());
                         DataConverter = MDStatics.CreateConverterOfType(DataConverterType);
+                        break;
+                    case Settings.CallOnValueChangedEventLocally:
+                        ShouldCallOnValueChangedCallbackLocally = setting.Value as bool? ?? false;
                         break;
                 }
             }
@@ -103,6 +115,7 @@ namespace MD
                 GetReplicatedType() == MDReplicatedType.OnChange && DataConverter.ShouldObjectBeReplicated(LastValue, CurrentValue))
             {
                 ReplicateToAll(CurrentValue);
+                CheckCallLocalOnChangeCallback(CurrentValue);
             }
             else if (JoinInProgressPeerId != -1)
             {
@@ -222,10 +235,7 @@ namespace MD
             object value = ConvertFromObject(CurrentValue, Parameters);
             Member.SetValue(Instance, value);
             LastValue = value;
-            if (OnValueChangedCallback != null)
-            {
-                OnValueChangedCallback.Invoke(Instance, null);
-            }
+            CallOnChangeCallback(LastValue);
         }
 
         /// <summary>
@@ -310,6 +320,32 @@ namespace MD
             } 
 
             return true;
+        }
+
+        protected void CheckCallLocalOnChangeCallback(object Value = null)
+        {
+            if (ShouldCallOnValueChangedCallbackLocally)
+            {
+                CallOnChangeCallback(Value);
+            }
+        }
+
+        protected void CallOnChangeCallback(object Value = null)
+        {
+            MethodInfo CallbackMethod = OnValueChangedMethodCallback ?? OnValueChangedEventCallback?.GetRaiseMethod(true);
+            if (CallbackMethod != null)
+            {
+                ParameterInfo[] Params = CallbackMethod.GetParameters();
+                Node Instance = NodeRef.GetRef() as Node;
+                if (Params.Length > 0 && Value != null)
+                {
+                    CallbackMethod.Invoke(Instance, new [] { Value });
+                }
+                else
+                {
+                    CallbackMethod.Invoke(Instance, null);
+                }
+            }
         }
     }
 }

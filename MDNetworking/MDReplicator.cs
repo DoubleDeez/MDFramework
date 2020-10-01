@@ -78,7 +78,7 @@ namespace MD
 
             if (Node.GetRef() == null)
             {
-                MDLog.Warn(LOG_CAT, "Node no longer exists for call");
+                MDLog.Warn(LOG_CAT, $"Node {Name} no longer exists for call");
                 return true;
             }
 
@@ -144,18 +144,22 @@ namespace MD
             Instance = Godot.Object.WeakRef(InInstance);
             Members = InMembers;
             NetworkMaster = InInstance.GetNetworkMaster();
+            CheckedPeerId = MDStatics.GetPeerId();
         }
 
-        public void CheckIfNetworkMasterChanged(int CurrentMaster)
+        public void CheckForNetworkChanges(int CurrentMaster)
         {
-            if (CurrentMaster != NetworkMaster)
+            int CurrentPeerId = MDStatics.GetPeerId();
+            if (CurrentMaster != NetworkMaster || CheckedPeerId != CurrentPeerId)
             {
                 Members.ForEach(member => member.CheckIfShouldReplicate());
                 NetworkMaster = CurrentMaster;
+                CheckedPeerId = CurrentPeerId;
             }
         }
 
         protected int NetworkMaster;
+        protected int CheckedPeerId = -1;
 
         public WeakRef Instance;
 
@@ -190,6 +194,7 @@ namespace MD
         private List<ClockedRemoteCall> ClockedRemoteCallList = new List<ClockedRemoteCall>();
 
         private const string LOG_CAT = "LogReplicator";
+        private const string DEBUG_CAT = "Replicator";
         public const float JIPWaitTime = 1000f;
 
         private uint ReplicationIdCounter = 0;
@@ -201,9 +206,9 @@ namespace MD
         public void Initialize()
         {
             MDLog.AddLogCategoryProperties(LOG_CAT, new MDLogProperties(MDLogLevel.Info));
-            MDOnScreenDebug.AddOnScreenDebugInfo("KeyToMemberMap Size", () => KeyToMemberMap.Count.ToString());
-            MDOnScreenDebug.AddOnScreenDebugInfo("NetworkIDToKeyMap Size", () => NetworkIdKeyMap.GetCount().ToString());
-            this.GetGameSession().OnSessionEndedEvent += OnSessionEnded;
+            MDOnScreenDebug.AddOnScreenDebugInfo(DEBUG_CAT, "Replicated Nodes", () => NodeList.Count.ToString());
+            MDOnScreenDebug.AddOnScreenDebugInfo(DEBUG_CAT, "KeyToMemberMap Size", () => KeyToMemberMap.Count.ToString());
+            MDOnScreenDebug.AddOnScreenDebugInfo(DEBUG_CAT, "NetworkIDToKeyMap Size", () => NetworkIdKeyMap.GetCount().ToString());
             this.GetGameSession().OnPlayerJoinedEvent += OnPlayerJoined;
             PauseMode = PauseModeEnum.Process;
             RpcSenderId = -1;
@@ -216,19 +221,12 @@ namespace MD
 
         public override void _ExitTree()
         {
-            this.GetGameSession().OnSessionEndedEvent -= OnSessionEnded;
             this.GetGameSession().OnPlayerJoinedEvent -= OnPlayerJoined;
         }
 
         public override void _PhysicsProcess(float delta)
         {
             TickReplication();
-        }
-
-        private void OnSessionEnded()
-        {
-            NetworkIdKeyMap = new MDReplicatorNetworkKeyIdMap(ShouldShowBufferSize());
-            KeyToMemberMap = new Dictionary<string, MDReplicatedMember>();
         }
 
         private void OnPlayerJoined(int PeerId)
@@ -314,7 +312,7 @@ namespace MD
                         if (!NetworkIdKeyMap.ContainsKey(member.GetUniqueKey()))
                         {
                             uint networkid = GetReplicationId();
-                            MDLog.Trace(LOG_CAT, $"Adding NetworkIdKeyMap key [{member.GetUniqueKey()}] with id [{networkid}]");
+                            MDLog.Debug(LOG_CAT, $"Adding NetworkIdKeyMap key [{member.GetUniqueKey()}] with id [{networkid}]");
                             NetworkIdKeyMap.AddNetworkKeyIdPair(networkid, member.GetUniqueKey());
                             NetworkIdKeyMap.CheckBuffer(networkid, member);
                             networkIdUpdates.Add(networkid);
@@ -362,9 +360,10 @@ namespace MD
             {
                 if (repNode.Instance.GetRef() != Instance)
                 {
-                    return;
+                    continue;
                 }
 
+                MDLog.Debug(LOG_CAT, $"Unregistering node {Instance.Name}");
                 NetworkIdKeyMap.RemoveMembers(repNode.Members);
                 foreach (MDReplicatedMember member in repNode.Members)
                 {
@@ -423,7 +422,7 @@ namespace MD
                     }
                     else
                     {
-                        RepNode.CheckIfNetworkMasterChanged(Instance.GetNetworkMaster());
+                        RepNode.CheckForNetworkChanges(Instance.GetNetworkMaster());
 
                         foreach (MDReplicatedMember RepMember in RepNode.Members)
                         {
@@ -436,6 +435,7 @@ namespace MD
                             }
 
                             MDLog.CTrace(JIPPeerId != -1, LOG_CAT, $"Replicating {RepMember.GetUniqueKey()} to JIP Player {JIPPeerId}");
+                            MDLog.CTrace(JIPPeerId == -1, LOG_CAT, $"Replicating {RepMember.GetUniqueKey()}");
                             RepMember.Replicate(JIPPeerId, CurrentReplicationList.Contains(RepMember));
                         }
                     }

@@ -51,7 +51,7 @@ namespace MD
 
         private static string FullLogFilePath;
         private static File LogFile;
-        private static Dictionary<string, MDLogProperties> LogProperties;
+        private static Dictionary<string, MDLogProperties> LogProperties = new Dictionary<string, MDLogProperties>();
 
         /// <summary>
         /// Initialize internal data and set the directory to store log files
@@ -59,7 +59,6 @@ namespace MD
         /// <param name="LogDir">The log directory to use</param>
         public static void Initialize(string LogDir)
         {
-            LogProperties = new Dictionary<string, MDLogProperties>();
             InitLogFile(LogDir);
             MDCommands.RegisterCommandAttributes(typeof(MDLog));
         }
@@ -356,8 +355,8 @@ namespace MD
         private static void LogToFile(string Message)
         {
             OpenLogFile();
-            LogFile.StoreLine(Message);
-            LogFile.Close();
+            LogFile?.StoreLine(Message);
+            LogFile?.Close();
         }
 
         // Creates our time-stamped log file and opens it for writing
@@ -382,8 +381,8 @@ namespace MD
         // Opens the log file for writing
         private static void OpenLogFile()
         {
-            LogFile.Open(FullLogFilePath, File.ModeFlags.ReadWrite);
-            LogFile.SeekEnd();
+            LogFile?.Open(FullLogFilePath, File.ModeFlags.ReadWrite);
+            LogFile?.SeekEnd();
         }
 
         // Ensures the directory for log files exists

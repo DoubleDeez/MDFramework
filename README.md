@@ -18,26 +18,21 @@ There are a lot of features from other game engines that I'm used to, so I wante
 * A [Game Synchronizer](https://github.com/DoubleDeez/MDFramework/wiki/Game-Synchronizer) to automatically synchronize the game when a new player joins
 
 # Installation
-0. (Optional) I recommend forking the repo so you can track your changes to it, easily merge updates, and reuse it in other projects you have.
-
 1. Add the repo as a submodule to your Godot project's directory (for me I added it to `src\MDFramework`).
 ```bash
 git submodule add https://github.com/DoubleDeez/MDFramework.git src/MDFramework
 ```
 
-2. Add the MDFramework files to your `Project.csproj`, inside of `<ItemGroup>`, making sure the path matches where you cloned the repo. 
-```xml
-    <Compile Include="src\MDFramework\**\*.cs" />
-```
-
-3. Setup your `project.godot` to AutoLoad either `MDGameInstance` or your subclass of it:
+2. Setup your `project.godot` to AutoLoad either `MDGameInstance` or your subclass of it:
 
 ```ini
 [autoload]
 GameInstance="*res://src/MDFramework/MDGameInstance.cs"
 ```
 
-4. Checkout the [wiki](https://github.com/DoubleDeez/MDFramework/wiki) for details on how to use MDFramework.
+3. Checkout the [wiki](https://github.com/DoubleDeez/MDFramework/wiki) for details on how to use MDFramework.
+
+4. When exporting, under the resources tab, make sure to include `*.ini` to package the config files.
 
 # Examples
 

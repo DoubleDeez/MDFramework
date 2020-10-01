@@ -11,6 +11,7 @@ namespace MD
     public class MDGameSynchPeerInfo
     {
         private const string LOG_CAT = "LogGameSynchPeerInfo";
+        private const string DEBUG_CAT = "GameSynchPeerInfo";
 
         // We don't want to have to read config all the time
         protected int SettingAveragePingToKeep = 0;
@@ -196,8 +197,7 @@ namespace MD
             }
 
             // Onscreen debug for ping
-            MDOnScreenDebug.AddOnScreenDebugInfo($"Ping({PeerId})",
-                () => MDStatics.GetGameSynchronizer().GetPlayerPing(PeerId).ToString());
+            MDOnScreenDebug.AddOnScreenDebugInfo(DEBUG_CAT, $"Ping({PeerId})", () => MDStatics.GetGameSynchronizer().GetPlayerPing(PeerId).ToString());
 
             PingTimer = GameSynchronizer.CreateUnpausableTimer($"PingTimer{PeerId}", false, GameSynchronizer.GetPingInterval(), 
                                             false, GameSynchronizer, MDGameSynchronizer.METHOD_ON_PING_TIMER_TIMEOUT, PeerId);

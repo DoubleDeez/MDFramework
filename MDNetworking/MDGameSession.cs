@@ -306,7 +306,7 @@ namespace MD
         }
 
         /// <summary>
-        /// Notifies all clients (except the new one) that a new player has joined
+        /// Notifies all clients (except the new one, as they'll have received the event already) that a new player has joined
         /// </summary>
         /// <param name="Joiner">The PeerID of the joining client</param>
         protected void BroadcastNewPlayerJoined(int Joiner)
@@ -324,20 +324,23 @@ namespace MD
         }
 
         /// <summary>
-        /// Notifies all clients (except the new one) that a new player has initialized
+        /// Notifies all clients that a new player has initialized
         /// </summary>
         /// <param name="Joiner">The PeerID of the joining client</param>
         protected void BroadcastNewPlayerInitialized(int Joiner)
         {
-            foreach (int PeerId in Players.Keys)
+            if (MDStatics.IsNetworkActive())
             {
-                if (PeerId == Joiner || PeerId == SERVER_ID)
+                foreach (int PeerId in Players.Keys)
                 {
-                    continue;
-                }
+                    if (PeerId == SERVER_ID)
+                    {
+                        continue;
+                    }
 
-                MDLog.Debug(LOG_CAT, $"Notifying Peer [{PeerId}] that Peer [{Joiner}] has initialized");
-                RpcId(PeerId, nameof(OnPlayerInitialized), Joiner);
+                    MDLog.Debug(LOG_CAT, $"Notifying Peer [{PeerId}] that Peer [{Joiner}] has initialized");
+                    RpcId(PeerId, nameof(OnPlayerInitialized), Joiner);
+                }
             }
         }
 
@@ -447,7 +450,6 @@ namespace MD
 
             MDPlayerInfo Player = Activator.CreateInstance(PlayerType) as MDPlayerInfo;
             Player.SetPeerId(PeerId);
-            Player.PauseMode = PauseModeEnum.Process;
             AddChild(Player);
             Players.Add(PeerId, Player);
 
