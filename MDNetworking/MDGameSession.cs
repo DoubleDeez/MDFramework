@@ -276,7 +276,7 @@ namespace MD
 
         private void ClientOnServerDisconnect()
         {
-            MDLog.Error(LOG_CAT, "Client was disconnected from server");
+            MDLog.Info(LOG_CAT, "Client was disconnected from server");
             Disconnect();
         }
 
