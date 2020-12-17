@@ -11,13 +11,41 @@ namespace MD
     /// </summary>
     public static class MDTypeExtensions
     {
-        public static MethodInfo GetMethodRecursive(this Type Instance, string MethodName)
+        public static MethodInfo GetMethodRecursive(this Type Instance, string MethodName, bool IgnoreCase)
         {
             MethodInfo Result = null;
             Type CurType = Instance;
+            BindingFlags Flags = MDStatics.BindFlagsAll;
+            if (IgnoreCase)
+            {
+                Flags = MDStatics.BindFlagsAllIgnoreCase;
+            }
             while (CurType != null && Result == null)
             {
-                Result = CurType.GetMethod(MethodName, MDStatics.BindFlagsAll);
+                Result = CurType.GetMethod(MethodName, Flags);
+                CurType = CurType.BaseType;
+            }
+
+            return Result;
+        }
+
+        public static MethodInfo GetMethodRecursive(this Type Instance, string MethodName)
+        {
+            return GetMethodRecursive(Instance, MethodName, false);
+        }
+
+        public static MethodInfo GetMethodRecursive(this Type Instance, string MethodName, Type[] Types, bool IgnoreCase)
+        {
+            MethodInfo Result = null;
+            Type CurType = Instance;
+            BindingFlags Flags = MDStatics.BindFlagsAll;
+            if (IgnoreCase)
+            {
+                Flags = MDStatics.BindFlagsAllIgnoreCase;
+            }
+            while (CurType != null && Result == null)
+            {
+                Result = CurType.GetMethod(MethodName, Flags, null, Types, null);
                 CurType = CurType.BaseType;
             }
 
@@ -26,11 +54,26 @@ namespace MD
 
         public static MethodInfo GetMethodRecursive(this Type Instance, string MethodName, Type[] Types)
         {
-            MethodInfo Result = null;
+            return GetMethodRecursive(Instance, MethodName, Types, false);
+        }
+
+        public static MemberInfo GetMemberRecursive(this Type Instance, string MemberName, bool IgnoreCase)
+        {
+            MemberInfo Result = null;
             Type CurType = Instance;
+            BindingFlags Flags = MDStatics.BindFlagsAll;
+            if (IgnoreCase)
+            {
+                Flags = MDStatics.BindFlagsAllIgnoreCase;
+            }
             while (CurType != null && Result == null)
             {
-                Result = CurType.GetMethod(MethodName, MDStatics.BindFlagsAll, null, Types, null);
+                Result = CurType.GetField(MemberName, Flags);
+                if (Result == null)
+                {
+                    Result = CurType.GetProperty(MemberName, Flags);
+                }
+
                 CurType = CurType.BaseType;
             }
 
@@ -39,20 +82,7 @@ namespace MD
 
         public static MemberInfo GetMemberRecursive(this Type Instance, string MemberName)
         {
-            MemberInfo Result = null;
-            Type CurType = Instance;
-            while (CurType != null && Result == null)
-            {
-                Result = CurType.GetField(MemberName, MDStatics.BindFlagsAll);
-                if (Result == null)
-                {
-                    Result = CurType.GetProperty(MemberName, MDStatics.BindFlagsAll);
-                }
-
-                CurType = CurType.BaseType;
-            }
-
-            return Result;
+            return GetMemberRecursive(Instance, MemberName, false);
         }
 
         public static bool IsCastableTo(this Type from, Type to, bool implicitly = false)

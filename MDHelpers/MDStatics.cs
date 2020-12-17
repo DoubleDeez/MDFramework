@@ -26,6 +26,7 @@ namespace MD
 
         public static BindingFlags BindFlagsAll = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.FlattenHierarchy | BindingFlags.Static;
 
+        public static BindingFlags BindFlagsAllIgnoreCase = BindFlagsAll | BindingFlags.IgnoreCase;
         // MDStatics needs a reference to a Godot object to really be useful, so the GameInstance sets a reference to itself here
         public static MDGameInstance GI { get; set; }
 
