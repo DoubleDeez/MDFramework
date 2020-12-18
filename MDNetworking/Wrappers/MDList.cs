@@ -109,7 +109,7 @@ namespace MD
 
         public MDList()
         {
-            MDLog.AddLogCategoryProperties(LOG_CAT, new MDLogProperties(MDLogLevel.Trace));
+            MDLog.AddLogCategoryProperties(LOG_CAT, new MDLogProperties(MDLogLevel.Info));
             this.Replicator = MDStatics.GetReplicator();
         }
 
@@ -183,6 +183,7 @@ namespace MD
                     IMDDataConverter Converter = RealList[index].Value;
                     if (Converter.ShouldObjectBeReplicated(item, item))
                     {
+                        MDLog.Trace(LOG_CAT, $"List has changed, sending modification");
                         hasChanges = true;
                         RecordAction(MDListActions.MODIFICATION, index, RealList[index]);
                     }
@@ -227,7 +228,7 @@ namespace MD
             MDListActions Type = (MDListActions)Enum.Parse(typeof(MDListActions), Params[1].ToString());
             object[] Parameters = Params.SubArray(2);
 
-            MDLog.Trace(LOG_CAT, $"Recieved command [{CmdNumber.ToString()}] {Type.ToString()} ({MDStatics.GetParametersAsString(Parameters)})");
+            MDLog.Trace(LOG_CAT, $"Received command [{CmdNumber.ToString()}] {Type.ToString()} ({MDStatics.GetParametersAsString(Parameters)})");
 
             if (CmdNumber > CommandCounter)
             {
