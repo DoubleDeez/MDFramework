@@ -42,6 +42,10 @@ namespace MD
         /// <returns>The value of the member in the instance</returns>
         public static object GetValue(this MemberInfo member, object Instance)
         {
+            if (Instance == null)
+            {
+                return null;
+            }
             switch (member.MemberType)
             {
                 case MemberTypes.Field:
