@@ -96,7 +96,16 @@ namespace MD
                 LoadConfiguration(PROJECT_EXPORT_CONFIG);
             #endif
 
-            IsLoaded = true;
+            if (Configuration.Count > 0)
+            {
+                IsLoaded = true;
+            }
+            else
+            {
+                string message = "Failed to load configuration for MDFramework. Did you remember to add *.ini files to your export?";
+                Console.WriteLine(message);
+                Godot.GD.PrintErr(message);
+            }
         }
 
         /// <summary>
