@@ -652,7 +652,7 @@ namespace MD
         public void SendClockedRpc(int PeerId, MDReliability Reliability, Node Target, string Method,
             params object[] Parameters)
         {
-            if (PeerId == MDStatics.GetPeerId())
+            if (PeerId == MDStatics.GetPeerId() || (MDStatics.IsServer() && !MDStatics.IsNetworkActive() && PeerId == MDStatics.GetServerId()))
             {
                 // This is to ourselves so just invoke
                 RpcSenderId = PeerId;
@@ -717,7 +717,7 @@ namespace MD
         /// <param name="Value">The value to set</param>
         public void SendClockedRset(int PeerId, MDReliability Reliability, Node Target, string MemberName, object Value)
         {
-            if (PeerId == MDStatics.GetPeerId())
+            if (PeerId == MDStatics.GetPeerId() || (MDStatics.IsServer() && !MDStatics.IsNetworkActive() && PeerId == MDStatics.GetServerId()))
             {
                 // This is to ourselves so just set
                 Target.SetMemberValue(MemberName, Value);
