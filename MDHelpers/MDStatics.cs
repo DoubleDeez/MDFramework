@@ -18,7 +18,7 @@ namespace MD
 
         private static readonly Dictionary<string, MethodInfo> MethodInfoCache = new Dictionary<string, MethodInfo>();
 
-        private static readonly Dictionary<Type, List<MethodInfo>> NumberedMethodInfoCache = new Dictionary<Type, List<MethodInfo>>();
+        private static readonly Dictionary<Type, IList<MethodInfo>> NumberedMethodInfoCache = new Dictionary<Type, IList<MethodInfo>>();
 
         private static readonly Dictionary<Type, IMDDataConverter> DataConverterCache = new Dictionary<Type, IMDDataConverter>();
 
@@ -222,23 +222,7 @@ namespace MD
         /// <returns>The attribute object for the specified type or null if not found</returns>
         public static T FindClassAttributeInNode<T>(Type InstanceType) where T : Attribute
         {
-            if (IsSameOrSubclass(InstanceType, typeof(Node)) == false)
-            {
-                return null;
-            }
-
-            T FoundAtr = Attribute.GetCustomAttribute(InstanceType, typeof(T)) as T;
-            if (FoundAtr != null)
-            {
-                return FoundAtr;
-            }
-
-            if (InstanceType != typeof(Node) && InstanceType.BaseType != null)
-            {
-                return FindClassAttributeInNode<T>(InstanceType.BaseType);
-            }
-
-            return null;
+            return MDReflectionCache.FindClassAttributeInNode<T>(InstanceType);
         }
 
         /// <summary>
@@ -265,11 +249,24 @@ namespace MD
         }
 
         /// <summary>
+        /// Check if a type is in the godot namespace
+        /// </summary>
+        public static bool IsInGodotNamespace(Type type)
+        {
+            if (type.Namespace == "Godot" || type.Namespace.StartsWith("Godot."))
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
         /// Get type member infos for the object
         /// </summary>
         /// <param name="Object">The object to find member infos for</param>
         /// <returns>List of member infos</returns>
-        public static List<MemberInfo> GetTypeMemberInfos(object Object)
+        public static IList<MemberInfo> GetTypeMemberInfos(object Object)
         {
             return Object.GetType().GetMemberInfos();
         }
@@ -317,32 +314,32 @@ namespace MD
                 return MDRemoteMode.Unknown;
             }
 
-            if (Info.GetCustomAttribute(typeof(RemoteAttribute)) != null)
+            if (MDReflectionCache.GetCustomAttribute<RemoteAttribute>(Info) != null)
             {
                 return MDRemoteMode.Remote;
             }
 
-            if (Info.GetCustomAttribute(typeof(RemoteSyncAttribute)) != null)
+            if (MDReflectionCache.GetCustomAttribute<RemoteSyncAttribute>(Info) != null)
             {
                 return MDRemoteMode.RemoteSync;
             }
 
-            if (Info.GetCustomAttribute(typeof(PuppetAttribute)) != null)
+            if (MDReflectionCache.GetCustomAttribute<PuppetAttribute>(Info) != null)
             {
                 return MDRemoteMode.Puppet;
             }
 
-            if (Info.GetCustomAttribute(typeof(PuppetSyncAttribute)) != null)
+            if (MDReflectionCache.GetCustomAttribute<PuppetSyncAttribute>(Info) != null)
             {
                 return MDRemoteMode.PuppetSync;
             }
 
-            if (Info.GetCustomAttribute(typeof(MasterAttribute)) != null)
+            if (MDReflectionCache.GetCustomAttribute<MasterAttribute>(Info) != null)
             {
                 return MDRemoteMode.Master;
             }
 
-            if (Info.GetCustomAttribute(typeof(MasterSyncAttribute)) != null)
+            if (MDReflectionCache.GetCustomAttribute<MasterSyncAttribute>(Info) != null)
             {
                 return MDRemoteMode.MasterSync;
             }
@@ -366,32 +363,32 @@ namespace MD
                 return MDRemoteMode.Unknown;
             }
 
-            if (Info.GetCustomAttribute(typeof(RemoteAttribute)) != null)
+            if (MDReflectionCache.GetCustomAttribute<RemoteAttribute>(Info) != null)
             {
                 return MDRemoteMode.Remote;
             }
 
-            if (Info.GetCustomAttribute(typeof(RemoteSyncAttribute)) != null)
+            if (MDReflectionCache.GetCustomAttribute<RemoteSyncAttribute>(Info) != null)
             {
                 return MDRemoteMode.RemoteSync;
             }
 
-            if (Info.GetCustomAttribute(typeof(PuppetAttribute)) != null)
+            if (MDReflectionCache.GetCustomAttribute<PuppetAttribute>(Info) != null)
             {
                 return MDRemoteMode.Puppet;
             }
 
-            if (Info.GetCustomAttribute(typeof(PuppetSyncAttribute)) != null)
+            if (MDReflectionCache.GetCustomAttribute<PuppetSyncAttribute>(Info) != null)
             {
                 return MDRemoteMode.PuppetSync;
             }
 
-            if (Info.GetCustomAttribute(typeof(MasterAttribute)) != null)
+            if (MDReflectionCache.GetCustomAttribute<MasterAttribute>(Info) != null)
             {
                 return MDRemoteMode.Master;
             }
 
-            if (Info.GetCustomAttribute(typeof(MasterSyncAttribute)) != null)
+            if (MDReflectionCache.GetCustomAttribute<MasterSyncAttribute>(Info) != null)
             {
                 return MDRemoteMode.MasterSync;
             }
@@ -440,7 +437,7 @@ namespace MD
 
             if (info != null)
             {
-                List<MethodInfo> methodInfos = NumberedMethodInfoCache[nodeType];
+                IList<MethodInfo> methodInfos = NumberedMethodInfoCache[nodeType];
                 for (int i = 0; i < methodInfos.Count; i++)
                 {
                     if (methodInfos[i].Equals(info))
@@ -482,7 +479,7 @@ namespace MD
                 else
                 {
                     // Couldn't find anything with direct compare so we will search for the method manually and cache it if found
-                    List<MethodInfo> Methods = nodeType.GetMethodInfos();
+                    IList<MethodInfo> Methods = nodeType.GetMethodInfos();
                     foreach (MethodInfo CandidateMethod in Methods)
                     {
                         if (CandidateMethod.Name != Method)

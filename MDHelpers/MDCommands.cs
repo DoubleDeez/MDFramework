@@ -58,10 +58,14 @@ namespace MD
         /// <param name="Instance">The object to register for</param>
         public static void RegisterCommandAttributes(Type ObjType, object Instance = null)
         {
-            List<MethodInfo> Methods = ObjType.GetMethodInfos();
+            if (MDStatics.IsInGodotNamespace(ObjType))
+            {
+                return;
+            }
+            IList<MethodInfo> Methods = ObjType.GetMethodInfos();
             foreach (MethodInfo Method in Methods)
             {
-                MDCommand CmdAttr = Method.GetCustomAttribute(typeof(MDCommand)) as MDCommand;
+                MDCommand CmdAttr = MDReflectionCache.GetCustomAttribute<MDCommand>(Method) as MDCommand;
                 if (CmdAttr != null)
                 {
                     RegisterCommand(Instance, Method, CmdAttr.DefaultArgs);
@@ -76,10 +80,14 @@ namespace MD
         /// <param name="Instance">The object to unregister for</param>
         public static void UnregisterCommandAttributes(Type ObjType, object Instance = null)
         {
-            MethodInfo[] Methods = ObjType.GetMethods();
+            if (MDStatics.IsInGodotNamespace(ObjType))
+            {
+                return;
+            }
+            IList<MethodInfo> Methods = ObjType.GetMethodInfos();
             foreach (MethodInfo Method in Methods)
             {
-                MDCommand CmdAttr = Method.GetCustomAttribute(typeof(MDCommand)) as MDCommand;
+                MDCommand CmdAttr = MDReflectionCache.GetCustomAttribute<MDCommand>(Method) as MDCommand;
                 if (CmdAttr != null)
                 {
                     UnregisterCommand(Instance, Method);

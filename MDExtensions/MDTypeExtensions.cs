@@ -145,30 +145,9 @@ namespace MD
         /// </summary>
         /// <param name="Instance">The object type to find for</param>
         /// <returns>List of members</returns>
-        public static List<MemberInfo> GetMemberInfos(this Type Instance)
+        public static IList<MemberInfo> GetMemberInfos(this Type Instance)
         {
-            List<MemberInfo> Members = new List<MemberInfo>();
-            while (Instance != null && Instance != typeof(Node))
-            {
-                Members.AddRange(Instance.GetFields(MDStatics.BindFlagsAll));
-                Members.AddRange(Instance.GetProperties(MDStatics.BindFlagsAll));
-                Instance = Instance.BaseType;
-            }
-
-            List<MemberInfo> DeDupedMembers = new List<MemberInfo>();
-            foreach (MemberInfo Member in Members)
-            {
-                bool IsUnique = DeDupedMembers.All(
-                    DeDupedMember =>
-                        DeDupedMember.DeclaringType != Member.DeclaringType || DeDupedMember.Name != Member.Name);
-
-                if (IsUnique)
-                {
-                    DeDupedMembers.Add(Member);
-                }
-            }
-
-            return DeDupedMembers;
+            return MDReflectionCache.GetMemberInfos(Instance);
         }
 
         /// <summary>
@@ -179,11 +158,11 @@ namespace MD
         /// <returns>List of MemberInfos that has the attribute or an empty list</returns>
         public static List<MemberInfo> GetAllMembersWithAttribute<T>(this Type Type) where T : Attribute
         {
-            List<MemberInfo> Members = Type.GetMemberInfos();
+            IList<MemberInfo> Members = Type.GetMemberInfos();
             List<MemberInfo> ReturnList = new List<MemberInfo>();
             foreach (MemberInfo Member in Members)
             {
-                T RepAttribute = Member.GetCustomAttribute(typeof(T)) as T;
+                T RepAttribute = MDReflectionCache.GetCustomAttribute<T>(Member) as T;
                 if (RepAttribute == null)
                 {
                     continue;
@@ -203,11 +182,11 @@ namespace MD
         /// <returns>List of MethodInfos that has the attribute or an empty list</returns>
         public static List<MethodInfo> GetAllMethodsWithAttribute<T>(this Type Type) where T : Attribute
         {
-            List<MethodInfo> Methods = Type.GetMethodInfos();
+            IList<MethodInfo> Methods = Type.GetMethodInfos();
             List<MethodInfo> ReturnList = new List<MethodInfo>();
             foreach (MethodInfo Method in Methods)
             {
-                T RepAttribute = Method.GetCustomAttribute(typeof(T)) as T;
+                T RepAttribute = MDReflectionCache.GetCustomAttribute<T>(Method) as T;;
                 if (RepAttribute == null)
                 {
                     continue;
@@ -224,27 +203,9 @@ namespace MD
         /// </summary>
         /// <param name="Instance">The object type to find for</param>
         /// <returns>List of methodss</returns>
-        public static List<MethodInfo> GetMethodInfos(this Type Instance)
+        public static IList<MethodInfo> GetMethodInfos(this Type Instance)
         {
-            List<MethodInfo> Methods = new List<MethodInfo>();
-            while (Instance != null && Instance != typeof(Node))
-            {
-                Methods.AddRange(Instance.GetMethods(MDStatics.BindFlagsAll));
-                Instance = Instance.BaseType;
-            }
-
-            List<MethodInfo> DeDupedMethods = new List<MethodInfo>();
-            foreach (MethodInfo Method in Methods)
-            {
-                bool IsUnique = DeDupedMethods.All(DeDupedMethod => DeDupedMethod.DeclaringType != Method.DeclaringType || DeDupedMethod.Name != Method.Name);
-
-                if (IsUnique)
-                {
-                    DeDupedMethods.Add(Method);
-                }
-            }
-
-            return DeDupedMethods;
+            return MDReflectionCache.GetMethodInfos(Instance);
         }
     }
 }

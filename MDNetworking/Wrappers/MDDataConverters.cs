@@ -247,10 +247,10 @@ namespace MD
             {
                 Members = new List<MemberInfo>();
                 DataConverters = new List<IMDDataConverter>();
-                List<MemberInfo> MemberInfos = typeof(T).GetMemberInfos();
+                IList<MemberInfo> MemberInfos = typeof(T).GetMemberInfos();
                 foreach (MemberInfo Member in MemberInfos)
                 {
-                    MDReplicated RepAttribute = Member.GetCustomAttribute(typeof(MDReplicated)) as MDReplicated;
+                    MDReplicated RepAttribute = MDReflectionCache.GetCustomAttribute<MDReplicated>(Member) as MDReplicated;
                     if (RepAttribute == null)
                     {
                         continue;

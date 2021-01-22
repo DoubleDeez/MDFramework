@@ -127,6 +127,14 @@ namespace MD
         // Registers a new node to MDFramework systems
         private void RegisterNewNode(Node Instance)
         {
+            Type type = Instance.GetType();
+
+            // Ignore nodes in Godot namespace as they won't have any attributes
+            if (MDStatics.IsInGodotNamespace(type))
+            {
+                return;
+            }
+
             MDAutoRegister AutoRegAtr = MDStatics.FindClassAttributeInNode<MDAutoRegister>(Instance.GetType());
             if (RequireAutoRegister() && AutoRegAtr == null ||
                 AutoRegAtr != null && AutoRegAtr.RegisterType == MDAutoRegisterType.None)
