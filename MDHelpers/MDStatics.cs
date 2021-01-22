@@ -253,7 +253,8 @@ namespace MD
         /// </summary>
         public static bool IsInGodotNamespace(Type type)
         {
-            if (type.Namespace == "Godot" || type.Namespace.StartsWith("Godot."))
+            if (type.Namespace != null && 
+               (type.Namespace == "Godot" || type.Namespace.StartsWith("Godot.")))
             {
                 return true;
             }
