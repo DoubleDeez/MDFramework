@@ -571,5 +571,37 @@ namespace MD
             GameSession.ChangeNetworkMaster(Instance, NewNetworkMaster);
 
         }
+
+        public static Node MDFindNode(this Node Instance, string PathToNode)
+        {
+            // First, if we have an explicit node path, try that
+            Node BoundNode = Instance.GetNodeOrNull(PathToNode);
+            if (BoundNode != null)
+            {
+                return BoundNode;
+            }
+
+            // Check if we have a child with the same name
+            Godot.Collections.Array Children = Instance.GetChildren();
+            foreach (Node Child in Children)
+            {
+                if (Child != null && Child.Name == PathToNode)
+                {
+                    return Child;
+                }
+            }
+
+            // Then check if a child has the node instead
+            foreach (Node Child in Children)
+            {
+                BoundNode = MDFindNode(Child, PathToNode);
+                if (BoundNode != null)
+                {
+                    return BoundNode;
+                }
+            }
+
+            return null;
+        }
     }
 }
