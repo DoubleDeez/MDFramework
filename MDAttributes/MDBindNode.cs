@@ -25,10 +25,10 @@ namespace MD
 
         public static void PopulateBindNodes(Node Instance)
         {
-            List<MemberInfo> Members = MDStatics.GetTypeMemberInfos(Instance);
+            IList<MemberInfo> Members = MDStatics.GetTypeMemberInfos(Instance);
             foreach (MemberInfo Member in Members)
             {
-                MDBindNode BindAttr = Member.GetCustomAttribute(typeof(MDBindNode)) as MDBindNode;
+                MDBindNode BindAttr = MDReflectionCache.GetCustomAttribute<MDBindNode>(Member) as MDBindNode;
                 if (BindAttr == null)
                 {
                     continue;
@@ -54,7 +54,7 @@ namespace MD
                 }
 
                 string PathToNode = BindAttr.GetNodePath(Member.Name);
-                Node BoundNode = FindNode(Instance, PathToNode);
+                Node BoundNode = Instance.MDFindNode(PathToNode);
                 if (BoundNode == null)
                 {
                     continue;
@@ -69,38 +69,6 @@ namespace MD
                     Property.SetValue(Instance, BoundNode);
                 }
             }
-        }
-
-        private static Node FindNode(Node Instance, string PathToNode)
-        {
-            // First, if we have an explicit node path, try that
-            Node BoundNode = Instance.GetNodeOrNull(PathToNode);
-            if (BoundNode != null)
-            {
-                return BoundNode;
-            }
-
-            // Check if we have a child with the same name
-            Godot.Collections.Array Children = Instance.GetChildren();
-            foreach (Node Child in Children)
-            {
-                if (Child != null && Child.Name == PathToNode)
-                {
-                    return Child;
-                }
-            }
-
-            // Then check if a child has the node instead
-            foreach (Node Child in Children)
-            {
-                BoundNode = FindNode(Child, PathToNode);
-                if (BoundNode != null)
-                {
-                    return BoundNode;
-                }
-            }
-
-            return null;
         }
     }
 }

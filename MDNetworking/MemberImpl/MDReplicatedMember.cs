@@ -261,8 +261,8 @@ namespace MD
         /// </summary>
         public void CheckIfShouldReplicate()
         {
-            MasterAttribute MasterAtr = Member.GetCustomAttribute(typeof(MasterAttribute)) as MasterAttribute;
-            MasterSyncAttribute MasterSyncAtr = Member.GetCustomAttribute(typeof(MasterSyncAttribute)) as MasterSyncAttribute;
+            MasterAttribute MasterAtr = MDReflectionCache.GetCustomAttribute<MasterAttribute>(Member) as MasterAttribute;
+            MasterSyncAttribute MasterSyncAtr = MDReflectionCache.GetCustomAttribute<MasterSyncAttribute>(Member) as MasterSyncAttribute;
             Node Node = NodeRef.GetRef() as Node;
             bool IsMaster = MDStatics.GetPeerId() == Node.GetNetworkMaster();
             IsShouldReplicate = (IsMaster && MasterAtr == null && MasterSyncAtr == null) || (IsMaster == false && (MasterAtr != null || MasterSyncAtr != null));
