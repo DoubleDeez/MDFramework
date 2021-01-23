@@ -255,7 +255,7 @@ namespace MD
         // Returns an array of settings for the member
         private MDReplicatedSetting[] GetSettings(MemberInfo Member)
         {
-            object[] Settings = Member.GetCustomAttributes(typeof(MDReplicatedSetting), true);
+            object[] Settings = MDReflectionCache.GetCustomAttributes<MDReplicatedSetting>(Member, true);
             return Array.ConvertAll(Settings, item => (MDReplicatedSetting) item);
         }
 
@@ -265,11 +265,11 @@ namespace MD
         /// <param name="Instance">The node to register</param>
         public void RegisterReplication(Node Instance)
         {
-            List<MemberInfo> Members = MDStatics.GetTypeMemberInfos(Instance);
+            IList<MemberInfo> Members = MDStatics.GetTypeMemberInfos(Instance);
             List<MDReplicatedMember> NodeMembers = new List<MDReplicatedMember>();
             foreach (MemberInfo Member in Members)
             {
-                MDReplicated RepAttribute = Member.GetCustomAttribute(typeof(MDReplicated)) as MDReplicated;
+                MDReplicated RepAttribute = MDReflectionCache.GetCustomAttribute<MDReplicated>(Member) as MDReplicated;
                 if (RepAttribute == null)
                 {
                     continue;
@@ -445,15 +445,15 @@ namespace MD
 
         private bool HasRPCModeSet(MemberInfo Member)
         {
-            MasterAttribute MasterAtr = Member.GetCustomAttribute(typeof(MasterAttribute)) as MasterAttribute;
+            MasterAttribute MasterAtr = MDReflectionCache.GetCustomAttribute<MasterAttribute>(Member) as MasterAttribute;
             MasterSyncAttribute MasterSyncAtr =
-                Member.GetCustomAttribute(typeof(MasterSyncAttribute)) as MasterSyncAttribute;
-            PuppetAttribute PuppetAtr = Member.GetCustomAttribute(typeof(PuppetAttribute)) as PuppetAttribute;
+                MDReflectionCache.GetCustomAttribute<MasterSyncAttribute>(Member) as MasterSyncAttribute;
+            PuppetAttribute PuppetAtr = MDReflectionCache.GetCustomAttribute<PuppetAttribute>(Member) as PuppetAttribute;
             PuppetSyncAttribute PuppetSyncAtr =
-                Member.GetCustomAttribute(typeof(PuppetSyncAttribute)) as PuppetSyncAttribute;
-            RemoteAttribute RemoteAtr = Member.GetCustomAttribute(typeof(RemoteAttribute)) as RemoteAttribute;
+                MDReflectionCache.GetCustomAttribute<PuppetSyncAttribute>(Member) as PuppetSyncAttribute;
+            RemoteAttribute RemoteAtr = MDReflectionCache.GetCustomAttribute<RemoteAttribute>(Member) as RemoteAttribute;
             RemoteSyncAttribute RemoteSyncAtr =
-                Member.GetCustomAttribute(typeof(RemoteSyncAttribute)) as RemoteSyncAttribute;
+                MDReflectionCache.GetCustomAttribute<RemoteSyncAttribute>(Member) as RemoteSyncAttribute;
 
             return MasterAtr != null || MasterSyncAtr != null || PuppetAtr != null || PuppetSyncAtr != null ||
                    RemoteAtr != null || RemoteSyncAtr != null;
@@ -652,7 +652,7 @@ namespace MD
         public void SendClockedRpc(int PeerId, MDReliability Reliability, Node Target, string Method,
             params object[] Parameters)
         {
-            if (PeerId == MDStatics.GetPeerId())
+            if (PeerId == MDStatics.GetPeerId() || (MDStatics.IsServer() && !MDStatics.IsNetworkActive() && PeerId == MDStatics.GetServerId()))
             {
                 // This is to ourselves so just invoke
                 RpcSenderId = PeerId;
@@ -717,7 +717,7 @@ namespace MD
         /// <param name="Value">The value to set</param>
         public void SendClockedRset(int PeerId, MDReliability Reliability, Node Target, string MemberName, object Value)
         {
-            if (PeerId == MDStatics.GetPeerId())
+            if (PeerId == MDStatics.GetPeerId() || (MDStatics.IsServer() && !MDStatics.IsNetworkActive() && PeerId == MDStatics.GetServerId()))
             {
                 // This is to ourselves so just set
                 Target.SetMemberValue(MemberName, Value);

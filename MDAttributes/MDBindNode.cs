@@ -25,10 +25,10 @@ namespace MD
 
         public static void PopulateBindNodes(Node Instance)
         {
-            List<MemberInfo> Members = MDStatics.GetTypeMemberInfos(Instance);
+            IList<MemberInfo> Members = MDStatics.GetTypeMemberInfos(Instance);
             foreach (MemberInfo Member in Members)
             {
-                MDBindNode BindAttr = Member.GetCustomAttribute(typeof(MDBindNode)) as MDBindNode;
+                MDBindNode BindAttr = MDReflectionCache.GetCustomAttribute<MDBindNode>(Member) as MDBindNode;
                 if (BindAttr == null)
                 {
                     continue;

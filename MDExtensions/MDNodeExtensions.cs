@@ -304,7 +304,7 @@ namespace MD
         /// <param name="Args">Arguments</param>
         public static void MDRpcId(this Node Instance, int PeerId, string Method, params object[] Args)
         {
-            if (!MDStatics.IsNetworkActive())
+            if (!MDStatics.IsNetworkActive() && !MDStatics.IsServer())
             {
                 return;
             }
@@ -320,7 +320,7 @@ namespace MD
         /// <param name="Args">Arguments</param>
         public static void MDRpcUnreliable(this Node Instance, string Method, params object[] Args)
         {
-            if (!MDStatics.IsNetworkActive())
+            if (!MDStatics.IsNetworkActive() && !MDStatics.IsServer())
             {
                 return;
             }
@@ -337,7 +337,7 @@ namespace MD
         /// <param name="Args">Arguments</param>
         public static void MDRpcUnreliableId(this Node Instance, int PeerId, string Method, params object[] Args)
         {
-            if (!MDStatics.IsNetworkActive())
+            if (!MDStatics.IsNetworkActive() && !MDStatics.IsServer())
             {
                 return;
             }
@@ -353,7 +353,7 @@ namespace MD
         /// <param name="Value">The value</param>
         public static void MDRset(this Node Instance, string Property, object Value)
         {
-            if (!MDStatics.IsNetworkActive())
+            if (!MDStatics.IsNetworkActive() && !MDStatics.IsServer())
             {
                 return;
             }
@@ -369,7 +369,7 @@ namespace MD
         /// <param name="Value">The value</param>
         public static void MDRsetId(this Node Instance, int PeerId, string Property, object Value)
         {
-            if (!MDStatics.IsNetworkActive())
+            if (!MDStatics.IsNetworkActive() && !MDStatics.IsServer())
             {
                 return;
             }
@@ -384,7 +384,7 @@ namespace MD
         /// <param name="Value">The value</param>
         public static void MDRsetUnreliable(this Node Instance, string Property, object Value)
         {
-            if (!MDStatics.IsNetworkActive())
+            if (!MDStatics.IsNetworkActive() && !MDStatics.IsServer())
             {
                 return;
             }
@@ -400,7 +400,7 @@ namespace MD
         /// <param name="Value">The value</param>
         public static void MDRsetUnreliableId(this Node Instance, int PeerId, string Property, object Value)
         {
-            if (!MDStatics.IsNetworkActive())
+            if (!MDStatics.IsNetworkActive() && !MDStatics.IsServer())
             {
                 return;
             }
