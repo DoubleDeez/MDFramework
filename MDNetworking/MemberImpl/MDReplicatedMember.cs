@@ -190,6 +190,15 @@ namespace MD
         }
 
         /// <summary>
+        /// Called when this member is about the be disposed
+        /// Can be used to unsubscribe from any events or do any cleanup
+        /// </summary>
+        public virtual void AboutToBeDisposed()
+        {
+
+        }
+
+        /// <summary>
         /// Checks if we got an updated value, this is called on clients that this value is replicated to.
         /// </summary>
         public virtual void CheckForValueUpdate()

@@ -367,6 +367,7 @@ namespace MD
                 NetworkIdKeyMap.RemoveMembers(repNode.Members);
                 foreach (MDReplicatedMember member in repNode.Members)
                 {
+                    member.AboutToBeDisposed();
                     GroupManager.RemoveReplicatedMember(member);
                     KeyToMemberMap.Remove(member.GetUniqueKey());
                 }

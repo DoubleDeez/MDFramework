@@ -113,6 +113,14 @@ namespace MD
             this.Replicator = MDStatics.GetReplicator();
         }
 
+        public void MDResetOnJoin()
+        {
+            MDLog.Trace(LOG_CAT, $"Resetting MDList");
+            RealList.Clear();
+            CommandQueue.Clear();
+            CommandCounter = 0;
+        }
+
     #region PUBLIC METHODS
 
         public List<object[]> MDGetCommandsForNewPlayer()
@@ -251,6 +259,7 @@ namespace MD
             {
                 case MDListActions.SET_CURRENT_COMMAND_ID:
                     CommandCounter = Convert.ToInt32(Parameters[0]);
+                    RemoveOldCommandQueueEntries();
                     break;
                 case MDListActions.MODIFICATION:
                     int index = Convert.ToInt32(Parameters[0]);
@@ -477,6 +486,20 @@ namespace MD
         {
             IMDDataConverter Converter = GetNewConverter();
             return CreateNewItem((T)Converter.ConvertBackToObject(null, Parameters), Converter);
+        }
+
+        protected void RemoveOldCommandQueueEntries()
+        {
+            List<ListCommandRecord> removelist = new List<ListCommandRecord>();
+            foreach (ListCommandRecord record in CommandQueue)
+            {
+                if (record.CommandNumber < CommandCounter)
+                {
+                    removelist.Add(record);
+                }
+            }
+
+            removelist.ForEach(item => CommandQueue.Remove(item));
         }
 
 

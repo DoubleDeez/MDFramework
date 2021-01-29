@@ -39,6 +39,11 @@ namespace MD
         bool MDShouldBeReplicated();
 
         void MDDoFullResynch(object list);
+
+        /// <summary>
+        /// Called when we connect to a server for any existing command replicator
+        /// </summary>
+        void MDResetOnJoin();
     }
 
     /// <summary>
@@ -52,9 +57,25 @@ namespace MD
             GameSession = MDStatics.GetGameSession();
             Replicator = GameSession.Replicator;
             GameClock = GameSession.GetGameClock();
+            GameSession.OnSessionStartedEvent += OnSessionStartedEvent;
             Node node = NodeRef.GetRef() as Node;
             IMDCommandReplicator CommandReplicator = InitializeCommandReplicator(Member, node);
             CommandReplicator.MDSetSettings(Settings);
+        }
+
+        public override void AboutToBeDisposed()
+        {
+            GameSession.OnSessionStartedEvent -= OnSessionStartedEvent;
+        }
+
+        private void OnSessionStartedEvent()
+        {
+            IMDCommandReplicator replicator = GetCommandReplicator();
+            // Reset this list on session start
+            if (replicator != null)
+            {
+                replicator.MDResetOnJoin();
+            }
         }
 
         public override void SetValues(uint Tick, params object[] Parameters)
@@ -114,6 +135,10 @@ namespace MD
         private IMDCommandReplicator GetCommandReplicator()
         {
             Node node = NodeRef.GetRef() as Node;
+            if (node == null)
+            {
+                return null;
+            }
             return (IMDCommandReplicator)Member.GetValue(node);
         }
 
