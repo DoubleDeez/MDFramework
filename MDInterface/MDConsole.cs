@@ -252,7 +252,7 @@ namespace MD
             for (; i < Mathf.Min(HelpLabelsCount, HelpCmdCount); ++i)
             {
                 int StringIndex = HelpCmdCount - i - 1;
-                Label HelpLabel = HistoryHelpBox.GetChild<Label>(i);
+                Godot.Label HelpLabel = HistoryHelpBox.GetChild<Godot.Label>(i);
                 HelpLabel.Text =
                     UseHelpText ? MDCommands.GetHelpText(StringList[StringIndex]) : StringList[StringIndex];
                 HelpLabel.Visible = true;
@@ -262,7 +262,7 @@ namespace MD
             for (; i < HelpCmdCount; ++i)
             {
                 int StringIndex = HelpCmdCount - i - 1;
-                Label HelpLabel = new Label
+                Godot.Label HelpLabel = new Godot.Label
                 {
                     Text = UseHelpText ? MDCommands.GetHelpText(StringList[StringIndex]) : StringList[StringIndex]
                 };
@@ -272,7 +272,7 @@ namespace MD
             // Hide the extras
             for (; i < HelpLabelsCount; ++i)
             {
-                Label HelpLabel = HistoryHelpBox.GetChild<Label>(i);
+                Godot.Label HelpLabel = HistoryHelpBox.GetChild<Godot.Label> (i);
                 HelpLabel.Visible = false;
             }
         }
