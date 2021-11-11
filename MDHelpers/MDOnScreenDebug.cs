@@ -52,23 +52,6 @@ namespace MD
             AddOnScreenDebugInfo(BASIC_DEBUG_CAT, "PeerId: ", () => MDStatics.GetPeerId().ToString(), Colors.Cyan);
         }
 
-        /////////////////////////////////I HAVE NO IDEA WHAT I'm DOING!?!?!?
-        public static void AddOnScreenDebugInfo(string v, Func<string> p)
-        {
-            //throw new NotImplementedException();
-            //AddOnScreenDebugInfo(v, p);
-            String namez = "UNKNOWN";
-            Dictionary<string, OnScreenDebugInfo> DebugInfoList = null;
-            DebugInfoList = new Dictionary<string, OnScreenDebugInfo>();
-            string DebugCategory = "unknown";
-            DebugInfoCategoryMap.Add(DebugCategory, DebugInfoList);
-            OnScreenInfoFunction InfoFunction = null;
-            InfoFunction = () => MDStatics.HumanReadableMemorySize(OS.GetStaticMemoryUsage());
-            Color color = new Color(128.0f, 128.0f, 128.0f, 1.0f);
-            DebugInfoList.Add(namez, new OnScreenDebugInfo(InfoFunction, color));
-
-        }
-
         /// <summary>Adds some info to print on the screen</summary>
         /// <param name="DebugCategory">The category to display, should be unique.</param>
         /// <param name="Name">The name to display, should be unique to the category.</param>
