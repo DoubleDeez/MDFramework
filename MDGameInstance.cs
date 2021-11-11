@@ -23,7 +23,7 @@ namespace MD
         public override void _Ready()
         {
             MDStatics.GI = this;
-            
+
             // Configuration first
             CreateConfiguration();
 
@@ -299,13 +299,13 @@ namespace MD
         ///<summary>Get the key used to open the console. (Default: KeyList.QuoteLeft)</summary>
         public virtual int GetConsoleKey()
         {
-            return Configuration.GetInt(MDConfiguration.ConfigurationSections.GameInstance, MDConfiguration.CONSOLE_KEY, (int) KeyList.Quoteleft);
+            return Configuration.GetInt(MDConfiguration.ConfigurationSections.GameInstance, MDConfiguration.CONSOLE_KEY, (int)KeyList.Quoteleft);
         }
 
         ///<summary>Get the key used to open the on screen debug. (Default: KeyList.F12)</summary>
         public virtual int GetOnScreenDebugKey()
         {
-            return Configuration.GetInt(MDConfiguration.ConfigurationSections.GameInstance, MDConfiguration.ON_SCREEN_DEBUG_KEY, (int) KeyList.F12);
+            return Configuration.GetInt(MDConfiguration.ConfigurationSections.GameInstance, MDConfiguration.ON_SCREEN_DEBUG_KEY, (int)KeyList.F12);
         }
 
         ///<summary>Get the directory for MDLog log files

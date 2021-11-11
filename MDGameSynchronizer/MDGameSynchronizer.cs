@@ -112,7 +112,7 @@ namespace MD
         {
             if (PeerSynchInfo.ContainsKey(PeerId))
             {
-                return Convert.ToUInt32(OS.GetTicksMsec() + PeerSynchInfo[PeerId].TickMSecOffset);
+                return Convert.ToUInt32(OS.GetTicksMsec() + (ulong)PeerSynchInfo[PeerId].TickMSecOffset);
             }
 
             MDLog.Warn(LOG_CAT, $"Requested OS.GetTicksMsec for peer [{PeerId}] that doesn't exist in list");
@@ -442,7 +442,7 @@ namespace MD
                 }
             }
 
-            UnpauseAtTickMsec(OS.GetTicksMsec() + GetUnpauseCountdownDurationMSec(), 0);
+            UnpauseAtTickMsec((uint)OS.GetTicksMsec() + GetUnpauseCountdownDurationMSec(), 0);
             PeerSynchInfo.Values.ToList().ForEach(value => value.CompletedSynch = false);
             timer.RemoveAndFree();
         }

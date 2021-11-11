@@ -292,7 +292,7 @@ namespace MD
         /// <param name="EstimatedTick">The estimated tick for the time</param>
         public void CheckSynch(long EstimateTime, long EstimatedTick)
         {
-            long currentTime = OS.GetTicksMsec();
+            long currentTime = Convert.ToInt64(OS.GetTicksMsec());
             if (EstimateTime < currentTime)
             {
                 // This packet was delayed and is already in the past, ignore

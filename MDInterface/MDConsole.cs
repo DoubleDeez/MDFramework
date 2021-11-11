@@ -272,7 +272,7 @@ namespace MD
             // Hide the extras
             for (; i < HelpLabelsCount; ++i)
             {
-                Label HelpLabel = HistoryHelpBox.GetChild<Label>(i);
+                Label HelpLabel = HistoryHelpBox.GetChild<Label> (i);
                 HelpLabel.Visible = false;
             }
         }

@@ -95,7 +95,7 @@ namespace MD
     
                 Of course this is a best guess estimate, by doing multiple measurements and taking the average we can close in on the truth.
             */
-            int estimatedGetTicksOffset = (int) (ClientTicksMsec - OS.GetTicksMsec() + pingOneWay);
+            int estimatedGetTicksOffset = (int) (ClientTicksMsec - OS.GetTicksMsec() + (ulong)pingOneWay);
             PushPlayerEstimatedTicksMSecToList(estimatedGetTicksOffset);
 
             // Check if we are done with the initial request burst
