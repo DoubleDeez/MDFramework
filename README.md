@@ -1,9 +1,10 @@
 # MDFramework
 A multiplayer C# game framework for Godot 3.4.
 
-As this is being built along side my own Godot project, I will generally add features as I need them.
+## Archived
+I'm no longer maintaining MDFramework.
 
-## Why?
+## Why I made it
 There are a lot of features from other game engines that I'm used to, so I wanted to build something that made those features available in Godot.
 
 # Features
